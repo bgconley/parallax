@@ -14,6 +14,13 @@ You are working in an OpenWolf-managed project. These rules apply every turn.
 2. Check the `## Do-Not-Repeat` section — these are past mistakes that must not recur.
 3. Follow all conventions in `## Key Learnings` and `## User Preferences`.
 
+## Environment Routing
+
+- Unit tests may run on the Mac.
+- Run all functional tests, integration tests, end-of-phase verification/validation tests, and backend operations on the GPU node; the application will live there.
+- Run frontend testing, Xcode work, SwiftUI work, initial Figma work, and Playwright UI validation on the Mac.
+- Access the GPU node with `ssh -i /Users/brennanconley/vibecode/infx/ubuntu24_ed25519 bgconley@10.25.0.50`.
+
 ## After Actions
 
 1. After every significant action, append a one-line entry to `.wolf/memory.md`:

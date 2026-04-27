@@ -1,5 +1,10 @@
 # Phase 0/1 Temporal Core Implementation Plan
 
+> Status note, 2026-04-27: this is a historical combined plan. Do not execute
+> Phase 1 tasks from this file unless the user explicitly starts Phase 1. Current
+> Phase 0 bootstrap scope and verification live in
+> `docs/architecture/phase0_bootstrap.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the Parallax repository foundation and first API-level activity/timing session loop from the v1.3 artifact pack.

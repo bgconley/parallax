@@ -1,13 +1,21 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-27T03:16:12.640Z
-> Files: 121 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-27T06:29:41Z
+> Files: manual Phase 0 update | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
-- `.DS_Store` (~2732 tok)
+- `.dockerignore` — Docker build exclusions for local metadata, caches, and artifact zip (~30 tok)
+- `.env.example` — Phase 0 runtime environment, ZFS bind paths, and Parallax-specific host ports (~180 tok)
 - `AGENTS.md` — Repository Guidelines (~833 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
+- `Makefile` — validation, lint/test, migration, and Compose lifecycle targets (~120 tok)
+- `docker-compose.yml` — root Compose include for Phase 0 runtime (~20 tok)
+- `pyproject.toml` — Python 3.12 dependency and lint/test configuration (~160 tok)
+
+## .github/workflows/
+
+- `ci.yml` — Phase 0 CI: uv sync, ruff, pytest, contract validation, Compose render (~110 tok)
 
 ## .claude/
 
@@ -19,7 +27,6 @@
 
 ## parallax_v1_3_artifact_pack/
 
-- `.DS_Store` (~2186 tok)
 - `AGENT_START_HERE.md` — Agent Start Here — Parallax v1.3 (~1277 tok)
 - `CHECKSUMS.sha256` (~3549 tok)
 - `MANIFEST.txt` — Parallax v1.3 artifact manifest (~3602 tok)
@@ -180,6 +187,51 @@
 - `bootstrap_dev.sh` (~116 tok)
 - `generate_manifest.py` — digest, main (~236 tok)
 - `validate_pack.py` — sha, parse_manifest, resolve_openapi_ref, schema_requires_mutation + 2 more (~2812 tok)
+
+## packages/db/parallax_db/
+
+- `migrations.py` — baseline migration discovery order excluding optional profiles (~80 tok)
+- `runner.py` — baseline SQL migration application and Phase 0 schema smoke checks (~260 tok)
+
+## scripts/
+
+- `apply_gpu_node_permissions.sh` — permission-only application for `/srv/parallax` runtime trees (~125 tok)
+- `apply_migrations.py` — repo-root runnable baseline migration CLI with optional schema smoke checks (~120 tok)
+- `setup_gpu_node_storage.sh` — GPU-node ZFS dataset, repo checkout, venv directory, and permission bootstrap (~205 tok)
+
+## services/api/
+
+- `Dockerfile` — Phase 0 API image using uv and non-root UID 10001 (~80 tok)
+
+## services/api/parallax_api/
+
+- `healthcheck.py` — container healthcheck client for `/v1/health` (~65 tok)
+- `main.py` — FastAPI app factory and dependency wiring (~70 tok)
+
+## services/api/parallax_api/services/
+
+- `health.py` — Postgres/Redis runtime health checks behind a small service interface (~130 tok)
+
+## services/api/tests/
+
+- `test_health.py` — API health/version tests with injected health checkers (~120 tok)
+
+## services/worker/
+
+- `Dockerfile` — Phase 0 worker image using uv and non-root UID 10001 (~80 tok)
+
+## services/worker/parallax_worker/
+
+- `__init__.py` — worker package marker (~10 tok)
+- `main.py` — minimal Phase 0 worker process bootstrap (~70 tok)
+
+## tests/
+
+- `test_phase0_bootstrap.py` — Phase 0 bootstrap regression tests for artifact hygiene, Compose, CI, migrations, and script runnable path (~230 tok)
+
+## docs/architecture/
+
+- `phase0_bootstrap.md` — Phase 0 scope, runtime paths, service boundaries, and verification commands (~220 tok)
 
 ## parallax_v1_3_artifact_pack/source_inputs/
 

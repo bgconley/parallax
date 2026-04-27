@@ -1,0 +1,98 @@
+from __future__ import annotations
+
+import subprocess
+from pathlib import Path
+
+from parallax_db.runner import phase0_schema_smoke_checks
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_artifact_pack_has_no_generated_macos_metadata() -> None:
+    assert list((REPO_ROOT / "parallax_v1_3_artifact_pack").rglob(".DS_Store")) == []
+
+
+def test_root_compose_renders_with_example_environment() -> None:
+    result = subprocess.run(
+        ["docker", "compose", "-f", "docker-compose.yml", "--env-file", ".env.example", "config"],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "parallax-api" in result.stdout
+    assert "parallax-worker" in result.stdout
+    assert "/srv/parallax/postgres" in result.stdout
+    assert "/srv/parallax/objects" in result.stdout
+    assert "DB: postgres12" in result.stdout
+
+
+def test_root_compose_uses_parallax_specific_host_ports() -> None:
+    result = subprocess.run(
+        ["docker", "compose", "-f", "docker-compose.yml", "--env-file", ".env.example", "config"],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert 'published: "15432"' in result.stdout
+    assert 'published: "16379"' in result.stdout
+    assert 'published: "18000"' in result.stdout
+    assert 'published: "5432"' not in result.stdout
+    assert 'published: "8000"' not in result.stdout
+
+
+def test_phase0_runtime_dockerfiles_exist() -> None:
+    assert (REPO_ROOT / "services/api/Dockerfile").is_file()
+    assert (REPO_ROOT / "services/worker/Dockerfile").is_file()
+
+
+def test_contract_validation_is_wired_into_ci() -> None:
+    workflow = REPO_ROOT / ".github/workflows/ci.yml"
+    assert workflow.is_file()
+    content = workflow.read_text()
+    assert "make validate" in content
+    assert "uv run pytest" in content
+    assert "uv run ruff check ." in content
+
+
+def test_phase0_schema_smoke_checks_cover_core_tables_and_enums() -> None:
+    check_names = {check.name for check in phase0_schema_smoke_checks()}
+
+    assert "table:app_user" in check_names
+    assert "table:client_mutation_log" in check_names
+    assert "table:activity" in check_names
+    assert "table:timing_session" in check_names
+    assert "table:timing_event" in check_names
+    assert "enum:timing_session_status" in check_names
+    assert "enum:timing_event_type" in check_names
+
+
+def test_migration_script_is_runnable_from_repo_root() -> None:
+    result = subprocess.run(
+        ["uv", "run", "python", "scripts/apply_migrations.py", "--help"],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Apply Parallax baseline SQL migrations" in result.stdout
+
+
+def test_resource_dependency_uses_valid_expression_unique_index() -> None:
+    migration_paths = [
+        REPO_ROOT / "migrations/0005_context_extraction_preflight.sql",
+        REPO_ROOT
+        / "parallax_v1_3_artifact_pack/database/migrations/0005_context_extraction_preflight.sql",
+    ]
+
+    for migration_path in migration_paths:
+        sql = migration_path.read_text()
+        assert "UNIQUE(activity_id, lower(resource_name))" not in sql
+        assert "CREATE UNIQUE INDEX ux_resource_dependency_activity_resource_name_lower" in sql

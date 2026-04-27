@@ -105,10 +105,11 @@ CREATE TABLE resource_dependency (
   last_failed_at timestamptz,
   created_from_event_id uuid REFERENCES temporal_extracted_context_event(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(activity_id, lower(resource_name))
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE UNIQUE INDEX ux_resource_dependency_activity_resource_name_lower
+  ON resource_dependency(activity_id, lower(resource_name));
 CREATE INDEX idx_resource_dependency_activity ON resource_dependency(user_id, activity_id, failure_count DESC);
 
 CREATE TABLE preflight_check (

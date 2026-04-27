@@ -27,7 +27,7 @@ services:
     image: temporalio/auto-setup:1.24
     container_name: parallax-temporal
     environment:
-      DB: postgresql
+      DB: postgres12
       DB_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-parallax}
       POSTGRES_PWD: ${POSTGRES_PASSWORD:-parallax_dev_password}

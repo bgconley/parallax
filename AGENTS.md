@@ -23,8 +23,12 @@ Run implementation commands from the repository root unless noted.
 - `uv run pytest -q`: runs local unit tests.
 - `uv run ruff check .`: runs Python lint checks.
 - `make validate`: validates the canonical artifact pack and local contract helper.
+- `python3 parallax_v1_3_artifact_pack/scripts/validate_pack.py --zip-path parallax_v1_3_artifact_pack.zip`: validates artifact directory and archive parity.
 - `bash -n scripts/setup_gpu_node_storage.sh scripts/apply_gpu_node_permissions.sh`: checks GPU-node shell scripts.
-- `docker compose up --build`: starts the prototype stack from the root include file.
+- `make dev-up`: starts the Phase 0 Docker Compose stack detached.
+- `make dev-down`: stops the Phase 0 Docker Compose stack.
+- `make dev-logs`: tails Compose logs.
+- `make schema-smoke`: applies baseline migrations through the host-side Postgres port and runs schema smoke checks.
 
 ## Coding Style & Naming Conventions
 
@@ -49,6 +53,10 @@ Use `uv` for the Parallax app environment on the GPU node. `uv` is available at 
 GPU-node runtime storage is verified under `tank/parallax` mounted at `/srv/parallax`. Apply permissions with `scripts/apply_gpu_node_permissions.sh` after datasets exist. Remote sudo commands need a TTY, for example `ssh -tt -i /Users/brennanconley/vibecode/infx/ubuntu24_ed25519 bgconley@10.25.0.50 'sudo -v && sudo /tmp/apply_gpu_node_permissions.sh'`.
 
 Current permission policy: `/srv/parallax` is `root:root 0755`; Postgres and WAL are numeric `999:999 0700`; service-writable objects/exports/models/cache/logs are `10001:bgconley 0770`; config and observability are `bgconley:bgconley 0755`; backups are `root:bgconley 0750`. Host names for UID/GID `999` may display as unrelated local accounts; verify numeric IDs against the pinned container image when the DB image is finalized.
+
+Phase work must be explicit. Do not start Phase 1 or any later phase unless the user directly instructs you to begin that phase. Phase 0 is the bootstrap gate: repo validation, Compose render/start, health readiness, baseline migrations, and GPU-node validation must be complete before moving on.
+
+The Phase 0 runtime uses Parallax-specific localhost ports to coexist with other GPU-node stacks: API `18000`, Postgres `15432`, Redis `16379`, Temporal `17233`, Temporal UI `18088`, MinIO `19000/19001`, and Caddy `18080/18443`. Container-to-container URLs still use service names such as `postgres:5432` and `redis:6379`.
 
 ## Commit & Pull Request Guidelines
 

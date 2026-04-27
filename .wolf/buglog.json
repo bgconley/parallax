@@ -72,6 +72,66 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-27T05:55:29Z"
+    },
+    {
+      "id": "bug-007",
+      "timestamp": "2026-04-27T06:29:41Z",
+      "error_message": "make dev-up failed on the GPU node with Bind for 127.0.0.1:5432 failed: port is already allocated",
+      "file": "infra/compose/docker-compose.parallax.prototype.yml, .env.example, tests/test_phase0_bootstrap.py",
+      "root_cause": "Phase 0 Compose used common host ports that were already occupied by other GPU-node stacks.",
+      "fix": "Added Parallax-specific configurable localhost ports and regression coverage for the rendered Compose config.",
+      "tags": ["compose", "gpu-node", "ports", "phase0"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T06:29:41Z"
+    },
+    {
+      "id": "bug-008",
+      "timestamp": "2026-04-27T06:29:41Z",
+      "error_message": "uv run python scripts/apply_migrations.py failed with ModuleNotFoundError: No module named 'parallax_db'",
+      "file": "scripts/apply_migrations.py, tests/test_phase0_bootstrap.py",
+      "root_cause": "The migration script assumed PYTHONPATH was preconfigured even when invoked directly from the repository root.",
+      "fix": "Bootstrapped packages/db onto sys.path inside the script and added a repo-root --help regression test.",
+      "tags": ["migration-runner", "pythonpath", "phase0"],
+      "related_bugs": ["bug-001"],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T06:29:41Z"
+    },
+    {
+      "id": "bug-009",
+      "timestamp": "2026-04-27T06:29:41Z",
+      "error_message": "Baseline migration failed with psycopg.errors.SyntaxError near UNIQUE(activity_id, lower(resource_name))",
+      "file": "migrations/0005_context_extraction_preflight.sql, parallax_v1_3_artifact_pack/database/migrations/0005_context_extraction_preflight.sql",
+      "root_cause": "PostgreSQL does not allow an expression inside a table-level UNIQUE constraint.",
+      "fix": "Changed the canonical and implementation migration to create a unique expression index after table creation, regenerated manifest/checksums/zip, and added regression coverage.",
+      "tags": ["postgres", "migration", "canonical-artifact", "phase0"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T06:29:41Z"
+    },
+    {
+      "id": "bug-010",
+      "timestamp": "2026-04-27T06:29:41Z",
+      "error_message": "parallax-temporal exited with Unsupported driver specified: 'DB=postgresql'",
+      "file": "infra/compose/docker-compose.parallax.prototype.yml, parallax_v1_3_artifact_pack/infrastructure/compose/docker-compose.parallax.prototype.yml",
+      "root_cause": "temporalio/auto-setup:1.24 expects the Postgres driver value postgres12, not postgresql.",
+      "fix": "Set DB=postgres12 in implementation and canonical prototype Compose, regenerated artifact manifest/checksums/zip, and added Compose regression coverage.",
+      "tags": ["temporal", "compose", "canonical-artifact", "phase0"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T06:29:41Z"
+    },
+    {
+      "id": "bug-011",
+      "timestamp": "2026-04-27T06:29:41Z",
+      "error_message": "Phase 1 implementation work had begun before Phase 0 was fully accepted and verified",
+      "file": "AGENTS.md, .wolf/OPENWOLF.md, .wolf/cerebrum.md",
+      "root_cause": "Phase progression was not treated as a hard user-controlled gate.",
+      "fix": "Recorded the rule that no phase may begin without explicit user instruction and verified Phase 0 before moving forward.",
+      "tags": ["process", "phase-gate", "canonical-artifacts"],
+      "related_bugs": ["bug-002"],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T06:29:41Z"
     }
   ]
 }

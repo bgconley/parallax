@@ -1,0 +1,8 @@
+.DS_Store
+.git
+.pytest_cache
+.ruff_cache
+.venv
+__pycache__
+*.pyc
+parallax_v1_3_artifact_pack.zip

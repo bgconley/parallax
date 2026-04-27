@@ -1,5 +1,3 @@
-version: "3.9"
-
 name: parallax
 
 services:
@@ -12,30 +10,43 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-parallax}
       POSTGRES_USER: ${POSTGRES_USER:-parallax}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-parallax_dev_password}
+      POSTGRES_INITDB_WALDIR: /var/lib/postgresql/wal
     volumes:
-      - parallax_postgres:/var/lib/postgresql/data
+      - ${PARALLAX_POSTGRES_DATA:-/srv/parallax/postgres}:/var/lib/postgresql/data
+      - ${PARALLAX_POSTGRES_WAL:-/srv/parallax/postgres_wal}:/var/lib/postgresql/wal
     ports:
-      - "5432:5432"
+      - "${PARALLAX_POSTGRES_BIND:-127.0.0.1}:${PARALLAX_POSTGRES_PORT:-15432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   redis:
     image: redis:7-alpine
     container_name: parallax-redis
     ports:
-      - "6379:6379"
+      - "${PARALLAX_REDIS_BIND:-127.0.0.1}:${PARALLAX_REDIS_PORT:-16379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   temporal:
     image: temporalio/auto-setup:1.24
     container_name: parallax-temporal
     environment:
-      DB: postgresql
+      DB: postgres12
       DB_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-parallax}
       POSTGRES_PWD: ${POSTGRES_PASSWORD:-parallax_dev_password}
       POSTGRES_SEEDS: postgres
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
-      - "7233:7233"
+      - "${PARALLAX_TEMPORAL_BIND:-127.0.0.1}:${PARALLAX_TEMPORAL_PORT:-17233}:7233"
 
   temporal-ui:
     image: temporalio/ui:latest
@@ -46,7 +57,7 @@ services:
     depends_on:
       - temporal
     ports:
-      - "8088:8080"
+      - "${PARALLAX_TEMPORAL_UI_BIND:-127.0.0.1}:${PARALLAX_TEMPORAL_UI_PORT:-18088}:8080"
 
   minio:
     image: minio/minio:latest
@@ -56,10 +67,10 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-parallax_dev}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-parallax_dev_password}
     volumes:
-      - parallax_minio:/data
+      - ${PARALLAX_OBJECTS_DIR:-/srv/parallax/objects}:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${PARALLAX_MINIO_BIND:-127.0.0.1}:${PARALLAX_MINIO_PORT:-19000}:9000"
+      - "${PARALLAX_MINIO_CONSOLE_BIND:-127.0.0.1}:${PARALLAX_MINIO_CONSOLE_PORT:-19001}:9001"
 
   api:
     image: parallax-api:dev
@@ -67,15 +78,35 @@ services:
     build:
       context: ../../
       dockerfile: services/api/Dockerfile
-    env_file:
-      - ../.env
+    environment:
+      PARALLAX_ENV: ${PARALLAX_ENV:-development}
+      PARALLAX_API_VERSION: ${PARALLAX_API_VERSION:-0.1.0}
+      PARALLAX_CONTRACT_VERSION: ${PARALLAX_CONTRACT_VERSION:-1.3.0}
+      PARALLAX_DEV_USER_ID: ${PARALLAX_DEV_USER_ID:-00000000-0000-0000-0000-000000000001}
+      PARALLAX_DATABASE_URL: ${PARALLAX_DATABASE_URL:-postgresql://parallax:parallax_dev_password@postgres:5432/parallax}
+      PARALLAX_REDIS_URL: ${PARALLAX_REDIS_URL:-redis://redis:6379/0}
+      PARALLAX_TEMPORAL_ADDRESS: ${PARALLAX_TEMPORAL_ADDRESS:-temporal:7233}
+      PARALLAX_OBJECT_STORAGE_ENDPOINT: ${PARALLAX_OBJECT_STORAGE_ENDPOINT:-http://minio:9000}
+      PARALLAX_LOG_DIR: /srv/parallax/logs
     depends_on:
-      - postgres
-      - redis
-      - temporal
-      - minio
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+      minio:
+        condition: service_started
+    volumes:
+      - ${PARALLAX_LOGS_DIR:-/srv/parallax/logs}:/srv/parallax/logs
+      - ${PARALLAX_CONFIG_DIR:-/srv/parallax/config}:/srv/parallax/config:ro
     ports:
-      - "8000:8000"
+      - "${PARALLAX_API_BIND:-127.0.0.1}:${PARALLAX_API_PORT:-18000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-m", "parallax_api.healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
 
   worker:
     image: parallax-worker:dev
@@ -83,13 +114,25 @@ services:
     build:
       context: ../../
       dockerfile: services/worker/Dockerfile
-    env_file:
-      - ../.env
+    environment:
+      PARALLAX_ENV: ${PARALLAX_ENV:-development}
+      PARALLAX_DATABASE_URL: ${PARALLAX_DATABASE_URL:-postgresql://parallax:parallax_dev_password@postgres:5432/parallax}
+      PARALLAX_REDIS_URL: ${PARALLAX_REDIS_URL:-redis://redis:6379/0}
+      PARALLAX_TEMPORAL_ADDRESS: ${PARALLAX_TEMPORAL_ADDRESS:-temporal:7233}
+      PARALLAX_OBJECT_STORAGE_ENDPOINT: ${PARALLAX_OBJECT_STORAGE_ENDPOINT:-http://minio:9000}
+      PARALLAX_LOG_DIR: /srv/parallax/logs
     depends_on:
-      - postgres
-      - redis
-      - temporal
-      - minio
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+      minio:
+        condition: service_started
+    volumes:
+      - ${PARALLAX_LOGS_DIR:-/srv/parallax/logs}:/srv/parallax/logs
+      - ${PARALLAX_CONFIG_DIR:-/srv/parallax/config}:/srv/parallax/config:ro
 
   caddy:
     image: caddy:2
@@ -99,9 +142,5 @@ services:
     depends_on:
       - api
     ports:
-      - "8443:443"
-      - "8080:80"
-
-volumes:
-  parallax_postgres:
-  parallax_minio:
+      - "${PARALLAX_CADDY_HTTPS_BIND:-127.0.0.1}:${PARALLAX_CADDY_HTTPS_PORT:-18443}:443"
+      - "${PARALLAX_CADDY_HTTP_BIND:-127.0.0.1}:${PARALLAX_CADDY_HTTP_PORT:-18080}:80"

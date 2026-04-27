@@ -29,6 +29,10 @@ You are working in an OpenWolf-managed project. These rules apply every turn.
 - Remote sudo over SSH needs a TTY. Use `ssh -tt ... 'sudo -v && sudo <command>'`; do not prefix the Mac-side SSH command with local `sudo`.
 - Current runtime permission policy: `/srv/parallax` `root:root 0755`; `postgres` and `postgres_wal` numeric `999:999 0700`; `objects`, `exports`, `models`, `hf_cache`, and `logs` numeric `10001:bgconley 0770`; `config` and `observability` `bgconley:bgconley 0755`; `backups` `root:bgconley 0750`.
 - Host passwd/group names for numeric UID/GID `999` may display as unrelated local accounts. Treat the numeric IDs as the source of truth until the pinned Postgres image is verified.
+- Do not begin Phase 1 or any later phase without explicit user instruction. Phase 0 must be proven with repo validation, Compose render/start, health readiness, baseline migrations, and GPU-node validation first.
+- Phase 0 Compose uses Parallax-specific localhost ports to avoid conflicts with other GPU-node stacks: API `18000`, Postgres `15432`, Redis `16379`, Temporal `17233`, Temporal UI `18088`, MinIO `19000/19001`, and Caddy `18080/18443`.
+- Baseline migrations are run with `scripts/apply_migrations.py`; the runner reads `migrations/` only and excludes optional profiles unless explicitly enabled later.
+- Temporal auto-setup `1.24` requires `DB=postgres12`, not `DB=postgresql`.
 
 ## After Actions
 

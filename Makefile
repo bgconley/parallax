@@ -1,4 +1,4 @@
-.PHONY: validate test lint migrate schema-smoke dev-up dev-down dev-logs
+.PHONY: validate test lint typecheck migrate schema-smoke dev-up dev-down dev-logs
 
 PARALLAX_HOST_DATABASE_URL ?= postgresql://parallax:parallax_dev_password@127.0.0.1:15432/parallax
 
@@ -11,6 +11,9 @@ test:
 
 lint:
 	uv run ruff check .
+
+typecheck:
+	uv run mypy services packages scripts
 
 migrate:
 	uv run python scripts/apply_migrations.py --database-url "$(PARALLAX_HOST_DATABASE_URL)" --migrations-dir migrations

@@ -25,6 +25,9 @@ jobs:
       - name: Lint
         run: uv run ruff check .
 
+      - name: Typecheck
+        run: make typecheck
+
       - name: Test
         run: uv run pytest
 

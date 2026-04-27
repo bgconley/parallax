@@ -4,7 +4,14 @@ Phase 0 is the only active implementation phase until the user explicitly starts
 
 ## Runtime Path
 
-The root `docker-compose.yml` includes `infra/compose/docker-compose.parallax.prototype.yml`. Services bind stateful paths to the canonical GPU-node ZFS mountpoints under `/srv/parallax`:
+The root `docker-compose.yml` includes `infra/compose/docker-compose.parallax.prototype.yml`.
+That file is an implementation derivative of the canonical prototype Compose file in
+`parallax_v1_3_artifact_pack/infrastructure/compose/`. The derivative keeps the same
+Phase 0 service set, but adapts it for the accepted GPU-node runtime by using
+Parallax-specific localhost ports, `/srv/parallax` bind mounts, root `.env` loading,
+service health checks, and API/worker Dockerfiles.
+
+Services bind stateful paths to the canonical GPU-node ZFS mountpoints under `/srv/parallax`:
 
 - Postgres data: `/srv/parallax/postgres`
 - Postgres WAL: `/srv/parallax/postgres_wal`
@@ -27,6 +34,7 @@ Mac-safe checks:
 
 ```bash
 uv run ruff check .
+make typecheck
 uv run pytest -q
 make validate
 python3 parallax_v1_3_artifact_pack/scripts/validate_pack.py --zip-path parallax_v1_3_artifact_pack.zip
@@ -37,6 +45,7 @@ GPU-node runtime checks from `/tank/repos/parallax`:
 
 ```bash
 PATH=/home/bgconley/.local/bin:$PATH UV_PROJECT_ENVIRONMENT=/tank/venvs/parallax uv sync --frozen --all-groups
+PATH=/home/bgconley/.local/bin:$PATH UV_PROJECT_ENVIRONMENT=/tank/venvs/parallax make typecheck
 PATH=/home/bgconley/.local/bin:$PATH UV_PROJECT_ENVIRONMENT=/tank/venvs/parallax make dev-up
 PATH=/home/bgconley/.local/bin:$PATH UV_PROJECT_ENVIRONMENT=/tank/venvs/parallax make schema-smoke
 curl -fsS http://127.0.0.1:18000/v1/health

@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This checkout contains the Parallax v1.3 artifact pack plus the initial Phase 0/1 implementation scaffold. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
+This checkout contains the Parallax v1.3 artifact pack plus the Phase 0 bootstrap implementation. Some earlier Phase 1 API scaffold files are present, but Phase 1 is not active and must not be advanced unless the user explicitly starts it. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
 
 Before making implementation or infrastructure decisions, read the relevant canonical artifact files first. Do not infer Parallax layout, storage, runtime, or service policy from existing GPU-node directories or other apps when a Parallax artifact covers the topic.
 
@@ -22,6 +22,7 @@ Run implementation commands from the repository root unless noted.
 
 - `uv run pytest -q`: runs local unit tests.
 - `uv run ruff check .`: runs Python lint checks.
+- `make typecheck`: runs the Phase 0 static type baseline.
 - `make validate`: validates the canonical artifact pack and local contract helper.
 - `python3 parallax_v1_3_artifact_pack/scripts/validate_pack.py --zip-path parallax_v1_3_artifact_pack.zip`: validates artifact directory and archive parity.
 - `bash -n scripts/setup_gpu_node_storage.sh scripts/apply_gpu_node_permissions.sh`: checks GPU-node shell scripts.

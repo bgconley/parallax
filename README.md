@@ -11,6 +11,7 @@ See `docs/architecture/phase0_bootstrap.md` for the current Phase 0 codepath and
 ```bash
 cp .env.example .env
 uv run ruff check .
+make typecheck
 uv run pytest -q
 make validate
 docker compose -f docker-compose.yml --env-file .env.example config

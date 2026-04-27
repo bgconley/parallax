@@ -37,7 +37,7 @@ class ActivityService:
         )
 
     def list_activities(self, user_id: UUID, query: str | None, limit: int) -> list[Activity]:
-        return self._activities.list(user_id, query=query, limit=limit)
+        return self._activities.list_activities(user_id, query=query, limit=limit)
 
     def get_activity(self, user_id: UUID, activity_id: UUID) -> Activity:
         activity = self._activities.get(user_id, activity_id)
@@ -51,9 +51,17 @@ class ActivityService:
         request: ResolveActivityRequest,
     ) -> ResolveActivityResponse:
         candidates = self._activities.resolve(user_id, request.query, request.limit)
-        recommended = candidates[0].activity.id if candidates and candidates[0].activity else None
+        if not candidates:
+            return ResolveActivityResponse(
+                candidates=[],
+                recommended_activity_id=None,
+                requires_confirmation=True,
+            )
+
+        best_candidate = candidates[0]
+        recommended = best_candidate.activity.id if best_candidate.activity else None
         return ResolveActivityResponse(
             candidates=candidates,
             recommended_activity_id=recommended,
-            requires_confirmation=recommended is None or candidates[0].confidence < 0.99,
+            requires_confirmation=recommended is None or best_candidate.confidence < 0.99,
         )

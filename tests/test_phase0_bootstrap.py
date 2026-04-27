@@ -46,6 +46,14 @@ def test_root_compose_uses_parallax_specific_host_ports() -> None:
     assert 'published: "8000"' not in result.stdout
 
 
+def test_phase0_docs_record_compose_derivation_and_phase_boundary() -> None:
+    phase0_doc = (REPO_ROOT / "docs/architecture/phase0_bootstrap.md").read_text()
+    agents_doc = (REPO_ROOT / "AGENTS.md").read_text()
+
+    assert "implementation derivative of the canonical prototype Compose file" in phase0_doc
+    assert "Phase 1 is not active" in agents_doc
+
+
 def test_phase0_runtime_dockerfiles_exist() -> None:
     assert (REPO_ROOT / "services/api/Dockerfile").is_file()
     assert (REPO_ROOT / "services/worker/Dockerfile").is_file()
@@ -58,6 +66,15 @@ def test_contract_validation_is_wired_into_ci() -> None:
     assert "make validate" in content
     assert "uv run pytest" in content
     assert "uv run ruff check ." in content
+    assert "make typecheck" in content
+
+
+def test_static_typecheck_is_available_from_makefile() -> None:
+    makefile = REPO_ROOT / "Makefile"
+    content = makefile.read_text()
+
+    assert "typecheck:" in content
+    assert "uv run mypy services packages scripts" in content
 
 
 def test_phase0_schema_smoke_checks_cover_core_tables_and_enums() -> None:

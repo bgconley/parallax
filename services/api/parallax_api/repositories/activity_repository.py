@@ -39,7 +39,12 @@ class ActivityRepository:
         self._store.activity_keys[(user_id, canonical_key)] = activity.id
         return activity
 
-    def list(self, user_id: UUID, query: str | None = None, limit: int = 50) -> list[Activity]:
+    def list_activities(
+        self,
+        user_id: UUID,
+        query: str | None = None,
+        limit: int = 50,
+    ) -> list[Activity]:
         activities = [
             activity
             for activity in self._store.activities.values()

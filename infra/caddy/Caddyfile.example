@@ -1,0 +1,5 @@
+api.parallax.local {
+  reverse_proxy api:8000
+}
+
+# Model endpoints intentionally are not exposed here.

@@ -1,0 +1,6 @@
+version: "3.9"
+
+name: parallax
+
+include:
+  - infra/compose/docker-compose.parallax.prototype.yml

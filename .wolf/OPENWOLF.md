@@ -7,6 +7,7 @@ You are working in an OpenWolf-managed project. These rules apply every turn.
 1. Check `.wolf/anatomy.md` BEFORE reading any file. It has a 2-3 line description and token estimate for every file in the project.
 2. If the description in anatomy.md is sufficient for your task, do NOT read the full file.
 3. If a file is not in anatomy.md, search with Grep/Glob, then update anatomy.md with the new entry.
+4. For Parallax implementation or infrastructure decisions, read the relevant canonical artifact files before inferring from the GPU node or another app's layout.
 
 ## Code Generation
 
@@ -20,6 +21,8 @@ You are working in an OpenWolf-managed project. These rules apply every turn.
 - Run all functional tests, integration tests, end-of-phase verification/validation tests, and backend operations on the GPU node; the application will live there.
 - Run frontend testing, Xcode work, SwiftUI work, initial Figma work, and Playwright UI validation on the Mac.
 - Access the GPU node with `ssh -i /Users/brennanconley/vibecode/infx/ubuntu24_ed25519 bgconley@10.25.0.50`.
+- For GPU-node storage, first follow `parallax_v1_3_artifact_pack/infrastructure/zfs/zfs_dataset_plan.md` and `create_parallax_datasets.sh`: use the `parallax` namespace, `/srv/parallax` mountpoints, and the actual node pool name as the script argument.
+- Use `/tank/repos/parallax` for the GPU-node repo checkout and `/tank/venvs/parallax` for Parallax virtualenvs. After Mac-side changes are pushed, pull updates from remote in `/tank/repos/parallax`.
 
 ## After Actions
 

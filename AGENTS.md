@@ -4,6 +4,8 @@
 
 This checkout contains the Parallax v1.3 artifact pack, not a full application implementation. The canonical source is `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `AGENT_START_HERE.md`.
 
+Before making implementation or infrastructure decisions, read the relevant canonical artifact files first. Do not infer Parallax layout, storage, runtime, or service policy from existing GPU-node directories or other apps when a Parallax artifact covers the topic.
+
 Key directories:
 
 - `docs/`: product, architecture, privacy, testing, operations, and implementation guidance.
@@ -35,6 +37,10 @@ Use `docs/12_testing_qa_release_rollback.md` as the test authority. Seed timing 
 Unit tests may run locally on the Mac. Run all functional tests, integration tests, end-of-phase verification/validation tests, and backend operations on the GPU node, because that is the deployment host. Keep frontend testing, Xcode and SwiftUI work, initial Figma work, and Playwright-based UI validation on the Mac.
 
 Access the GPU node with `ssh -i /Users/brennanconley/vibecode/infx/ubuntu24_ed25519 bgconley@10.25.0.50`.
+
+For GPU-node storage, start from `parallax_v1_3_artifact_pack/infrastructure/zfs/zfs_dataset_plan.md` and `create_parallax_datasets.sh`. Use the `parallax` ZFS namespace and `/srv/parallax` mountpoints from the artifact; pass the actual pool name to the script.
+
+Use `/tank/repos/parallax` for the GPU-node repo checkout and `/tank/venvs/parallax` for Parallax virtualenvs. After pushing from the Mac, pull updates into `/tank/repos/parallax`.
 
 ## Commit & Pull Request Guidelines
 

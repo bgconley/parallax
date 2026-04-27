@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, Request, status
+
+from ..auth import AuthContext, get_auth_context
+from ..repositories.memory import InMemoryStore
+from ..schemas.timing import (
+    AppendTimingEventRequest,
+    CompleteTimingSessionRequest,
+    CreateTimingSessionRequest,
+    TimingEvent,
+    TimingSession,
+)
+from ..services.timing_service import TimingService
+
+router = APIRouter(prefix="/v1/timing/sessions", tags=["timing"])
+
+
+def get_store(request: Request) -> InMemoryStore:
+    return request.app.state.store
+
+
+AUTH_CONTEXT = Depends(get_auth_context)
+STORE = Depends(get_store)
+
+
+@router.post("", response_model=TimingSession, status_code=status.HTTP_201_CREATED)
+def create_timing_session(
+    payload: CreateTimingSessionRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    store: InMemoryStore = STORE,
+) -> TimingSession:
+    return TimingService(store).create_session(auth.user_id, payload)
+
+
+@router.get("/{session_id}", response_model=TimingSession)
+def get_timing_session(
+    session_id: UUID,
+    auth: AuthContext = AUTH_CONTEXT,
+    store: InMemoryStore = STORE,
+) -> TimingSession:
+    return TimingService(store).get_session(auth.user_id, session_id)
+
+
+@router.post(
+    "/{session_id}/events",
+    response_model=TimingEvent,
+    status_code=status.HTTP_201_CREATED,
+)
+def append_timing_event(
+    session_id: UUID,
+    payload: AppendTimingEventRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    store: InMemoryStore = STORE,
+) -> TimingEvent:
+    return TimingService(store).append_event(auth.user_id, session_id, payload)
+
+
+@router.post("/{session_id}/complete", response_model=TimingSession)
+def complete_timing_session(
+    session_id: UUID,
+    payload: CompleteTimingSessionRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    store: InMemoryStore = STORE,
+) -> TimingSession:
+    return TimingService(store).complete_session(auth.user_id, session_id, payload)

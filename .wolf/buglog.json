@@ -1,4 +1,29 @@
 {
   "version": 1,
-  "bugs": []
+  "bugs": [
+    {
+      "id": "bug-001",
+      "timestamp": "2026-04-27T05:00:20Z",
+      "error_message": "make validate failed because python -m parallax_contracts.validation could not find the parallax_contracts package",
+      "file": "Makefile",
+      "root_cause": "pytest had pythonpath configuration, but the Makefile validation command did not set PYTHONPATH for local package directories.",
+      "fix": "Set PYTHONPATH=packages/contracts:packages/db:services/api for the contract validation command.",
+      "tags": ["makefile", "pythonpath", "validation"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T05:00:20Z"
+    },
+    {
+      "id": "bug-002",
+      "timestamp": "2026-04-27T05:06:42Z",
+      "error_message": "User correction: infrastructure reasoning inferred from existing GPU-node layout before grounding in canonical Parallax ZFS artifacts.",
+      "file": "AGENTS.md, .wolf/OPENWOLF.md, .wolf/cerebrum.md",
+      "root_cause": "I inspected node precedent before making the canonical ZFS artifact plan/script the governing source for Parallax storage decisions.",
+      "fix": "Recorded a durable rule to review relevant canonical artifacts first, and specifically to use the Parallax ZFS plan/script for GPU-node storage setup.",
+      "tags": ["process", "canonical-artifacts", "zfs", "gpu-node"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T05:06:42Z"
+    }
+  ]
 }

@@ -22,6 +22,36 @@ paths:
             application/json:
               schema:
                 type: object
+  /v1/ready:
+    get:
+      summary: Readiness check
+      operationId: getReadiness
+      security: []
+      responses:
+        '200':
+          description: Ready
+          content:
+            application/json:
+              schema:
+                type: object
+        '503':
+          description: Not ready
+          content:
+            application/json:
+              schema:
+                type: object
+  /v1/live:
+    get:
+      summary: Liveness check
+      operationId: getLiveness
+      security: []
+      responses:
+        '200':
+          description: Live
+          content:
+            application/json:
+              schema:
+                type: object
   /v1/version:
     get:
       summary: Version metadata

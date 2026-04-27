@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from ..domain.timing_reconstruction import project_timing_session
 from ..schemas.timing import (
     AppendTimingEventRequest,
     CompleteTimingSessionRequest,
@@ -44,7 +45,10 @@ class TimingRepository:
         if session is None or session.user_id != user_id:
             return None
         events = list(self._store.session_events.get(session_id, []))
-        return session.model_copy(update={"events": events})
+        projection = project_timing_session(session, events)
+        return session.model_copy(
+            update={**projection.session_updates, "events": projection.ordered_events}
+        )
 
     def append_event(
         self,
@@ -71,7 +75,9 @@ class TimingRepository:
             payload=request.payload,
         )
         self._store.session_events[session_id].append(event)
-        self._store.sessions[session_id] = _session_after_event(session, event)
+        events = list(self._store.session_events[session_id])
+        projection = project_timing_session(session, events)
+        self._store.sessions[session_id] = session.model_copy(update=projection.session_updates)
         return event
 
     def complete_session(
@@ -91,27 +97,8 @@ class TimingRepository:
             payload=request.payload,
         )
         self.append_event(user_id, session_id, event_request)
-        updated = self._store.sessions[session_id].model_copy(
-            update={
-                "status": "completed_unreviewed",
-                "completed_at": request.completed_at,
-                "wall_seconds": request.timer_elapsed_seconds,
-                "active_seconds": request.timer_active_seconds,
-            }
-        )
-        self._store.sessions[session_id] = updated
-        return self.get_session(user_id, session_id) or updated
-
-
-def _session_after_event(session: TimingSession, event: TimingEvent) -> TimingSession:
-    updates: dict[str, object] = {"needs_timeline_recompute": True}
-    if event.event_type == "session_started":
-        updates["status"] = "running"
-        updates["started_at"] = event.client_time
-    elif event.event_type == "session_paused":
-        updates["status"] = "paused"
-    elif event.event_type == "session_resumed":
-        updates["status"] = "running"
-    elif event.event_type == "session_abandoned":
-        updates["status"] = "abandoned"
-    return session.model_copy(update=updates)
+        updated = self.get_session(user_id, session_id)
+        if updated is None:
+            raise KeyError(session_id)
+        self._store.sessions[session_id] = updated.model_copy(update={"events": []})
+        return updated

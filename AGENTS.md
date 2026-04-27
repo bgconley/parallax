@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This checkout contains the Parallax v1.3 artifact pack plus the Phase 0 bootstrap implementation. Some earlier Phase 1 API scaffold files are present, but Phase 1 is not active and must not be advanced unless the user explicitly starts it. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
+This checkout contains the Parallax v1.3 artifact pack plus the Phase 0 bootstrap and active Phase 1 core-loop implementation. Do not advance Phase 2 or later unless the user explicitly starts that phase. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
 
 Before making implementation or infrastructure decisions, read the relevant canonical artifact files first. Do not infer Parallax layout, storage, runtime, or service policy from existing GPU-node directories or other apps when a Parallax artifact covers the topic.
 
@@ -22,14 +22,16 @@ Run implementation commands from the repository root unless noted.
 
 - `uv run pytest -q`: runs local unit tests.
 - `uv run ruff check .`: runs Python lint checks.
-- `make typecheck`: runs the Phase 0 static type baseline.
+- `make typecheck`: runs the static type baseline.
 - `make validate`: validates the canonical artifact pack and local contract helper.
+- `make security`: runs the Bandit and Semgrep security/static-analysis gate.
 - `python3 parallax_v1_3_artifact_pack/scripts/validate_pack.py --zip-path parallax_v1_3_artifact_pack.zip`: validates artifact directory and archive parity.
 - `bash -n scripts/setup_gpu_node_storage.sh scripts/apply_gpu_node_permissions.sh`: checks GPU-node shell scripts.
-- `make dev-up`: starts the Phase 0 Docker Compose stack detached.
-- `make dev-down`: stops the Phase 0 Docker Compose stack.
+- `make dev-up`: starts the Docker Compose stack detached.
+- `make dev-down`: stops the Docker Compose stack.
 - `make dev-logs`: tails Compose logs.
 - `make schema-smoke`: applies baseline migrations through the host-side Postgres port and runs schema smoke checks.
+- `make phase1-smoke`: runs the Phase 1 API/Postgres acceptance smoke against the configured API and host database URL.
 
 ## Coding Style & Naming Conventions
 
@@ -55,9 +57,11 @@ GPU-node runtime storage is verified under `tank/parallax` mounted at `/srv/para
 
 Current permission policy: `/srv/parallax` is `root:root 0755`; Postgres and WAL are numeric `999:999 0700`; service-writable objects/exports/models/cache/logs are `10001:bgconley 0770`; config and observability are `bgconley:bgconley 0755`; backups are `root:bgconley 0750`. Host names for UID/GID `999` may display as unrelated local accounts; verify numeric IDs against the pinned container image when the DB image is finalized.
 
-Phase work must be explicit. Do not start Phase 1 or any later phase unless the user directly instructs you to begin that phase. Phase 0 is the bootstrap gate: repo validation, Compose render/start, health readiness, baseline migrations, and GPU-node validation must be complete before moving on.
+Phase work must be explicit. Phase 0 is complete and Phase 1 is active only because the user explicitly started it. Do not start Phase 2 or any later phase unless the user directly instructs you to begin that phase.
 
 The Phase 0 runtime uses Parallax-specific localhost ports to coexist with other GPU-node stacks: API `18000`, Postgres `15432`, Redis `16379`, Temporal `17233`, Temporal UI `18088`, MinIO `19000/19001`, and Caddy `18080/18443`. Container-to-container URLs still use service names such as `postgres:5432` and `redis:6379`.
+
+Phase 1 API auth requires `X-Parallax-User-Id`; missing or malformed values must fail with a structured 401. Do not reintroduce an implicit development user fallback.
 
 ## Commit & Pull Request Guidelines
 

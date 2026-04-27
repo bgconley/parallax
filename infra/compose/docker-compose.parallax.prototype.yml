@@ -1,10 +1,9 @@
 name: parallax
 
 services:
-  # Prototype runtime only. Implementation branches intended for private alpha must
-  # pin tested service image versions before release.
+  # Prototype runtime only. External service images are pinned to the tested Phase 0/1 matrix.
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg16@sha256:7d400e340efb42f4d8c9c12c6427adb253f726881a9985d2a471bf0eed824dff
     container_name: parallax-postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-parallax}
@@ -23,7 +22,7 @@ services:
       retries: 20
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf
     container_name: parallax-redis
     ports:
       - "${PARALLAX_REDIS_BIND:-127.0.0.1}:${PARALLAX_REDIS_PORT:-16379}:6379"
@@ -34,7 +33,7 @@ services:
       retries: 20
 
   temporal:
-    image: temporalio/auto-setup:1.24
+    image: temporalio/auto-setup:1.24@sha256:98cdb6b5e02d64cb933864a9ba91cb66065eb320623a0dafdf44beba535bca88
     container_name: parallax-temporal
     environment:
       DB: postgres12
@@ -49,7 +48,7 @@ services:
       - "${PARALLAX_TEMPORAL_BIND:-127.0.0.1}:${PARALLAX_TEMPORAL_PORT:-17233}:7233"
 
   temporal-ui:
-    image: temporalio/ui:latest
+    image: temporalio/ui@sha256:a066bdf5c4de689cabaf80cc357871f1db5e6d750a6bcfc42e877b913e31ef24
     container_name: parallax-temporal-ui
     environment:
       TEMPORAL_ADDRESS: temporal:7233
@@ -60,7 +59,7 @@ services:
       - "${PARALLAX_TEMPORAL_UI_BIND:-127.0.0.1}:${PARALLAX_TEMPORAL_UI_PORT:-18088}:8080"
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     container_name: parallax-minio
     command: server /data --console-address ":9001"
     environment:
@@ -82,7 +81,6 @@ services:
       PARALLAX_ENV: ${PARALLAX_ENV:-development}
       PARALLAX_API_VERSION: ${PARALLAX_API_VERSION:-0.1.0}
       PARALLAX_CONTRACT_VERSION: ${PARALLAX_CONTRACT_VERSION:-1.3.0}
-      PARALLAX_DEV_USER_ID: ${PARALLAX_DEV_USER_ID:-00000000-0000-0000-0000-000000000001}
       PARALLAX_DATABASE_URL: ${PARALLAX_DATABASE_URL:-postgresql://parallax:parallax_dev_password@postgres:5432/parallax}
       PARALLAX_REDIS_URL: ${PARALLAX_REDIS_URL:-redis://redis:6379/0}
       PARALLAX_TEMPORAL_ADDRESS: ${PARALLAX_TEMPORAL_ADDRESS:-temporal:7233}
@@ -135,7 +133,7 @@ services:
       - ${PARALLAX_CONFIG_DIR:-/srv/parallax/config}:/srv/parallax/config:ro
 
   caddy:
-    image: caddy:2
+    image: caddy:2@sha256:25cdc846626b62d05f6b633b9b40c2c9f6ef89b515dc76133cefd920f7dbe562
     container_name: parallax-caddy
     volumes:
       - ../caddy/Caddyfile.example:/etc/caddy/Caddyfile:ro

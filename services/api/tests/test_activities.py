@@ -1,9 +1,16 @@
 from uuid import UUID
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from parallax_api.main import create_app
+from parallax_api.repositories.in_memory_unit_of_work import InMemoryUnitOfWorkFactory
 
 USER_ID = "00000000-0000-0000-0000-0000000000a1"
+OTHER_USER_ID = "00000000-0000-0000-0000-0000000000a2"
+
+
+def make_app() -> FastAPI:
+    return create_app(uow_factory=InMemoryUnitOfWorkFactory())
 
 
 def mutation(client_mutation_id: str) -> dict[str, object]:
@@ -17,7 +24,7 @@ def mutation(client_mutation_id: str) -> dict[str, object]:
 
 
 def test_create_list_and_get_activity_are_user_scoped() -> None:
-    client = TestClient(create_app())
+    client = TestClient(make_app())
 
     created = client.post(
         "/v1/activities",
@@ -49,9 +56,19 @@ def test_create_list_and_get_activity_are_user_scoped() -> None:
     assert fetched.status_code == 200
     assert fetched.json()["id"] == activity["id"]
 
+    other_list = client.get("/v1/activities", headers={"X-Parallax-User-Id": OTHER_USER_ID})
+    assert other_list.status_code == 200
+    assert other_list.json() == []
+
+    other_fetch = client.get(
+        f"/v1/activities/{activity['id']}",
+        headers={"X-Parallax-User-Id": OTHER_USER_ID},
+    )
+    assert other_fetch.status_code == 404
+
 
 def test_duplicate_activity_mutation_replays_original_result() -> None:
-    client = TestClient(create_app())
+    client = TestClient(make_app())
     payload = {
         "mutation": mutation("activity-replay"),
         "display_name": "Wash pans",
@@ -69,7 +86,7 @@ def test_duplicate_activity_mutation_replays_original_result() -> None:
 
 
 def test_activity_resolver_is_read_only() -> None:
-    client = TestClient(create_app())
+    client = TestClient(make_app())
 
     response = client.post(
         "/v1/activities/resolve",

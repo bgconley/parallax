@@ -2,9 +2,9 @@
 
 Parallax is a temporal-first personal intelligence app implemented from the canonical v1.3 artifact pack in `parallax_v1_3_artifact_pack/`.
 
-The active implementation scope is Phase 0 bootstrap until the user explicitly starts a later phase. Phase 0 covers repository validation, Docker Compose runtime startup, API health readiness, and baseline migration tooling. Optional PostGIS, TimescaleDB, ParadeDB, passive background capture, and advanced ML features stay out of the baseline path until the core loop is authorized and verified.
+Phase 0 bootstrap is complete. The active implementation scope is Phase 1: the core activity and whole-task timing session loop. Optional PostGIS, TimescaleDB, ParadeDB, passive background capture, review/profile APIs, and advanced ML features stay out until their phases are explicitly started and verified.
 
-See `docs/architecture/phase0_bootstrap.md` for the current Phase 0 codepath and validation commands.
+See `docs/architecture/phase0_bootstrap.md` and `docs/architecture/phase1_core_loop.md` for the current codepaths and validation commands.
 
 ## Development
 
@@ -14,6 +14,7 @@ uv run ruff check .
 make typecheck
 uv run pytest -q
 make validate
+make security
 docker compose -f docker-compose.yml --env-file .env.example config
 ```
 

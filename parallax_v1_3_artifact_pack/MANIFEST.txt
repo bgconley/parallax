@@ -34,7 +34,7 @@ contracts/json_schema/timing_review_flag.schema.json | 1714 | df2998c9e86d0373f2
 contracts/json_schema/timing_session.schema.json | 27248 | fc95c965689f74663eb97d8f9d0b3784ad336e11a219ba94949ae8c0d4d74148
 contracts/json_schema/user_place.schema.json | 1673 | 29a4a1d84238e3164031247e0f1346792a4d73955ffa7184b8843348c7a43c82
 contracts/json_schema/workflow_payloads.schema.json | 6498 | a67007582fa1dedc960e67d6b259aee8992cfc94bbb3e3c14c43c0e50b6dee59
-contracts/openapi/parallax_api_v1_3.yaml | 130792 | 764f028b8e2d451c15804e4e254c627b23296131fe8e6c0cc8ff8daa0c74331b
+contracts/openapi/parallax_api_v1_3.yaml | 131466 | 433bd28055c975a9a1f614783c89d03633052d31f0125361489f1a418aab3780
 contracts/pydantic/parallax_contracts_v1_3.py | 23472 | e167dad3f103fd4fc308fb7209ed095c13cd69ef9ff931e41fa7edd69a093d33
 database/README.md | 3999 | bafa248d3ccbd9624c1a98196830ae3c3ebbed469dbb8c865b6c590b424afc4f
 database/migrations/0001_extensions_and_enums.sql | 4185 | e53fda6c34e3cebcd2fe117742ba0380fa1fe9e38c50a3535ce48cfd549d086c

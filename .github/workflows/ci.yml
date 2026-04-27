@@ -31,6 +31,9 @@ jobs:
       - name: Test
         run: uv run pytest
 
+      - name: Security scan
+        run: make security
+
       - name: Validate contracts
         run: make validate
 

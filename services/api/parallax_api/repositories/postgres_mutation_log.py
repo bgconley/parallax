@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+from typing import Any
+from uuid import UUID
+
+import psycopg
+from psycopg.types.json import Jsonb
+from pydantic import BaseModel
+
+from ..schemas.common import MutationEnvelope
+from .mutation_log import StoredMutation
+from .postgres_identity import ensure_app_user, mark_user_device_seen
+
+
+class PostgresMutationLogRepository:
+    def __init__(self, connection: psycopg.Connection[Any]) -> None:
+        self._connection = connection
+
+    def get(self, user_id: UUID, mutation: MutationEnvelope) -> StoredMutation | None:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                select mutation_type, entity_type, entity_id, result_json
+                from client_mutation_log
+                where user_id = %s
+                  and (
+                    (client_device_id = %s and client_mutation_id = %s)
+                    or idempotency_key = %s
+                  )
+                order by received_at asc
+                limit 1
+                """,
+                (
+                    user_id,
+                    mutation.client_device_id,
+                    mutation.client_mutation_id,
+                    mutation.idempotency_key,
+                ),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            return None
+        return StoredMutation(
+            mutation_type=row["mutation_type"],
+            entity_type=row["entity_type"],
+            entity_id=row["entity_id"],
+            result=row["result_json"],
+        )
+
+    def save(
+        self,
+        *,
+        user_id: UUID,
+        mutation: MutationEnvelope,
+        mutation_type: str,
+        entity_type: str,
+        entity_id: UUID | None,
+        result: BaseModel,
+    ) -> None:
+        result_json = result.model_dump(mode="json")
+        with self._connection.cursor() as cursor:
+            ensure_app_user(cursor, user_id)
+            mark_user_device_seen(cursor, user_id, mutation.client_device_id)
+            cursor.execute(
+                """
+                insert into client_mutation_log (
+                  user_id, client_device_id, client_mutation_id, idempotency_key,
+                  mutation_type, entity_type, entity_id, result_json
+                )
+                values (%s, %s, %s, %s, %s, %s, %s, %s)
+                on conflict (user_id, idempotency_key) do nothing
+                """,
+                (
+                    user_id,
+                    mutation.client_device_id,
+                    mutation.client_mutation_id,
+                    mutation.idempotency_key,
+                    mutation_type,
+                    entity_type,
+                    entity_id,
+                    Jsonb(result_json),
+                ),
+            )

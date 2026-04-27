@@ -46,12 +46,14 @@ def test_root_compose_uses_parallax_specific_host_ports() -> None:
     assert 'published: "8000"' not in result.stdout
 
 
-def test_phase0_docs_record_compose_derivation_and_phase_boundary() -> None:
+def test_phase_docs_record_compose_derivation_and_phase_boundary() -> None:
     phase0_doc = (REPO_ROOT / "docs/architecture/phase0_bootstrap.md").read_text()
     agents_doc = (REPO_ROOT / "AGENTS.md").read_text()
+    phase1_doc = (REPO_ROOT / "docs/architecture/phase1_core_loop.md").read_text()
 
     assert "implementation derivative of the canonical prototype Compose file" in phase0_doc
-    assert "Phase 1 is not active" in agents_doc
+    assert "Phase 1 is active only because the user explicitly started it" in agents_doc
+    assert "Out of scope: review decisions" in phase1_doc
 
 
 def test_phase0_runtime_dockerfiles_exist() -> None:

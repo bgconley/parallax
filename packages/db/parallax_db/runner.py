@@ -20,6 +20,7 @@ class AppliedMigration:
 class SchemaSmokeCheck:
     name: str
     sql: str
+    params: tuple[str, ...] = ()
 
 
 def phase0_schema_smoke_checks() -> list[SchemaSmokeCheck]:
@@ -64,7 +65,7 @@ def run_schema_smoke_checks(
     with psycopg.connect(database_url, autocommit=True) as connection:
         for check in selected_checks:
             with connection.cursor() as cursor:
-                cursor.execute(check.sql)
+                cursor.execute(check.sql, check.params)
                 exists = cursor.fetchone()
             if not exists or not exists[0]:
                 failures.append(check.name)
@@ -105,34 +106,30 @@ def _sha256(content: str) -> str:
 
 
 def _table_check(name: str) -> SchemaSmokeCheck:
-    literal_name = _sql_literal(name)
     return SchemaSmokeCheck(
         name=f"table:{name}",
-        sql=f"""
+        sql="""
             select exists (
             select 1 from information_schema.tables
-            where table_schema = 'public' and table_name = {literal_name}
+            where table_schema = 'public' and table_name = %s
             )
         """,
+        params=(name,),
     )
 
 
 def _enum_check(name: str) -> SchemaSmokeCheck:
-    literal_name = _sql_literal(name)
     return SchemaSmokeCheck(
         name=f"enum:{name}",
-        sql=f"""
+        sql="""
             select exists (
             select 1 from pg_type t
             join pg_namespace n on n.oid = t.typnamespace
-            where n.nspname = 'public' and t.typtype = 'e' and t.typname = {literal_name}
+            where n.nspname = 'public' and t.typtype = 'e' and t.typname = %s
             )
         """,
+        params=(name,),
     )
-
-
-def _sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
 
 
 _PHASE0_TABLES = (

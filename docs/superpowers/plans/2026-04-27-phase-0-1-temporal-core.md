@@ -1,9 +1,9 @@
 # Phase 0/1 Temporal Core Implementation Plan
 
-> Status note, 2026-04-27: this is a historical combined plan. Do not execute
-> Phase 1 tasks from this file unless the user explicitly starts Phase 1. Current
-> Phase 0 bootstrap scope and verification live in
-> `docs/architecture/phase0_bootstrap.md`.
+> Status note, 2026-04-27: this is a historical combined plan. The user has
+> explicitly started Phase 1. Current Phase 0 and Phase 1 scope and verification
+> live in `docs/architecture/phase0_bootstrap.md` and
+> `docs/architecture/phase1_core_loop.md`.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -39,7 +39,7 @@
 - Create: `services/api/tests/test_health.py`
 
 - [ ] Write failing tests for `GET /v1/health` and `GET /v1/version`.
-- [ ] Implement typed settings and an auth stub that infers `user_id` from `X-Parallax-User-Id` or a development default.
+- [ ] Implement typed settings and a Phase 1 auth stub that requires `X-Parallax-User-Id` and rejects missing or malformed values.
 - [ ] Keep health/version endpoints free of domain writes.
 - [ ] Run the focused health tests locally.
 

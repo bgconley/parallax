@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import json
 import sys
-from urllib.error import URLError
-from urllib.request import urlopen
+from http.client import HTTPConnection
 
 
 def main() -> int:
+    connection = HTTPConnection("127.0.0.1", 8000, timeout=5)
     try:
-        with urlopen("http://127.0.0.1:8000/v1/health", timeout=5) as response:
-            payload = json.load(response)
-    except (OSError, URLError, json.JSONDecodeError):
+        connection.request("GET", "/v1/ready")
+        response = connection.getresponse()
+        payload = json.loads(response.read().decode("utf-8"))
+    except (OSError, json.JSONDecodeError):
         return 1
+    finally:
+        connection.close()
     return 0 if response.status == 200 and payload.get("status") == "healthy" else 1
 
 

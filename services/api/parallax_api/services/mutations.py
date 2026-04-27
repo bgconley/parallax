@@ -4,15 +4,17 @@ from collections.abc import Callable
 from typing import TypeVar
 from uuid import UUID
 
-from ..repositories.memory import InMemoryStore, MutationKey, MutationRecord
+from pydantic import BaseModel
+
+from ..repositories.mutation_log import MutationLogRepository
 from ..schemas.common import MutationEnvelope
 
-T = TypeVar("T")
+T = TypeVar("T", bound=BaseModel)
 
 
 class MutationReplayService:
-    def __init__(self, store: InMemoryStore) -> None:
-        self._store = store
+    def __init__(self, mutation_log: MutationLogRepository) -> None:
+        self._mutation_log = mutation_log
 
     def replay_or_apply(
         self,
@@ -21,21 +23,20 @@ class MutationReplayService:
         mutation: MutationEnvelope,
         mutation_type: str,
         entity_type: str,
-        apply: Callable[[], tuple[UUID, T]],
+        result_type: type[T],
+        apply: Callable[[], tuple[UUID | None, T]],
     ) -> T:
-        key = self._key(user_id, mutation)
-        if key in self._store.mutation_records:
-            return self._store.mutation_records[key].result  # type: ignore[return-value]
+        existing = self._mutation_log.get(user_id, mutation)
+        if existing is not None:
+            return result_type.model_validate(existing.result)
 
         entity_id, result = apply()
-        self._store.mutation_records[key] = MutationRecord(
+        self._mutation_log.save(
+            user_id=user_id,
+            mutation=mutation,
             mutation_type=mutation_type,
             entity_type=entity_type,
             entity_id=entity_id,
             result=result,
         )
         return result
-
-    @staticmethod
-    def _key(user_id: UUID, mutation: MutationEnvelope) -> MutationKey:
-        return (user_id, mutation.client_device_id, mutation.client_mutation_id)

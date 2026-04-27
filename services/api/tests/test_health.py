@@ -5,14 +5,29 @@ from parallax_api.services.health import HealthReport
 
 class HealthyChecker:
     def check(self) -> HealthReport:
-        return HealthReport(status="healthy", checks={"api": "ok", "postgres": "ok", "redis": "ok"})
+        return HealthReport(
+            status="healthy",
+            checks={
+                "api": "ok",
+                "postgres": "ok",
+                "redis": "ok",
+                "temporal": "ok",
+                "object_storage": "ok",
+            },
+        )
 
 
 class UnhealthyChecker:
     def check(self) -> HealthReport:
         return HealthReport(
             status="unhealthy",
-            checks={"api": "ok", "postgres": "error", "redis": "ok"},
+            checks={
+                "api": "ok",
+                "postgres": "error",
+                "redis": "ok",
+                "temporal": "ok",
+                "object_storage": "ok",
+            },
         )
 
 
@@ -25,7 +40,13 @@ def test_health_endpoint_reports_runtime_dependencies() -> None:
     assert response.json() == {
         "service": "parallax-api",
         "status": "healthy",
-        "checks": {"api": "ok", "postgres": "ok", "redis": "ok"},
+        "checks": {
+            "api": "ok",
+            "postgres": "ok",
+            "redis": "ok",
+            "temporal": "ok",
+            "object_storage": "ok",
+        },
     }
 
 
@@ -37,6 +58,25 @@ def test_health_endpoint_returns_503_when_runtime_dependency_is_unhealthy() -> N
     assert response.status_code == 503
     assert response.json()["status"] == "unhealthy"
     assert response.json()["checks"]["postgres"] == "error"
+
+
+def test_readiness_uses_runtime_dependency_checks() -> None:
+    client = TestClient(create_app(health_checker=UnhealthyChecker()))
+
+    response = client.get("/v1/ready")
+
+    assert response.status_code == 503
+    assert response.json()["status"] == "unhealthy"
+    assert response.json()["checks"]["postgres"] == "error"
+
+
+def test_liveness_does_not_depend_on_downstream_services() -> None:
+    client = TestClient(create_app(health_checker=UnhealthyChecker()))
+
+    response = client.get("/v1/live")
+
+    assert response.status_code == 200
+    assert response.json() == {"service": "parallax-api", "status": "live"}
 
 
 def test_version_endpoint_reports_contract_and_app_version() -> None:

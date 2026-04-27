@@ -24,6 +24,30 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-27T05:06:42Z"
+    },
+    {
+      "id": "bug-003",
+      "timestamp": "2026-04-27T05:37:00Z",
+      "error_message": "make validate failed with manifest missing entries: ['.DS_Store', 'infrastructure/.DS_Store']",
+      "file": "parallax_v1_3_artifact_pack/.DS_Store, parallax_v1_3_artifact_pack/infrastructure/.DS_Store, .gitignore",
+      "root_cause": "macOS metadata files were created inside the canonical artifact pack and were not present in the pack manifest.",
+      "fix": "Removed the generated .DS_Store files and kept .DS_Store ignored so pack validation passes.",
+      "tags": ["validation", "artifact-pack", "manifest", "macos"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T05:37:00Z"
+    },
+    {
+      "id": "bug-004",
+      "timestamp": "2026-04-27T05:45:00Z",
+      "error_message": "sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper",
+      "file": "AGENTS.md, .wolf/OPENWOLF.md, .wolf/cerebrum.md",
+      "root_cause": "Remote sudo was executed over SSH without allocating a TTY; trying local sudo before ssh prompts for the Mac password and does not satisfy the GPU-node sudo prompt.",
+      "fix": "Use ssh -tt for remote sudo commands, for example ssh -tt ... 'sudo -v && sudo <command>'.",
+      "tags": ["ssh", "sudo", "gpu-node", "operations"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T05:45:00Z"
     }
   ]
 }

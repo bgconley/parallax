@@ -23,6 +23,11 @@ You are working in an OpenWolf-managed project. These rules apply every turn.
 - Access the GPU node with `ssh -i /Users/brennanconley/vibecode/infx/ubuntu24_ed25519 bgconley@10.25.0.50`.
 - For GPU-node storage, first follow `parallax_v1_3_artifact_pack/infrastructure/zfs/zfs_dataset_plan.md` and `create_parallax_datasets.sh`: use the `parallax` namespace, `/srv/parallax` mountpoints, and the actual node pool name as the script argument.
 - Use `/tank/repos/parallax` for the GPU-node repo checkout and `/tank/venvs/parallax` for Parallax virtualenvs. After Mac-side changes are pushed, pull updates from remote in `/tank/repos/parallax`.
+- `tank/venvs` is root ext4 on the GPU node, not a ZFS dataset; `/tank/venvs/parallax` is still the accepted Parallax venv path.
+- Parallax runtime datasets are mounted as `tank/parallax/*` under `/srv/parallax`. Use `scripts/setup_gpu_node_storage.sh` for dataset/bootstrap setup and `scripts/apply_gpu_node_permissions.sh` when only ownership/modes need to be applied.
+- Remote sudo over SSH needs a TTY. Use `ssh -tt ... 'sudo -v && sudo <command>'`; do not prefix the Mac-side SSH command with local `sudo`.
+- Current runtime permission policy: `/srv/parallax` `root:root 0755`; `postgres` and `postgres_wal` numeric `999:999 0700`; `objects`, `exports`, `models`, `hf_cache`, and `logs` numeric `10001:bgconley 0770`; `config` and `observability` `bgconley:bgconley 0755`; `backups` `root:bgconley 0750`.
+- Host passwd/group names for numeric UID/GID `999` may display as unrelated local accounts. Treat the numeric IDs as the source of truth until the pinned Postgres image is verified.
 
 ## After Actions
 

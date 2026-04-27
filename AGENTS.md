@@ -2,27 +2,29 @@
 
 ## Project Structure & Module Organization
 
-This checkout contains the Parallax v1.3 artifact pack, not a full application implementation. The canonical source is `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `AGENT_START_HERE.md`.
+This checkout contains the Parallax v1.3 artifact pack plus the initial Phase 0/1 implementation scaffold. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
 
 Before making implementation or infrastructure decisions, read the relevant canonical artifact files first. Do not infer Parallax layout, storage, runtime, or service policy from existing GPU-node directories or other apps when a Parallax artifact covers the topic.
 
 Key directories:
 
+- `services/api/`: FastAPI shell, routes, schemas, repositories, services, and API unit tests.
+- `packages/contracts/` and `packages/db/`: local validation and database helper packages.
+- `migrations/`: copied baseline SQL migrations used by the implementation scaffold.
 - `docs/`: product, architecture, privacy, testing, operations, and implementation guidance.
-- `contracts/`: OpenAPI, JSON Schema, event/job contracts, Pydantic scaffold, and design tokens.
-- `database/`: migrations, optional profiles, rollback notes, and example queries.
-- `infrastructure/`: prototype Compose, Caddy, ZFS, and object storage plans.
-- `scripts/`: pack bootstrap and validation utilities.
-- `examples/` and `tests_or_eval/`: payload samples, reference mockups, semantic test matrices, and eval cases.
+- `infra/`: copied prototype Compose, Caddy, and ZFS artifacts for implementation use.
+- `scripts/`: GPU-node storage setup plus validation utilities.
+- `parallax_v1_3_artifact_pack/`: canonical docs, contracts, database artifacts, scripts, examples, and eval cases.
 
 ## Build, Test, and Development Commands
 
-Run commands from `parallax_v1_3_artifact_pack/` unless noted.
+Run implementation commands from the repository root unless noted.
 
-- `./scripts/bootstrap_dev.sh`: creates `infrastructure/.env` and prints the startup command.
-- `docker compose -f infrastructure/compose/docker-compose.parallax.prototype.yml --env-file infrastructure/.env up --build`: starts the prototype service stack. API/worker Dockerfiles are expected in an implementation repo.
-- `python3 scripts/validate_pack.py --skip-zip-check`: validates files, parseability, migration order, mutation envelopes, and retired-name leakage.
-- `python3 scripts/validate_pack.py --zip-path ../parallax_v1_3_artifact_pack.zip`: also checks archive contents.
+- `uv run pytest -q`: runs local unit tests.
+- `uv run ruff check .`: runs Python lint checks.
+- `make validate`: validates the canonical artifact pack and local contract helper.
+- `bash -n scripts/setup_gpu_node_storage.sh scripts/apply_gpu_node_permissions.sh`: checks GPU-node shell scripts.
+- `docker compose up --build`: starts the prototype stack from the root include file.
 
 ## Coding Style & Naming Conventions
 
@@ -40,7 +42,11 @@ Access the GPU node with `ssh -i /Users/brennanconley/vibecode/infx/ubuntu24_ed2
 
 For GPU-node storage, start from `parallax_v1_3_artifact_pack/infrastructure/zfs/zfs_dataset_plan.md` and `create_parallax_datasets.sh`. Use the `parallax` ZFS namespace and `/srv/parallax` mountpoints from the artifact; pass the actual pool name to the script.
 
-Use `/tank/repos/parallax` for the GPU-node repo checkout and `/tank/venvs/parallax` for Parallax virtualenvs. After pushing from the Mac, pull updates into `/tank/repos/parallax`.
+Use `/tank/repos/parallax` for the GPU-node repo checkout and `/tank/venvs/parallax` for Parallax virtualenvs. `tank/venvs` is currently root ext4 on this host, not ZFS; that is expected and accepted. After pushing from the Mac, pull updates into `/tank/repos/parallax`.
+
+GPU-node runtime storage is verified under `tank/parallax` mounted at `/srv/parallax`. Apply permissions with `scripts/apply_gpu_node_permissions.sh` after datasets exist. Remote sudo commands need a TTY, for example `ssh -tt -i /Users/brennanconley/vibecode/infx/ubuntu24_ed25519 bgconley@10.25.0.50 'sudo -v && sudo /tmp/apply_gpu_node_permissions.sh'`.
+
+Current permission policy: `/srv/parallax` is `root:root 0755`; Postgres and WAL are numeric `999:999 0700`; service-writable objects/exports/models/cache/logs are `10001:bgconley 0770`; config and observability are `bgconley:bgconley 0755`; backups are `root:bgconley 0750`. Host names for UID/GID `999` may display as unrelated local accounts; verify numeric IDs against the pinned container image when the DB image is finalized.
 
 ## Commit & Pull Request Guidelines
 

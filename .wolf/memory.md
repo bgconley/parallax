@@ -11,3 +11,6 @@
 | 01:45 | Verified live GPU-node Parallax datasets, mountpoints, recordsize properties, and ownership/mode policy under /srv/parallax | /srv/parallax, tank/parallax, /tank/repos/parallax, /tank/venvs/parallax | storage state verified; /tank/venvs ext4 accepted | ~100 |
 | 01:50 | Staged, validated, committed, and pushed Phase 0/1 bootstrap plus GPU storage artifacts to origin/master | commit 2a133d5, scripts, docs, services/api, packages, migrations | remote updated and working tree clean | ~90 |
 | 01:58 | Recorded remote sudo TTY requirement, .DS_Store validation gotcha, verified storage permissions, and venv filesystem exception | AGENTS.md, .wolf/OPENWOLF.md, .wolf/cerebrum.md, .wolf/buglog.json | session context refreshed | ~110 |
+| 01:59 | Committed and pushed refreshed GPU storage operating notes | commit 8f020fc, AGENTS.md, .wolf/* | remote updated and working tree clean | ~60 |
+| 02:04 | Pulled origin/master into /tank/repos/parallax and synced dependencies with uv into /tank/venvs/parallax | /tank/repos/parallax, /tank/venvs/parallax, uv.lock | GPU app venv aligned without repo-local .venv | ~90 |
+| 02:08 | Ran GPU-node uv validation and HTTP smoke for health, activity creation, resolver, timing event append, and session completion | uv, pytest, ruff, make validate, FastAPI smoke | checks passed; temporary server stopped | ~130 |

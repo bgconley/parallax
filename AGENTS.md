@@ -44,6 +44,8 @@ For GPU-node storage, start from `parallax_v1_3_artifact_pack/infrastructure/zfs
 
 Use `/tank/repos/parallax` for the GPU-node repo checkout and `/tank/venvs/parallax` for Parallax virtualenvs. `tank/venvs` is currently root ext4 on this host, not ZFS; that is expected and accepted. After pushing from the Mac, pull updates into `/tank/repos/parallax`.
 
+Use `uv` for the Parallax app environment on the GPU node. `uv` is available at `/home/bgconley/.local/bin/uv`, but non-interactive SSH sessions may not include `~/.local/bin` on `PATH`. Run GPU-node checks with `PATH=/home/bgconley/.local/bin:$PATH` and `UV_PROJECT_ENVIRONMENT=/tank/venvs/parallax` so `uv` uses the accepted venv path and does not create `/tank/repos/parallax/.venv`.
+
 GPU-node runtime storage is verified under `tank/parallax` mounted at `/srv/parallax`. Apply permissions with `scripts/apply_gpu_node_permissions.sh` after datasets exist. Remote sudo commands need a TTY, for example `ssh -tt -i /Users/brennanconley/vibecode/infx/ubuntu24_ed25519 bgconley@10.25.0.50 'sudo -v && sudo /tmp/apply_gpu_node_permissions.sh'`.
 
 Current permission policy: `/srv/parallax` is `root:root 0755`; Postgres and WAL are numeric `999:999 0700`; service-writable objects/exports/models/cache/logs are `10001:bgconley 0770`; config and observability are `bgconley:bgconley 0755`; backups are `root:bgconley 0750`. Host names for UID/GID `999` may display as unrelated local accounts; verify numeric IDs against the pinned container image when the DB image is finalized.

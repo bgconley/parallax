@@ -48,6 +48,30 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-27T05:45:00Z"
+    },
+    {
+      "id": "bug-005",
+      "timestamp": "2026-04-27T05:55:29Z",
+      "error_message": "python3 -m pip install --user uv failed with error: externally-managed-environment",
+      "file": "AGENTS.md, .wolf/OPENWOLF.md, .wolf/cerebrum.md",
+      "root_cause": "Ubuntu system Python is externally managed under PEP 668, so direct user installs through system pip are blocked.",
+      "fix": "Use the existing user-level uv binary at /home/bgconley/.local/bin/uv and prefix non-interactive SSH commands with PATH=/home/bgconley/.local/bin:$PATH.",
+      "tags": ["uv", "pip", "pep668", "gpu-node"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T05:55:29Z"
+    },
+    {
+      "id": "bug-006",
+      "timestamp": "2026-04-27T05:55:29Z",
+      "error_message": "GPU-node HTTP smoke failed with KeyError: <built-in function id>",
+      "file": "ad hoc GPU-node smoke command",
+      "root_cause": "A Python snippet embedded in a single-quoted SSH heredoc used session['id'] inside an f-string, and shell quoting stripped the string quotes.",
+      "fix": "Assign values such as session_id = session[\"id\"] before f-strings or otherwise avoid single quotes inside single-quoted SSH heredoc snippets.",
+      "tags": ["ssh", "quoting", "smoke-test", "python"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T05:55:29Z"
     }
   ]
 }

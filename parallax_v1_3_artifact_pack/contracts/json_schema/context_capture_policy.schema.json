@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/context_capture_policy.schema.json",
+  "title": "ContextCapturePolicy",
+  "type": "object",
+  "additionalProperties": false,
+  "description": "Server-authoritative policy for optional location, radio, motion, and device context capture.",
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "location_enabled": {
+      "type": "boolean"
+    },
+    "precise_location_enabled": {
+      "type": "boolean"
+    },
+    "background_location_enabled": {
+      "type": "boolean"
+    },
+    "radio_context_enabled": {
+      "type": "boolean"
+    },
+    "motion_context_enabled": {
+      "type": "boolean"
+    },
+    "device_context_enabled": {
+      "type": "boolean"
+    },
+    "raw_location_retention_days": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "raw_radio_retention_days": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "default_location_retention_policy": {
+      "$ref": "common.schema.json#/$defs/sensor_retention_policy"
+    },
+    "default_radio_retention_policy": {
+      "$ref": "common.schema.json#/$defs/sensor_retention_policy"
+    },
+    "per_run_context_default": {
+      "type": "boolean"
+    },
+    "updated_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "location_enabled",
+    "precise_location_enabled",
+    "background_location_enabled",
+    "radio_context_enabled",
+    "motion_context_enabled",
+    "device_context_enabled",
+    "default_location_retention_policy",
+    "default_radio_retention_policy",
+    "per_run_context_default",
+    "updated_at",
+    "created_at"
+  ]
+}

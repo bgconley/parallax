@@ -1,0 +1,181 @@
+version: 1.3.0
+project: Parallax
+description: Canonical domain event contract for Parallax v1.3.
+common_envelope:
+  event_id: uuid
+  event_name: string
+  user_id: uuid
+  aggregate_type: string
+  aggregate_id: uuid
+  occurred_at: date-time
+  schema_version: 1.3.0
+  payload: object
+events:
+- event_name: activity.created
+  aggregate_type: activity
+  payload_schema: Activity
+- event_name: activity.alias_added
+  aggregate_type: activity
+  payload_fields:
+  - activity_id
+  - alias_id
+  - alias_text
+  - user_confirmed
+- event_name: activity.relationship_created
+  aggregate_type: activity
+  payload_fields:
+  - from_activity_id
+  - to_activity_id
+  - kind
+- event_name: timing.session_created
+  aggregate_type: timing_session
+  payload_schema: TimingSession
+- event_name: timing.event_appended
+  aggregate_type: timing_session
+  payload_schema: TimingEvent
+- event_name: timing.session_completed
+  aggregate_type: timing_session
+  payload_fields:
+  - session_id
+  - completed_at
+  - timer_elapsed_seconds
+  - timer_active_seconds
+- event_name: timing.review_saved
+  aggregate_type: timing_session
+  payload_schema: ModelUpdateDecision
+- event_name: timing.timeline_recompute_requested
+  aggregate_type: timing_session
+  payload_fields:
+  - session_id
+  - reason
+- event_name: context.annotation_captured
+  aggregate_type: temporal_context_annotation
+  payload_schema: TemporalContextAnnotation
+- event_name: context.extraction_requested
+  aggregate_type: temporal_context_annotation
+  payload_fields:
+  - annotation_id
+  - force
+- event_name: context.extracted_event_created
+  aggregate_type: temporal_extracted_context_event
+  payload_schema: ExtractedContextEvent
+- event_name: context.extracted_event_confirmed
+  aggregate_type: temporal_extracted_context_event
+  payload_fields:
+  - event_id
+  - confirmation_state
+- event_name: context.extracted_event_corrected
+  aggregate_type: temporal_extracted_context_event
+  payload_fields:
+  - event_id
+  - before
+  - after
+- event_name: activity_profile.recompute_requested
+  aggregate_type: activity
+  payload_fields:
+  - activity_id
+  - reason
+- event_name: activity_profile.recomputed
+  aggregate_type: activity
+  payload_fields:
+  - activity_id
+  - snapshot_id
+  - confidence
+  - sample_size
+- event_name: preflight.check_suggested
+  aggregate_type: preflight_check
+  payload_schema: PreflightCheck
+- event_name: temporal_query.requested
+  aggregate_type: temporal_query_answer
+  payload_fields:
+  - answer_id
+  - question
+  - activity_id
+- event_name: temporal_query.answered
+  aggregate_type: temporal_query_answer
+  payload_schema: TemporalQueryAnswer
+- event_name: privacy.redaction_requested
+  aggregate_type: privacy
+  payload_fields:
+  - entity_type
+  - entity_id
+  - reason
+- event_name: privacy.export_requested
+  aggregate_type: privacy
+  payload_fields:
+  - include_raw_context
+  - include_audio
+- event_name: privacy.delete_requested
+  aggregate_type: privacy
+  payload_fields:
+  - delete_scope
+  - entity_id
+- event_name: privacy.context_capture_policy_updated
+  aggregate_type: context_capture_policy
+  payload_schema: ContextCapturePolicy
+- event_name: retrieval.document_refresh_requested
+  aggregate_type: retrieval_document
+  payload_fields:
+  - entity_type
+  - entity_id
+  - document_kind
+- event_name: model.invocation_recorded
+  aggregate_type: model_invocation
+  payload_fields:
+  - role
+  - provider
+  - model_name
+  - schema_valid
+  - repair_count
+  - fallback_used
+- event_name: context.capture_snapshot_created
+  aggregate_type: capture_context_snapshot
+  payload_schema: CaptureContextSnapshot
+- event_name: context.geospatial_observation_captured
+  aggregate_type: capture_context_snapshot
+  payload_schema: GeospatialObservation
+- event_name: context.radio_observation_captured
+  aggregate_type: capture_context_snapshot
+  payload_schema: RadioObservation
+- event_name: context.device_observation_captured
+  aggregate_type: capture_context_snapshot
+  payload_schema: DeviceContextObservation
+- event_name: place.inference_requested
+  aggregate_type: capture_context_snapshot
+  payload_fields:
+  - snapshot_id
+  - reason
+- event_name: place.inferred
+  aggregate_type: inferred_place_observation
+  payload_schema: InferredPlaceObservation
+- event_name: place.confirmed
+  aggregate_type: user_place
+  payload_schema: UserPlace
+- event_name: analytics.feature_vector_recompute_requested
+  aggregate_type: temporal_feature_vector
+  payload_fields:
+  - activity_id
+  - session_id
+  - feature_families
+  - reason
+- event_name: analytics.feature_vector_generated
+  aggregate_type: temporal_feature_vector
+  payload_schema: TemporalFeatureVector
+- event_name: timing.possible_forgotten_timer_flagged
+  aggregate_type: timing_review_flag
+  payload_schema: TimingReviewFlag
+- event_name: timing.review_flag_updated
+  aggregate_type: timing_review_flag
+  payload_fields:
+  - flag_id
+  - status
+  - resolution_note
+rules:
+- Events are immutable once dispatched.
+- Event payloads must not include raw context unless the event is explicitly a private
+  internal event and logs are disabled.
+- Every event is user-scoped when user data is involved.
+- Outbox dispatch must be idempotent.
+- Context events are auxiliary evidence and must not silently mutate source timing
+  durations.
+- Raw coordinates and raw radio identifiers must not appear in normal event logs.

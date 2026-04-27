@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/capture_context_snapshot.schema.json",
+  "title": "CaptureContextSnapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "session_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "checkpoint_run_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "user_place_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "capture_method": {
+      "$ref": "common.schema.json#/$defs/capture_method"
+    },
+    "capture_trigger": {
+      "$ref": "common.schema.json#/$defs/capture_trigger"
+    },
+    "client_captured_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    },
+    "server_received_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    },
+    "client_monotonic_millis": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "source_device_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "app_foreground_state": {
+      "type": "string",
+      "enum": [
+        "foreground",
+        "background",
+        "locked",
+        "extension",
+        "unknown"
+      ]
+    },
+    "location_state": {
+      "$ref": "common.schema.json#/$defs/sensor_availability_state"
+    },
+    "radio_state": {
+      "$ref": "common.schema.json#/$defs/sensor_availability_state"
+    },
+    "motion_state_available": {
+      "$ref": "common.schema.json#/$defs/sensor_availability_state"
+    },
+    "device_context_state": {
+      "$ref": "common.schema.json#/$defs/sensor_availability_state"
+    },
+    "privacy_class": {
+      "$ref": "common.schema.json#/$defs/privacy_class"
+    },
+    "retention_policy": {
+      "$ref": "common.schema.json#/$defs/sensor_retention_policy"
+    },
+    "context_quality_score": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "permission_summary": {
+      "type": "object"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "client_mutation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "client_device_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    },
+    "geospatial_observations": {
+      "type": "array",
+      "items": {
+        "$ref": "geospatial_observation.schema.json"
+      }
+    },
+    "radio_observations": {
+      "type": "array",
+      "items": {
+        "$ref": "radio_observation.schema.json"
+      }
+    },
+    "device_context_observations": {
+      "type": "array",
+      "items": {
+        "$ref": "device_context_observation.schema.json"
+      }
+    },
+    "inferred_places": {
+      "type": "array",
+      "items": {
+        "$ref": "inferred_place_observation.schema.json"
+      }
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "capture_method",
+    "capture_trigger",
+    "client_captured_at",
+    "server_received_at",
+    "source_device_id",
+    "app_foreground_state",
+    "location_state",
+    "radio_state",
+    "motion_state_available",
+    "device_context_state",
+    "privacy_class",
+    "retention_policy",
+    "permission_summary",
+    "client_mutation_id",
+    "client_device_id",
+    "idempotency_key",
+    "created_at"
+  ]
+}

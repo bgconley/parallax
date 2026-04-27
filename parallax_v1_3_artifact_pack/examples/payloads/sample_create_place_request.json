@@ -1,0 +1,22 @@
+{
+  "mutation": {
+    "client_mutation_id": "mut_place_create_001",
+    "client_device_id": "ios_device_demo",
+    "client_timestamp": "2026-04-26T14:05:00Z",
+    "idempotency_key": "ios_device_demo:mut_place_create_001",
+    "client_sequence": 3
+  },
+  "display_name": "Kitchen",
+  "category": "kitchen",
+  "latitude": null,
+  "longitude": null,
+  "radius_meters": null,
+  "source": "manual_place",
+  "privacy_class": "normal",
+  "confirmed_by_user": true,
+  "is_sensitive": false,
+  "aliases": [
+    "upstairs kitchen"
+  ],
+  "metadata": {}
+}

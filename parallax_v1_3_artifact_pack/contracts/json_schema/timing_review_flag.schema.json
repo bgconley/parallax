@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/timing_review_flag.schema.json",
+  "title": "TimingReviewFlag",
+  "type": "object",
+  "additionalProperties": false,
+  "description": "A review prompt with evidence. Review flags never change timing truth without an explicit user correction or review decision.",
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "session_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "snapshot_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "flag_type": {
+      "$ref": "common.schema.json#/$defs/timing_review_flag_type"
+    },
+    "status": {
+      "$ref": "common.schema.json#/$defs/timing_review_flag_status"
+    },
+    "severity": {
+      "$ref": "common.schema.json#/$defs/severity"
+    },
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "reason_code": {
+      "type": "string"
+    },
+    "user_message": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "object"
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    },
+    "resolved_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "resolution_note": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "session_id",
+    "flag_type",
+    "status",
+    "severity",
+    "reason_code",
+    "user_message",
+    "evidence",
+    "created_at"
+  ]
+}

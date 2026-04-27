@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/geospatial_observation.schema.json",
+  "title": "GeospatialObservation",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "snapshot_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "source": {
+      "$ref": "common.schema.json#/$defs/geospatial_source_type"
+    },
+    "observed_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    },
+    "latitude": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": -90,
+      "maximum": 90
+    },
+    "longitude": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": -180,
+      "maximum": 180
+    },
+    "altitude_meters": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "horizontal_accuracy_meters": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "vertical_accuracy_meters": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "speed_mps": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "course_degrees": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 360
+    },
+    "is_precise": {
+      "type": "boolean"
+    },
+    "is_stale": {
+      "type": "boolean"
+    },
+    "staleness_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "privacy_class": {
+      "$ref": "common.schema.json#/$defs/privacy_class"
+    },
+    "retention_policy": {
+      "$ref": "common.schema.json#/$defs/sensor_retention_policy"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "snapshot_id",
+    "source",
+    "observed_at",
+    "is_precise",
+    "is_stale",
+    "privacy_class",
+    "retention_policy",
+    "created_at"
+  ]
+}

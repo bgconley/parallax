@@ -1,0 +1,30 @@
+{
+  "mutation": {
+    "client_mutation_id": "mut_sync_push_001",
+    "client_device_id": "ios_device_demo",
+    "client_timestamp": "2026-04-26T14:00:01Z",
+    "idempotency_key": "ios_device_demo:mut_sync_push_001",
+    "client_sequence": 2
+  },
+  "client_device_id": "ios_device_demo",
+  "mutations": [
+    {
+      "operation": "append_timing_event",
+      "path": "/v1/timing/sessions/00000000-0000-0000-0000-000000000501/events",
+      "body": {
+        "mutation": {
+          "client_mutation_id": "mut_event_001",
+          "client_device_id": "ios_device_demo",
+          "client_timestamp": "2026-04-26T14:00:00Z",
+          "idempotency_key": "ios_device_demo:mut_event_001",
+          "client_sequence": 1
+        },
+        "event_type": "session_started",
+        "client_time": "2026-04-26T14:00:00Z",
+        "timer_elapsed_seconds": 0,
+        "timer_active_seconds": 0,
+        "payload": {}
+      }
+    }
+  ]
+}

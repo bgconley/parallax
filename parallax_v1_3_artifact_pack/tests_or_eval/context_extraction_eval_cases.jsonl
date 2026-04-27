@@ -1,0 +1,3 @@
+{"case_id": "CTX-001", "input": "The sponge is gross. I need to go downstairs and get a new one.", "expected_span_type": "resource_detour", "expected_friction_category": "resource", "expected_count_policy": "wall_only", "expected_preflight_contains": "sponge"}
+{"case_id": "CTX-002", "input": "Paused because my neighbor called.", "expected_span_type": "interruption", "expected_friction_category": "interruption", "expected_count_policy": "wall_only"}
+{"case_id": "CTX-003", "input": "I forgot to stop the timer after I finished.", "expected_span_type": "bad_timer", "expected_friction_category": "timer_quality", "expected_count_policy": "review_required"}

@@ -1,0 +1,228 @@
+{
+  "meta": {
+    "version": "1.3",
+    "app_name": "Parallax",
+    "pack_name": "Parallax Canonical Artifact Pack",
+    "relationship": "Canonical design token source for Parallax v1.3 implementation and Figma alignment."
+  },
+  "color": {
+    "surface": {
+      "canvas_light": "#F6F2EC",
+      "canvas_dark": "#171512",
+      "card_light": "#FFFCF7",
+      "card_dark": "#24211E",
+      "elevated_light": "#FFFFFF",
+      "elevated_dark": "#2B2824",
+      "separator_light": "#E7E0D7",
+      "separator_dark": "#3D3832",
+      "field_light": "#FFFFFF",
+      "field_dark": "#2B2824"
+    },
+    "text": {
+      "primary_light": "#181817",
+      "secondary_light": "#5F5A54",
+      "tertiary_light": "#8E877D",
+      "primary_dark": "#F4F0E8",
+      "secondary_dark": "#CAC2B8",
+      "tertiary_dark": "#978F84",
+      "inverse": "#FFFFFF"
+    },
+    "accent": {
+      "primary": "#4C7EE8",
+      "primary_soft": "#E7EEFF",
+      "primary_deep": "#315FC4",
+      "primary_text": "#315FC4",
+      "lilac": "#9B84E8",
+      "lilac_soft": "#F0EAFF",
+      "lilac_text": "#5D45B8",
+      "sage": "#809662",
+      "sage_soft": "#EDF3E5",
+      "sage_text": "#506D3D",
+      "amber": "#C58C3A",
+      "amber_soft": "#F8EEDC",
+      "amber_text": "#835615",
+      "rose": "#C97B7B",
+      "rose_soft": "#FBEAEA",
+      "rose_text": "#8A4444",
+      "teal": "#5B8B84",
+      "teal_soft": "#E6F1EE",
+      "teal_text": "#356E66"
+    },
+    "semantic": {
+      "success": "#5F865C",
+      "success_text": "#41633E",
+      "warning": "#C58C3A",
+      "warning_text": "#835615",
+      "danger": "#C97B7B",
+      "danger_text": "#8A4444",
+      "info": "#4C7EE8",
+      "info_text": "#315FC4",
+      "muted": "#8E877D",
+      "muted_text": "#5F5A54"
+    },
+    "temporal": {
+      "active": "#4C7EE8",
+      "active_soft": "#E7EEFF",
+      "active_text": "#315FC4",
+      "elapsed": "#315FC4",
+      "wall": "#D8E3FF",
+      "wall_text": "#315FC4",
+      "checkpoint": "#9B84E8",
+      "checkpoint_soft": "#F0EAFF",
+      "checkpoint_text": "#5D45B8",
+      "detour": "#809662",
+      "detour_soft": "#EDF3E5",
+      "detour_text": "#506D3D",
+      "interruption": "#C58C3A",
+      "interruption_soft": "#F8EEDC",
+      "interruption_text": "#835615",
+      "waiting": "#5B8B84",
+      "waiting_soft": "#E6F1EE",
+      "waiting_text": "#356E66",
+      "side_quest": "#9B84E8",
+      "side_quest_soft": "#F0EAFF",
+      "side_quest_text": "#5D45B8",
+      "setup": "#809662",
+      "setup_soft": "#EDF3E5",
+      "setup_text": "#506D3D",
+      "start_latency": "#C58C3A",
+      "start_latency_soft": "#F8EEDC",
+      "start_latency_text": "#835615",
+      "typical": "#809662",
+      "typical_text": "#506D3D",
+      "unusual": "#9B84E8",
+      "unusual_text": "#5D45B8",
+      "learning": "#5F865C",
+      "learning_text": "#41633E",
+      "ask": "#4C7EE8",
+      "ask_text": "#315FC4",
+      "privacy": "#5B8B84",
+      "privacy_text": "#356E66"
+    }
+  },
+  "typography": {
+    "font_family": "SF Pro / system",
+    "display": {
+      "size": 40,
+      "weight": "700",
+      "line_height": 46
+    },
+    "large_title": {
+      "size": 34,
+      "weight": "700",
+      "line_height": 41
+    },
+    "title1": {
+      "size": 28,
+      "weight": "700",
+      "line_height": 34
+    },
+    "title2": {
+      "size": 22,
+      "weight": "700",
+      "line_height": 28
+    },
+    "title3": {
+      "size": 20,
+      "weight": "600",
+      "line_height": 25
+    },
+    "body": {
+      "size": 17,
+      "weight": "400",
+      "line_height": 22
+    },
+    "body_emphasis": {
+      "size": 17,
+      "weight": "600",
+      "line_height": 22
+    },
+    "callout": {
+      "size": 16,
+      "weight": "400",
+      "line_height": 21
+    },
+    "subheadline": {
+      "size": 15,
+      "weight": "400",
+      "line_height": 20
+    },
+    "footnote": {
+      "size": 13,
+      "weight": "400",
+      "line_height": 18
+    },
+    "caption": {
+      "size": 12,
+      "weight": "400",
+      "line_height": 16
+    }
+  },
+  "spacing": {
+    "xxs": 4,
+    "xs": 8,
+    "sm": 12,
+    "md": 16,
+    "lg": 20,
+    "xl": 24,
+    "xxl": 32,
+    "screen_horizontal": 20,
+    "screen_vertical": 24,
+    "card_inner": 16,
+    "section_gap": 20,
+    "sheet_handle_top": 10
+  },
+  "radius": {
+    "chip": 16,
+    "button": 18,
+    "card_medium": 22,
+    "card_large": 28,
+    "sheet": 28,
+    "icon_container": 16,
+    "timeline_pill": 14,
+    "field": 18
+  },
+  "shadow": {
+    "card_light": {
+      "x": 0,
+      "y": 8,
+      "blur": 24,
+      "opacity": 0.08
+    },
+    "card_dark": {
+      "x": 0,
+      "y": 10,
+      "blur": 26,
+      "opacity": 0.28
+    }
+  },
+  "motion": {
+    "fast_ms": 140,
+    "standard_ms": 220,
+    "slow_ms": 320,
+    "spring_response": 0.34,
+    "spring_damping": 0.86,
+    "reduced_motion_replacements": {
+      "timer_ring": "numeric_cards",
+      "ai_pending": "static_status_pill",
+      "timeline_insert": "instant_insert_with_haptic"
+    }
+  },
+  "haptics": {
+    "session_started": "medium",
+    "checkpoint_saved": "medium",
+    "context_captured": "light",
+    "review_saved": "success",
+    "low_confidence_prompt": "light",
+    "correction_saved": "light"
+  },
+  "accessibility": {
+    "minimum_touch_target_pt": 44,
+    "preferred_touch_target_pt": 48,
+    "dynamic_type_required": true,
+    "color_only_states_allowed": false,
+    "max_default_mode_choices": 3,
+    "max_primary_insight_cards_above_fold": 2,
+    "minimum_contrast_normal_text": 4.5
+  }
+}

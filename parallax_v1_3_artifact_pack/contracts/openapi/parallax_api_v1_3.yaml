@@ -1,0 +1,5121 @@
+openapi: 3.1.0
+info:
+  title: Parallax API
+  version: 1.3.0
+  description: Canonical v1.3 API contract for Parallax, a temporal-first personal
+    intelligence application with timing analytics and user-controlled context awareness.
+servers:
+- url: https://api.parallax.local
+  description: Local/staging base URL
+security:
+- bearerAuth: []
+paths:
+  /v1/health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+  /v1/version:
+    get:
+      summary: Version metadata
+      operationId: getVersion
+      security: []
+      responses:
+        '200':
+          description: Version
+          content:
+            application/json:
+              schema:
+                type: object
+  /v1/activities:
+    post:
+      summary: Create activity
+      operationId: createActivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActivityRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activity'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    get:
+      summary: List activities
+      operationId: listActivities
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 50
+          maximum: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Activity'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/activities/resolve:
+    post:
+      summary: Resolve activity name or alias
+      description: Read-only resolver. This endpoint must not create aliases, emit
+        events, enqueue jobs, or write audit rows beyond normal request logs. Alias
+        creation uses /v1/activities/{activity_id}/aliases and requires a mutation
+        envelope.
+      operationId: resolveActivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveActivityRequest'
+      responses:
+        '200':
+          description: Resolution candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveActivityResponse'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/activities/{activity_id}:
+    get:
+      summary: Get activity
+      operationId: getActivity
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activity'
+        '404':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/activities/{activity_id}/aliases:
+    post:
+      summary: Add activity alias
+      operationId: addActivityAlias
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mutation:
+                  $ref: '#/components/schemas/MutationEnvelope'
+                alias_text:
+                  type: string
+                user_confirmed:
+                  type: boolean
+                  default: true
+              required:
+              - mutation
+              - alias_text
+      responses:
+        '201':
+          description: Alias created
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/activities/{activity_id}/relationships:
+    post:
+      summary: Create activity relationship
+      operationId: createActivityRelationship
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mutation:
+                  $ref: '#/components/schemas/MutationEnvelope'
+                to_activity_id:
+                  type: string
+                  format: uuid
+                kind:
+                  type: string
+                  enum:
+                  - same_as
+                  - alias_of
+                  - part_of
+                  - has_checkpoint
+                  - variant_of
+                  - related_to
+                  - usually_before
+                  - usually_after
+                metadata:
+                  type: object
+              required:
+              - mutation
+              - to_activity_id
+              - kind
+      responses:
+        '201':
+          description: Relationship created
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/activities/{activity_id}/profile:
+    get:
+      summary: Get activity profile
+      operationId: getActivityProfile
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityProfile'
+        '404':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/sessions:
+    post:
+      summary: Create timing session
+      operationId: createTimingSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTimingSessionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimingSession'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/sessions/{session_id}:
+    get:
+      summary: Get timing session
+      operationId: getTimingSession
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimingSession'
+        '404':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/sessions/{session_id}/events:
+    post:
+      summary: Append timing event
+      operationId: appendTimingEvent
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppendTimingEventRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimingEvent'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/sessions/{session_id}/event-spans:
+    post:
+      summary: Create or correct timing span
+      operationId: createTimingEventSpan
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mutation:
+                  $ref: '#/components/schemas/MutationEnvelope'
+                span:
+                  $ref: '#/components/schemas/TimingEventSpan'
+              required:
+              - mutation
+              - span
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimingEventSpan'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/sessions/{session_id}/complete:
+    post:
+      summary: Complete timing session
+      operationId: completeTimingSession
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteTimingSessionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimingSession'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/sessions/{session_id}/review:
+    post:
+      summary: Review timing session and decide model inclusion
+      operationId: reviewTimingSession
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewTimingSessionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelUpdateDecision'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/sessions/{session_id}/discard:
+    post:
+      summary: Discard timing session
+      operationId: discardTimingSession
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewTimingSessionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelUpdateDecision'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/sessions/{session_id}/annotations:
+    post:
+      summary: Create context annotation
+      operationId: createContextAnnotation
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAnnotationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporalContextAnnotation'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/annotations/{annotation_id}:
+    get:
+      summary: Get context annotation
+      operationId: getContextAnnotation
+      parameters:
+      - name: annotation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporalContextAnnotation'
+        '404':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/annotations/{annotation_id}/extract:
+    post:
+      summary: Request annotation extraction
+      operationId: extractContextAnnotation
+      parameters:
+      - name: annotation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mutation:
+                  $ref: '#/components/schemas/MutationEnvelope'
+                force:
+                  type: boolean
+                  default: false
+              required:
+              - mutation
+      responses:
+        '202':
+          description: Extraction queued
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/extracted-events/{event_id}/confirm:
+    post:
+      summary: Confirm extracted event
+      operationId: confirmExtractedEvent
+      parameters:
+      - name: event_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mutation:
+                  $ref: '#/components/schemas/MutationEnvelope'
+                confirmation_state:
+                  type: string
+                  enum:
+                  - confirmed
+                  - ignored
+              required:
+              - mutation
+              - confirmation_state
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractedContextEvent'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/extracted-events/{event_id}/correct:
+    post:
+      summary: Correct extracted event
+      operationId: correctExtractedEvent
+      parameters:
+      - name: event_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectExtractedEventRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractedContextEvent'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/activities/{activity_id}/checkpoints:
+    get:
+      summary: List checkpoint templates
+      operationId: listCheckpoints
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Checkpoint templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+    put:
+      summary: Replace checkpoint templates
+      operationId: putCheckpoints
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutCheckpointsRequest'
+      responses:
+        '200':
+          description: Checkpoint templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/activities/{activity_id}/preflight-checks:
+    get:
+      summary: List preflight checks
+      operationId: listPreflightChecks
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PreflightCheck'
+    post:
+      summary: Create preflight check
+      operationId: createPreflightCheck
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePreflightCheckRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreflightCheck'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/temporal/predictions:
+    post:
+      summary: Create temporal prediction
+      operationId: createTemporalPrediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePredictionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporalPrediction'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/temporal/predictions/{prediction_id}/outcome:
+    post:
+      summary: Record prediction outcome
+      operationId: recordPredictionOutcome
+      parameters:
+      - name: prediction_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mutation:
+                  $ref: '#/components/schemas/MutationEnvelope'
+                session_id:
+                  type:
+                  - string
+                  - 'null'
+                  format: uuid
+                outcome_type:
+                  type: string
+                  enum:
+                  - completed
+                  - skipped
+                  - deferred
+                  - abandoned
+                  - ignored
+                actual_active_seconds:
+                  type:
+                  - integer
+                  - 'null'
+                  minimum: 0
+                actual_wall_seconds:
+                  type:
+                  - integer
+                  - 'null'
+                  minimum: 0
+              required:
+              - mutation
+              - outcome_type
+      responses:
+        '201':
+          description: Outcome recorded
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/temporal/query:
+    post:
+      summary: Ask grounded question about time
+      operationId: createTemporalQuery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemporalQueryRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporalQueryAnswer'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/temporal/query/{answer_id}:
+    get:
+      summary: Get temporal query answer
+      operationId: getTemporalQueryAnswer
+      parameters:
+      - name: answer_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporalQueryAnswer'
+        '404':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/privacy/settings:
+    get:
+      summary: Get privacy settings
+      operationId: getPrivacySettings
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacySettings'
+    put:
+      summary: Update privacy settings
+      operationId: updatePrivacySettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mutation:
+                  $ref: '#/components/schemas/MutationEnvelope'
+                settings:
+                  $ref: '#/components/schemas/PrivacySettings'
+              required:
+              - mutation
+              - settings
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacySettings'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/privacy/context-capture-policy:
+    get:
+      summary: Get context capture policy
+      description: Canonical backend policy for whether location, radio, motion,
+        and device context may be captured or retained for the authenticated user.
+      operationId: getContextCapturePolicy
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContextCapturePolicy'
+    patch:
+      summary: Update context capture policy
+      description: Mutating policy update. Mobile clients must treat this response
+        as the server-authoritative capture and retention policy before collecting
+        optional context signals.
+      operationId: updateContextCapturePolicy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateContextCapturePolicyRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContextCapturePolicy'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/privacy/redact:
+    post:
+      summary: Redact raw/private content
+      operationId: redactPrivacyData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacyRedactRequest'
+      responses:
+        '202':
+          description: Redaction queued
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/privacy/export:
+    post:
+      summary: Request data export
+      operationId: requestPrivacyExport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacyExportRequest'
+      responses:
+        '202':
+          description: Export queued
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/privacy/delete:
+    post:
+      summary: Request data deletion
+      operationId: requestPrivacyDelete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacyDeleteRequest'
+      responses:
+        '202':
+          description: Deletion queued
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/sync/push:
+    post:
+      summary: Batch push offline mutations
+      description: Mutating batch replay endpoint. The top-level mutation envelope
+        identifies the sync push request; each operation payload still carries its
+        own mutation envelope for endpoint-level idempotency when applicable.
+      operationId: syncPush
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncPushRequest'
+      responses:
+        '202':
+          description: Batch accepted
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/sync/pull:
+    get:
+      summary: Pull changes since cursor
+      operationId: syncPull
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 100
+          maximum: 500
+      responses:
+        '200':
+          description: Changes
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/sessions/{session_id}/capture-context:
+    post:
+      summary: Create capture context snapshot for a timing session
+      operationId: createCaptureContextSnapshot
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCaptureContextSnapshotRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaptureContextSnapshot'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    get:
+      summary: List capture context snapshots for a timing session
+      operationId: listCaptureContextSnapshots
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CaptureContextSnapshot'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/sessions/{session_id}/review-flags:
+    get:
+      summary: List timing review flags for a session
+      description: Review flags are prompts and evidence for user review. They are
+        not source timing facts and must not change session totals without an explicit
+        user correction or review decision.
+      operationId: listTimingReviewFlags
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/TimingReviewFlagStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TimingReviewFlag'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/timing/review-flags/{flag_id}:
+    patch:
+      summary: Update a timing review flag
+      operationId: updateTimingReviewFlag
+      parameters:
+      - name: flag_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTimingReviewFlagRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimingReviewFlag'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/places:
+    post:
+      summary: Create or confirm a user place
+      operationId: createUserPlace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlaceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPlace'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    get:
+      summary: List user places
+      operationId: listUserPlaces
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserPlace'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/places/resolve:
+    post:
+      summary: Resolve inferred user place candidate
+      description: Read-only resolver for place candidates. This endpoint returns
+        a candidate or existing place match but must not create, confirm, or update
+        a user place. New place confirmation uses POST /v1/places; edits use PATCH
+        /v1/places/{place_id}.
+      operationId: resolveUserPlace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolvePlaceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolvePlaceResponse'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/places/{place_id}:
+    patch:
+      summary: Update or confirm a user place
+      operationId: updateUserPlace
+      parameters:
+      - name: place_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlaceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPlace'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /v1/analytics/feature-vectors/recompute:
+    post:
+      summary: Request temporal feature vector recomputation
+      operationId: requestFeatureVectorRecompute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecomputeFeatureVectorsRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id: &id001
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                required:
+                - job_id
+                - status
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+components:
+  schemas:
+    MutationEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        client_mutation_id:
+          type: string
+          minLength: 1
+        client_device_id:
+          type: string
+          minLength: 1
+        client_timestamp:
+          type: string
+          format: date-time
+        idempotency_key:
+          type: string
+          minLength: 1
+        client_sequence:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+      required:
+      - client_mutation_id
+      - client_device_id
+      - client_timestamp
+      - idempotency_key
+    ApiError:
+      type: object
+      additionalProperties: false
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+        request_id:
+          type: string
+        retryable:
+          type: boolean
+        docs_ref:
+          type:
+          - string
+          - 'null'
+      required:
+      - error_code
+      - message
+      - request_id
+      - retryable
+    SyncMetadata:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation_accepted:
+          type: boolean
+        duplicate_replay:
+          type: boolean
+        recompute_queued:
+          type: boolean
+      required:
+      - mutation_accepted
+      - duplicate_replay
+      - recompute_queued
+    Activity:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+          minLength: 1
+        canonical_key:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        status:
+          type: string
+          enum:
+          - active
+          - archived
+          - merged
+        merged_into_activity_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        default_timing_mode:
+          type: string
+          enum:
+          - estimate_only
+          - whole_task
+          - checkpointed
+          - routine
+          - calibration
+          - passive
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user_id
+      - display_name
+      - status
+      - default_timing_mode
+      - privacy_class
+      - created_at
+      - updated_at
+    TimingEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+          enum:
+          - intent_recorded
+          - session_started
+          - session_paused
+          - session_resumed
+          - session_completed
+          - session_abandoned
+          - checkpoint_started
+          - checkpoint_completed
+          - checkpoint_skipped
+          - annotation_captured
+          - extracted_event_created
+          - active_work_started
+          - active_work_completed
+          - setup_started
+          - setup_completed
+          - resource_detour_started
+          - resource_detour_completed
+          - interruption_started
+          - interruption_completed
+          - waiting_started
+          - waiting_completed
+          - side_quest_started
+          - side_quest_completed
+          - transition_started
+          - transition_completed
+          - bad_timer_marked
+          - scope_changed
+          - user_correction_applied
+          - review_saved
+          - sync_reconciled
+        client_time:
+          type: string
+          format: date-time
+        server_time:
+          type: string
+          format: date-time
+        timer_elapsed_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        timer_active_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        client_sequence:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        client_mutation_id:
+          type: string
+        client_device_id:
+          type: string
+        idempotency_key:
+          type: string
+        capture_context_snapshot_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          description: Server-resolved capture context snapshot link, when available.
+        capture_context_snapshot_ref:
+          type:
+          - string
+          - 'null'
+          description: Client snapshot mutation/idempotency reference used for offline
+            replay until capture_context_snapshot_id can be resolved.
+        payload:
+          type: object
+      required:
+      - id
+      - user_id
+      - session_id
+      - event_type
+      - client_time
+      - server_time
+      - client_mutation_id
+      - client_device_id
+      - idempotency_key
+      - payload
+    TimingEventSpan:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        checkpoint_run_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        span_type:
+          type: string
+          enum:
+          - active_work
+          - setup
+          - resource_detour
+          - interruption
+          - waiting
+          - side_quest
+          - start_latency
+          - transition
+          - body_energy
+          - decision_loop
+          - attention_drift
+          - environment_friction
+          - bad_timer
+          - scope_change
+          - other
+        friction_category:
+          type: string
+          enum:
+          - none
+          - resource
+          - setup
+          - transition
+          - interruption
+          - waiting
+          - side_quest
+          - decision
+          - attention
+          - body_energy
+          - environment
+          - timer_quality
+          - scope
+          - unknown
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        duration_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        count_policy:
+          type: string
+          enum:
+          - wall_and_active
+          - wall_only
+          - active_only
+          - separate_start_latency
+          - separate_transition
+          - do_not_count
+          - review_required
+        count_in_wall_time:
+          type: boolean
+        count_in_active_time:
+          type: boolean
+        model_update_scopes:
+          type: array
+          items:
+            type: string
+        linked_annotation_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        linked_extracted_event_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        user_corrected:
+          type: boolean
+      required:
+      - id
+      - user_id
+      - session_id
+      - span_type
+      - friction_category
+      - started_at
+      - count_policy
+      - count_in_wall_time
+      - count_in_active_time
+      - model_update_scopes
+      - user_corrected
+    TimingReviewFlagType:
+      type: string
+      enum:
+      - possible_forgotten_timer
+      - place_transition
+      - long_idle_gap
+      - impossible_sequence
+      - low_context_quality
+      - privacy_review_required
+      - manual_review_requested
+      - other
+    TimingReviewFlagStatus:
+      type: string
+      enum:
+      - open
+      - snoozed
+      - resolved
+      - dismissed
+    TimingReviewFlag:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        snapshot_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        flag_type:
+          $ref: '#/components/schemas/TimingReviewFlagType'
+        status:
+          $ref: '#/components/schemas/TimingReviewFlagStatus'
+        severity:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+        confidence:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        reason_code:
+          type: string
+        user_message:
+          type: string
+        evidence:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        resolution_note:
+          type:
+          - string
+          - 'null'
+      required:
+      - id
+      - user_id
+      - session_id
+      - flag_type
+      - status
+      - severity
+      - reason_code
+      - user_message
+      - evidence
+      - created_at
+    UpdateTimingReviewFlagRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        status:
+          $ref: '#/components/schemas/TimingReviewFlagStatus'
+        resolution_note:
+          type:
+          - string
+          - 'null'
+      required:
+      - mutation
+      - status
+    TimingSession:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        activity_id:
+          type: string
+          format: uuid
+        client_session_id:
+          type:
+          - string
+          - 'null'
+        source_device_id:
+          type:
+          - string
+          - 'null'
+        mode:
+          type: string
+          enum:
+          - estimate_only
+          - whole_task
+          - checkpointed
+          - routine
+          - calibration
+          - passive
+        status:
+          type: string
+          enum:
+          - draft
+          - intent_recorded
+          - running
+          - paused
+          - completed_unreviewed
+          - reviewed
+          - discarded
+          - abandoned
+        work_mode:
+          type: string
+          enum:
+          - unknown
+          - home
+          - wfh
+          - office
+          - travel
+          - weekend
+          - errand
+          - hybrid
+        actor_mode:
+          type: string
+          enum:
+          - solo
+          - assisted
+          - delegated
+          - unknown
+        intended_start_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        started_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        active_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        wall_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        setup_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        detour_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        interruption_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        waiting_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        side_quest_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        start_latency_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        transition_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        run_quality:
+          type: string
+          enum:
+          - unknown
+          - typical
+          - useful_unusual
+          - assisted
+          - partial
+          - bad_timer
+          - corrupted
+          - do_not_train
+        model_inclusion:
+          type: string
+          enum:
+          - not_reviewed
+          - full
+          - active_duration_only
+          - wall_envelope_only
+          - friction_patterns_only
+          - query_evidence_only
+          - exclude
+        needs_timeline_recompute:
+          type: boolean
+        events:
+          type: array
+          items:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            $id: https://schemas.parallax.local/v1.3/TimingEvent.schema.json
+            title: TimingEvent
+            type: object
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+                format: uuid
+              user_id:
+                type: string
+                format: uuid
+              session_id:
+                type: string
+                format: uuid
+              event_type:
+                type: string
+                enum:
+                - intent_recorded
+                - session_started
+                - session_paused
+                - session_resumed
+                - session_completed
+                - session_abandoned
+                - checkpoint_started
+                - checkpoint_completed
+                - checkpoint_skipped
+                - annotation_captured
+                - extracted_event_created
+                - active_work_started
+                - active_work_completed
+                - setup_started
+                - setup_completed
+                - resource_detour_started
+                - resource_detour_completed
+                - interruption_started
+                - interruption_completed
+                - waiting_started
+                - waiting_completed
+                - side_quest_started
+                - side_quest_completed
+                - transition_started
+                - transition_completed
+                - bad_timer_marked
+                - scope_changed
+                - user_correction_applied
+                - review_saved
+                - sync_reconciled
+              client_time:
+                type: string
+                format: date-time
+              server_time:
+                type: string
+                format: date-time
+              timer_elapsed_seconds:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              timer_active_seconds:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              client_sequence:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              client_mutation_id:
+                type: string
+              client_device_id:
+                type: string
+              idempotency_key:
+                type: string
+              capture_context_snapshot_id:
+                type:
+                - string
+                - 'null'
+                format: uuid
+                description: Server-resolved capture context snapshot link, when available.
+              capture_context_snapshot_ref:
+                type:
+                - string
+                - 'null'
+                description: Client snapshot mutation/idempotency reference used for offline
+                  replay until capture_context_snapshot_id can be resolved.
+              payload:
+                type: object
+            required:
+            - id
+            - user_id
+            - session_id
+            - event_type
+            - client_time
+            - server_time
+            - client_mutation_id
+            - client_device_id
+            - idempotency_key
+            - payload
+        spans:
+          type: array
+          items:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            $id: https://schemas.parallax.local/v1.3/TimingEventSpan.schema.json
+            title: TimingEventSpan
+            type: object
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+                format: uuid
+              user_id:
+                type: string
+                format: uuid
+              session_id:
+                type: string
+                format: uuid
+              checkpoint_run_id:
+                type:
+                - string
+                - 'null'
+                format: uuid
+              span_type:
+                type: string
+                enum:
+                - active_work
+                - setup
+                - resource_detour
+                - interruption
+                - waiting
+                - side_quest
+                - start_latency
+                - transition
+                - body_energy
+                - decision_loop
+                - attention_drift
+                - environment_friction
+                - bad_timer
+                - scope_change
+                - other
+              friction_category:
+                type: string
+                enum:
+                - none
+                - resource
+                - setup
+                - transition
+                - interruption
+                - waiting
+                - side_quest
+                - decision
+                - attention
+                - body_energy
+                - environment
+                - timer_quality
+                - scope
+                - unknown
+              started_at:
+                type: string
+                format: date-time
+              ended_at:
+                type:
+                - string
+                - 'null'
+                format: date-time
+              duration_seconds:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              count_policy:
+                type: string
+                enum:
+                - wall_and_active
+                - wall_only
+                - active_only
+                - separate_start_latency
+                - separate_transition
+                - do_not_count
+                - review_required
+              count_in_wall_time:
+                type: boolean
+              count_in_active_time:
+                type: boolean
+              model_update_scopes:
+                type: array
+                items:
+                  type: string
+              linked_annotation_id:
+                type:
+                - string
+                - 'null'
+                format: uuid
+              linked_extracted_event_id:
+                type:
+                - string
+                - 'null'
+                format: uuid
+              user_corrected:
+                type: boolean
+            required:
+            - id
+            - user_id
+            - session_id
+            - span_type
+            - friction_category
+            - started_at
+            - count_policy
+            - count_in_wall_time
+            - count_in_active_time
+            - model_update_scopes
+            - user_corrected
+      required:
+      - id
+      - user_id
+      - activity_id
+      - mode
+      - status
+      - work_mode
+      - actor_mode
+      - run_quality
+      - model_inclusion
+      - needs_timeline_recompute
+    TemporalContextAnnotation:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        checkpoint_run_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        input_mode:
+          type: string
+          enum:
+          - text
+          - voice
+          - quick_chip
+          - system_detected
+          - review_note
+        raw_text:
+          type:
+          - string
+          - 'null'
+        redacted_text:
+          type:
+          - string
+          - 'null'
+        transcript_confidence:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        audio_object_ref:
+          type:
+          - string
+          - 'null'
+        timer_elapsed_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        timer_active_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        occurred_at:
+          type: string
+          format: date-time
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        status:
+          type: string
+          enum:
+          - captured
+          - transcription_pending
+          - transcribed
+          - extraction_pending
+          - extracted
+          - needs_confirmation
+          - confirmed
+          - corrected
+          - ignored
+          - redacted
+          - deleted
+        client_mutation_id:
+          type: string
+        client_device_id:
+          type: string
+        idempotency_key:
+          type: string
+        capture_context_snapshot_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          description: Server-resolved capture context snapshot link, when available.
+        capture_context_snapshot_ref:
+          type:
+          - string
+          - 'null'
+          description: Client snapshot mutation/idempotency reference used for offline
+            replay until capture_context_snapshot_id can be resolved.
+        metadata:
+          type: object
+      required:
+      - id
+      - user_id
+      - session_id
+      - input_mode
+      - occurred_at
+      - privacy_class
+      - status
+      - client_mutation_id
+      - client_device_id
+      - idempotency_key
+      - metadata
+    ExtractedContextEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        annotation_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        checkpoint_run_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        span_type:
+          type: string
+          enum:
+          - active_work
+          - setup
+          - resource_detour
+          - interruption
+          - waiting
+          - side_quest
+          - start_latency
+          - transition
+          - body_energy
+          - decision_loop
+          - attention_drift
+          - environment_friction
+          - bad_timer
+          - scope_change
+          - other
+        friction_category:
+          type: string
+          enum:
+          - none
+          - resource
+          - setup
+          - transition
+          - interruption
+          - waiting
+          - side_quest
+          - decision
+          - attention
+          - body_energy
+          - environment
+          - timer_quality
+          - scope
+          - unknown
+        friction_subtype:
+          type:
+          - string
+          - 'null'
+        resource_name:
+          type:
+          - string
+          - 'null'
+        location_from:
+          type:
+          - string
+          - 'null'
+        location_to:
+          type:
+          - string
+          - 'null'
+        duration_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        count_policy:
+          type: string
+          enum:
+          - wall_and_active
+          - wall_only
+          - active_only
+          - separate_start_latency
+          - separate_transition
+          - do_not_count
+          - review_required
+        count_in_wall_time:
+          type: boolean
+        count_in_active_time:
+          type: boolean
+        model_update_scopes:
+          type: array
+          items:
+            type: string
+        suggested_preflight_text:
+          type:
+          - string
+          - 'null'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        confirmation_state:
+          type: string
+          enum:
+          - auto_logged
+          - needs_confirmation
+          - confirmed
+          - corrected
+          - ignored
+          - deferred_to_review
+        sensitive_data_detected:
+          type: boolean
+        model_invocation_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        source_json:
+          type: object
+        user_correction_json:
+          type: object
+      required:
+      - id
+      - user_id
+      - annotation_id
+      - session_id
+      - span_type
+      - friction_category
+      - count_policy
+      - count_in_wall_time
+      - count_in_active_time
+      - model_update_scopes
+      - confidence
+      - confirmation_state
+      - sensitive_data_detected
+      - source_json
+      - user_correction_json
+    ModelUpdateDecision:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        decision:
+          type: string
+          enum:
+          - save_useful_run
+          - mark_unusual
+          - save_partial
+          - active_only
+          - friction_only
+          - query_evidence_only
+          - discard_timing_keep_note
+          - discard_all
+        model_inclusion:
+          type: string
+          enum:
+          - not_reviewed
+          - full
+          - active_duration_only
+          - wall_envelope_only
+          - friction_patterns_only
+          - query_evidence_only
+          - exclude
+        scopes:
+          type: array
+          items:
+            type: string
+        reviewed_at:
+          type: string
+          format: date-time
+        user_note:
+          type:
+          - string
+          - 'null'
+        payload:
+          type: object
+      required:
+      - id
+      - user_id
+      - session_id
+      - decision
+      - model_inclusion
+      - scopes
+      - reviewed_at
+      - payload
+    PreflightCheck:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        activity_id:
+          type: string
+          format: uuid
+        check_text:
+          type: string
+          minLength: 1
+        state:
+          type: string
+          enum:
+          - active
+          - snoozed
+          - hidden
+          - retired
+        source:
+          type: string
+          enum:
+          - user_created
+          - model_suggested
+          - resource_dependency
+          - checkpoint_pattern
+        confidence:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        failure_count:
+          type: integer
+          minimum: 0
+        last_triggered_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        source_event_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+      required:
+      - id
+      - user_id
+      - activity_id
+      - check_text
+      - state
+      - source
+      - failure_count
+    ActivityProfile:
+      type: object
+      additionalProperties: false
+      properties:
+        activity:
+          $schema: https://json-schema.org/draft/2020-12/schema
+          $id: https://schemas.parallax.local/v1.3/Activity.schema.json
+          title: Activity
+          type: object
+          additionalProperties: false
+          properties:
+            id:
+              type: string
+              format: uuid
+            user_id:
+              type: string
+              format: uuid
+            display_name:
+              type: string
+              minLength: 1
+            canonical_key:
+              type:
+              - string
+              - 'null'
+            description:
+              type:
+              - string
+              - 'null'
+            status:
+              type: string
+              enum:
+              - active
+              - archived
+              - merged
+            merged_into_activity_id:
+              type:
+              - string
+              - 'null'
+              format: uuid
+            default_timing_mode:
+              type: string
+              enum:
+              - estimate_only
+              - whole_task
+              - checkpointed
+              - routine
+              - calibration
+              - passive
+            privacy_class:
+              type: string
+              enum:
+              - normal
+              - sensitive
+              - private
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+          required:
+          - id
+          - user_id
+          - display_name
+          - status
+          - default_timing_mode
+          - privacy_class
+          - created_at
+          - updated_at
+        latest_stats:
+          type:
+          - object
+          - 'null'
+          properties:
+            sample_size:
+              type: integer
+              minimum: 0
+            confidence:
+              type: string
+              enum:
+              - very_low
+              - low
+              - medium
+              - high
+            active_p50_seconds:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            active_p80_seconds:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            wall_p50_seconds:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            wall_p80_seconds:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            start_latency_p80_seconds:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            top_friction:
+              type: array
+              items:
+                type: object
+          additionalProperties: false
+        preflight_checks:
+          type: array
+          items:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            $id: https://schemas.parallax.local/v1.3/PreflightCheck.schema.json
+            title: PreflightCheck
+            type: object
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+                format: uuid
+              user_id:
+                type: string
+                format: uuid
+              activity_id:
+                type: string
+                format: uuid
+              check_text:
+                type: string
+                minLength: 1
+              state:
+                type: string
+                enum:
+                - active
+                - snoozed
+                - hidden
+                - retired
+              source:
+                type: string
+                enum:
+                - user_created
+                - model_suggested
+                - resource_dependency
+                - checkpoint_pattern
+              confidence:
+                type:
+                - number
+                - 'null'
+                minimum: 0
+                maximum: 1
+              failure_count:
+                type: integer
+                minimum: 0
+              last_triggered_at:
+                type:
+                - string
+                - 'null'
+                format: date-time
+              source_event_id:
+                type:
+                - string
+                - 'null'
+                format: uuid
+            required:
+            - id
+            - user_id
+            - activity_id
+            - check_text
+            - state
+            - source
+            - failure_count
+        recent_sessions:
+          type: array
+          items:
+            $schema: https://json-schema.org/draft/2020-12/schema
+            $id: https://schemas.parallax.local/v1.3/TimingSession.schema.json
+            title: TimingSession
+            type: object
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+                format: uuid
+              user_id:
+                type: string
+                format: uuid
+              activity_id:
+                type: string
+                format: uuid
+              client_session_id:
+                type:
+                - string
+                - 'null'
+              source_device_id:
+                type:
+                - string
+                - 'null'
+              mode:
+                type: string
+                enum:
+                - estimate_only
+                - whole_task
+                - checkpointed
+                - routine
+                - calibration
+                - passive
+              status:
+                type: string
+                enum:
+                - draft
+                - intent_recorded
+                - running
+                - paused
+                - completed_unreviewed
+                - reviewed
+                - discarded
+                - abandoned
+              work_mode:
+                type: string
+                enum:
+                - unknown
+                - home
+                - wfh
+                - office
+                - travel
+                - weekend
+                - errand
+                - hybrid
+              actor_mode:
+                type: string
+                enum:
+                - solo
+                - assisted
+                - delegated
+                - unknown
+              intended_start_at:
+                type:
+                - string
+                - 'null'
+                format: date-time
+              started_at:
+                type:
+                - string
+                - 'null'
+                format: date-time
+              completed_at:
+                type:
+                - string
+                - 'null'
+                format: date-time
+              active_seconds:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              wall_seconds:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              setup_seconds:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              detour_seconds:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              interruption_seconds:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              waiting_seconds:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              side_quest_seconds:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              start_latency_seconds:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+              run_quality:
+                type: string
+                enum:
+                - unknown
+                - typical
+                - useful_unusual
+                - assisted
+                - partial
+                - bad_timer
+                - corrupted
+                - do_not_train
+              model_inclusion:
+                type: string
+                enum:
+                - not_reviewed
+                - full
+                - active_duration_only
+                - wall_envelope_only
+                - friction_patterns_only
+                - query_evidence_only
+                - exclude
+              needs_timeline_recompute:
+                type: boolean
+              events:
+                type: array
+                items:
+                  $schema: https://json-schema.org/draft/2020-12/schema
+                  $id: https://schemas.parallax.local/v1.3/TimingEvent.schema.json
+                  title: TimingEvent
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    user_id:
+                      type: string
+                      format: uuid
+                    session_id:
+                      type: string
+                      format: uuid
+                    event_type:
+                      type: string
+                      enum:
+                      - intent_recorded
+                      - session_started
+                      - session_paused
+                      - session_resumed
+                      - session_completed
+                      - session_abandoned
+                      - checkpoint_started
+                      - checkpoint_completed
+                      - checkpoint_skipped
+                      - annotation_captured
+                      - extracted_event_created
+                      - active_work_started
+                      - active_work_completed
+                      - setup_started
+                      - setup_completed
+                      - resource_detour_started
+                      - resource_detour_completed
+                      - interruption_started
+                      - interruption_completed
+                      - waiting_started
+                      - waiting_completed
+                      - side_quest_started
+                      - side_quest_completed
+                      - transition_started
+                      - transition_completed
+                      - bad_timer_marked
+                      - scope_changed
+                      - user_correction_applied
+                      - review_saved
+                      - sync_reconciled
+                    client_time:
+                      type: string
+                      format: date-time
+                    server_time:
+                      type: string
+                      format: date-time
+                    timer_elapsed_seconds:
+                      type:
+                      - integer
+                      - 'null'
+                      minimum: 0
+                    timer_active_seconds:
+                      type:
+                      - integer
+                      - 'null'
+                      minimum: 0
+                    client_sequence:
+                      type:
+                      - integer
+                      - 'null'
+                      minimum: 0
+                    client_mutation_id:
+                      type: string
+                    client_device_id:
+                      type: string
+                    idempotency_key:
+                      type: string
+                    capture_context_snapshot_id:
+                      type:
+                      - string
+                      - 'null'
+                      format: uuid
+                      description: Server-resolved capture context snapshot link, when
+                        available.
+                    capture_context_snapshot_ref:
+                      type:
+                      - string
+                      - 'null'
+                      description: Client snapshot mutation/idempotency reference used
+                        for offline replay until capture_context_snapshot_id can be
+                        resolved.
+                    payload:
+                      type: object
+                  required:
+                  - id
+                  - user_id
+                  - session_id
+                  - event_type
+                  - client_time
+                  - server_time
+                  - client_mutation_id
+                  - client_device_id
+                  - idempotency_key
+                  - payload
+              spans:
+                type: array
+                items:
+                  $schema: https://json-schema.org/draft/2020-12/schema
+                  $id: https://schemas.parallax.local/v1.3/TimingEventSpan.schema.json
+                  title: TimingEventSpan
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    user_id:
+                      type: string
+                      format: uuid
+                    session_id:
+                      type: string
+                      format: uuid
+                    checkpoint_run_id:
+                      type:
+                      - string
+                      - 'null'
+                      format: uuid
+                    span_type:
+                      type: string
+                      enum:
+                      - active_work
+                      - setup
+                      - resource_detour
+                      - interruption
+                      - waiting
+                      - side_quest
+                      - start_latency
+                      - transition
+                      - body_energy
+                      - decision_loop
+                      - attention_drift
+                      - environment_friction
+                      - bad_timer
+                      - scope_change
+                      - other
+                    friction_category:
+                      type: string
+                      enum:
+                      - none
+                      - resource
+                      - setup
+                      - transition
+                      - interruption
+                      - waiting
+                      - side_quest
+                      - decision
+                      - attention
+                      - body_energy
+                      - environment
+                      - timer_quality
+                      - scope
+                      - unknown
+                    started_at:
+                      type: string
+                      format: date-time
+                    ended_at:
+                      type:
+                      - string
+                      - 'null'
+                      format: date-time
+                    duration_seconds:
+                      type:
+                      - integer
+                      - 'null'
+                      minimum: 0
+                    count_policy:
+                      type: string
+                      enum:
+                      - wall_and_active
+                      - wall_only
+                      - active_only
+                      - separate_start_latency
+                      - separate_transition
+                      - do_not_count
+                      - review_required
+                    count_in_wall_time:
+                      type: boolean
+                    count_in_active_time:
+                      type: boolean
+                    model_update_scopes:
+                      type: array
+                      items:
+                        type: string
+                    linked_annotation_id:
+                      type:
+                      - string
+                      - 'null'
+                      format: uuid
+                    linked_extracted_event_id:
+                      type:
+                      - string
+                      - 'null'
+                      format: uuid
+                    user_corrected:
+                      type: boolean
+                  required:
+                  - id
+                  - user_id
+                  - session_id
+                  - span_type
+                  - friction_category
+                  - started_at
+                  - count_policy
+                  - count_in_wall_time
+                  - count_in_active_time
+                  - model_update_scopes
+                  - user_corrected
+            required:
+            - id
+            - user_id
+            - activity_id
+            - mode
+            - status
+            - work_mode
+            - actor_mode
+            - run_quality
+            - model_inclusion
+            - needs_timeline_recompute
+        limitations:
+          type: array
+          items:
+            type: string
+      required:
+      - activity
+      - preflight_checks
+      - recent_sessions
+      - limitations
+    TemporalPrediction:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        activity_id:
+          type: string
+          format: uuid
+        prediction_type:
+          type: string
+          enum:
+          - duration_range
+          - temporal_envelope
+          - start_by
+          - checkpoint_range
+        work_mode:
+          type: string
+          enum:
+          - unknown
+          - home
+          - wfh
+          - office
+          - travel
+          - weekend
+          - errand
+          - hybrid
+        actor_mode:
+          type: string
+          enum:
+          - solo
+          - assisted
+          - delegated
+          - unknown
+        active_p50_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        active_p80_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        wall_p50_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        wall_p80_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        setup_risk_seconds_p80:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        start_latency_p80_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        basis:
+          type: string
+          enum:
+          - generic_prior
+          - personal_last_time
+          - personal_rolling_stats
+          - personal_model
+          - hybrid
+          - insufficient_data
+        sample_size:
+          type: integer
+          minimum: 0
+        confidence:
+          type: string
+          enum:
+          - very_low
+          - low
+          - medium
+          - high
+        warnings:
+          type: array
+          items:
+            type: string
+        evidence_bundle_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+      required:
+      - id
+      - user_id
+      - activity_id
+      - prediction_type
+      - work_mode
+      - actor_mode
+      - basis
+      - sample_size
+      - confidence
+      - warnings
+    TemporalQueryAnswer:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        question:
+          type: string
+          minLength: 1
+        answer:
+          type:
+          - string
+          - 'null'
+        confidence:
+          type: string
+          enum:
+          - very_low
+          - low
+          - medium
+          - high
+        sample_size:
+          type: integer
+          minimum: 0
+        time_window:
+          type:
+          - string
+          - 'null'
+        computed_facts:
+          type: object
+        limitations:
+          type: array
+          items:
+            type: string
+        evidence:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              entity_type:
+                type: string
+              entity_id:
+                type: string
+                format: uuid
+              summary:
+                type: string
+              occurred_at:
+                type:
+                - string
+                - 'null'
+                format: date-time
+              score:
+                type:
+                - number
+                - 'null'
+            required:
+            - entity_type
+            - entity_id
+            - summary
+        status:
+          type: string
+          enum:
+          - pending
+          - complete
+          - failed
+          - corrected
+      required:
+      - id
+      - user_id
+      - question
+      - confidence
+      - sample_size
+      - computed_facts
+      - limitations
+      - evidence
+      - status
+    PrivacySettings:
+      type: object
+      additionalProperties: false
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        retain_raw_context:
+          type: boolean
+        retain_transcripts:
+          type: boolean
+        retain_audio:
+          type: boolean
+        allow_cloud_llm_fallback:
+          type: boolean
+        allow_raw_notes_in_query_answers:
+          type: boolean
+        allow_embedding_of_sensitive_notes:
+          type: boolean
+        community_aggregation_opt_in:
+          type: boolean
+        raw_context_retention_days:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        audio_retention_days:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - user_id
+      - retain_raw_context
+      - retain_transcripts
+      - retain_audio
+      - allow_cloud_llm_fallback
+      - allow_raw_notes_in_query_answers
+      - allow_embedding_of_sensitive_notes
+      - community_aggregation_opt_in
+      - updated_at
+    ContextCapturePolicy:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        location_enabled:
+          type: boolean
+        precise_location_enabled:
+          type: boolean
+        background_location_enabled:
+          type: boolean
+        radio_context_enabled:
+          type: boolean
+        motion_context_enabled:
+          type: boolean
+        device_context_enabled:
+          type: boolean
+        raw_location_retention_days:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        raw_radio_retention_days:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        default_location_retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        default_radio_retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        per_run_context_default:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user_id
+      - location_enabled
+      - precise_location_enabled
+      - background_location_enabled
+      - radio_context_enabled
+      - motion_context_enabled
+      - device_context_enabled
+      - default_location_retention_policy
+      - default_radio_retention_policy
+      - per_run_context_default
+      - updated_at
+      - created_at
+    UpdateContextCapturePolicyRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        location_enabled:
+          type: boolean
+        precise_location_enabled:
+          type: boolean
+        background_location_enabled:
+          type: boolean
+        radio_context_enabled:
+          type: boolean
+        motion_context_enabled:
+          type: boolean
+        device_context_enabled:
+          type: boolean
+        raw_location_retention_days:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        raw_radio_retention_days:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        default_location_retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        default_radio_retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        per_run_context_default:
+          type: boolean
+      required:
+      - mutation
+    CreateActivityRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        display_name:
+          type: string
+          minLength: 1
+        description:
+          type:
+          - string
+          - 'null'
+        default_timing_mode:
+          type: string
+          enum:
+          - estimate_only
+          - whole_task
+          - checkpointed
+          - routine
+          - calibration
+          - passive
+          default: whole_task
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+          default: normal
+      required:
+      - mutation
+      - display_name
+    ResolveActivityRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        query:
+          type: string
+          minLength: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 25
+          default: 10
+      required:
+      - query
+    ResolveActivityResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        candidates:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              activity:
+                oneOf:
+                - $ref: '#/components/schemas/Activity'
+                - type: 'null'
+              display_name:
+                type: string
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+              match_type:
+                type: string
+                enum:
+                - canonical
+                - alias
+                - fuzzy
+                - no_match
+              evidence:
+                type: object
+            required:
+            - display_name
+            - confidence
+            - match_type
+            - evidence
+        recommended_activity_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        requires_confirmation:
+          type: boolean
+      required:
+      - candidates
+      - requires_confirmation
+    CreateTimingSessionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        activity_id:
+          type: string
+          format: uuid
+        client_session_id:
+          type: string
+        mode:
+          type: string
+          enum:
+          - estimate_only
+          - whole_task
+          - checkpointed
+          - routine
+          - calibration
+          - passive
+          default: whole_task
+        work_mode:
+          type: string
+          enum:
+          - unknown
+          - home
+          - wfh
+          - office
+          - travel
+          - weekend
+          - errand
+          - hybrid
+          default: unknown
+        actor_mode:
+          type: string
+          enum:
+          - solo
+          - assisted
+          - delegated
+          - unknown
+          default: unknown
+        intended_start_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        user_pre_estimate_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+      required:
+      - mutation
+      - activity_id
+      - client_session_id
+      - mode
+    AppendTimingEventRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        event_type:
+          type: string
+          enum:
+          - intent_recorded
+          - session_started
+          - session_paused
+          - session_resumed
+          - session_completed
+          - session_abandoned
+          - checkpoint_started
+          - checkpoint_completed
+          - checkpoint_skipped
+          - annotation_captured
+          - extracted_event_created
+          - active_work_started
+          - active_work_completed
+          - setup_started
+          - setup_completed
+          - resource_detour_started
+          - resource_detour_completed
+          - interruption_started
+          - interruption_completed
+          - waiting_started
+          - waiting_completed
+          - side_quest_started
+          - side_quest_completed
+          - transition_started
+          - transition_completed
+          - bad_timer_marked
+          - scope_changed
+          - user_correction_applied
+          - review_saved
+          - sync_reconciled
+        client_time:
+          type: string
+          format: date-time
+        timer_elapsed_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        timer_active_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        capture_context_snapshot_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          description: Existing server snapshot ID to attach when known.
+        capture_context_snapshot_ref:
+          type:
+          - string
+          - 'null'
+          description: Client snapshot mutation/idempotency reference for out-of-order
+            offline replay.
+        payload:
+          type: object
+          default: {}
+      required:
+      - mutation
+      - event_type
+      - client_time
+    CompleteTimingSessionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        completed_at:
+          type: string
+          format: date-time
+        timer_elapsed_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        timer_active_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        capture_context_snapshot_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          description: Existing server snapshot ID to attach when known.
+        capture_context_snapshot_ref:
+          type:
+          - string
+          - 'null'
+          description: Client snapshot mutation/idempotency reference for out-of-order
+            offline replay.
+        payload:
+          type: object
+          default: {}
+      required:
+      - mutation
+      - completed_at
+    CreateAnnotationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        checkpoint_run_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        input_mode:
+          type: string
+          enum:
+          - text
+          - voice
+          - quick_chip
+          - system_detected
+          - review_note
+        raw_text:
+          type:
+          - string
+          - 'null'
+        audio_object_ref:
+          type:
+          - string
+          - 'null'
+        timer_elapsed_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        timer_active_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        capture_context_snapshot_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          description: Existing server snapshot ID to attach when known.
+        capture_context_snapshot_ref:
+          type:
+          - string
+          - 'null'
+          description: Client snapshot mutation/idempotency reference for out-of-order
+            offline replay.
+        occurred_at:
+          type: string
+          format: date-time
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+          default: normal
+        metadata:
+          type: object
+          default: {}
+      required:
+      - mutation
+      - input_mode
+      - occurred_at
+      - privacy_class
+    ReviewTimingSessionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        decision:
+          type: string
+          enum:
+          - save_useful_run
+          - mark_unusual
+          - save_partial
+          - active_only
+          - friction_only
+          - query_evidence_only
+          - discard_timing_keep_note
+          - discard_all
+        model_inclusion:
+          type: string
+          enum:
+          - not_reviewed
+          - full
+          - active_duration_only
+          - wall_envelope_only
+          - friction_patterns_only
+          - query_evidence_only
+          - exclude
+        scopes:
+          type: array
+          items:
+            type: string
+        span_overrides:
+          type: array
+          items:
+            type: object
+        user_note:
+          type:
+          - string
+          - 'null'
+      required:
+      - mutation
+      - decision
+      - model_inclusion
+      - scopes
+    CorrectExtractedEventRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        span_type:
+          type: string
+          enum:
+          - active_work
+          - setup
+          - resource_detour
+          - interruption
+          - waiting
+          - side_quest
+          - start_latency
+          - transition
+          - body_energy
+          - decision_loop
+          - attention_drift
+          - environment_friction
+          - bad_timer
+          - scope_change
+          - other
+        friction_category:
+          type: string
+          enum:
+          - none
+          - resource
+          - setup
+          - transition
+          - interruption
+          - waiting
+          - side_quest
+          - decision
+          - attention
+          - body_energy
+          - environment
+          - timer_quality
+          - scope
+          - unknown
+        duration_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        count_policy:
+          type: string
+          enum:
+          - wall_and_active
+          - wall_only
+          - active_only
+          - separate_start_latency
+          - separate_transition
+          - do_not_count
+          - review_required
+        count_in_wall_time:
+          type: boolean
+        count_in_active_time:
+          type: boolean
+        suggested_preflight_text:
+          type:
+          - string
+          - 'null'
+        user_note:
+          type:
+          - string
+          - 'null'
+      required:
+      - mutation
+      - span_type
+      - friction_category
+      - count_policy
+      - count_in_wall_time
+      - count_in_active_time
+    PutCheckpointsRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        checkpoints:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              label:
+                type: string
+              sequence_order:
+                type: integer
+                minimum: 1
+              optional:
+                type: boolean
+                default: false
+              phase_type:
+                type:
+                - string
+                - 'null'
+            required:
+            - label
+            - sequence_order
+      required:
+      - mutation
+      - checkpoints
+    CreatePreflightCheckRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        check_text:
+          type: string
+          minLength: 1
+        source:
+          type: string
+          enum:
+          - user_created
+          - model_suggested
+          - resource_dependency
+          - checkpoint_pattern
+          default: user_created
+      required:
+      - mutation
+      - check_text
+    CreatePredictionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        activity_id:
+          type: string
+          format: uuid
+        prediction_type:
+          type: string
+          enum:
+          - duration_range
+          - temporal_envelope
+          - start_by
+          - checkpoint_range
+        deadline:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        work_mode:
+          type: string
+          enum:
+          - unknown
+          - home
+          - wfh
+          - office
+          - travel
+          - weekend
+          - errand
+          - hybrid
+          default: unknown
+      required:
+      - mutation
+      - activity_id
+      - prediction_type
+    TemporalQueryRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        question:
+          type: string
+          minLength: 1
+        activity_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        time_window:
+          type:
+          - string
+          - 'null'
+        include_raw_quotes:
+          type: boolean
+          default: false
+      required:
+      - mutation
+      - question
+    PrivacyRedactRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+          format: uuid
+        reason:
+          type:
+          - string
+          - 'null'
+      required:
+      - mutation
+      - entity_type
+      - entity_id
+    PrivacyExportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        include_raw_context:
+          type: boolean
+          default: true
+        include_audio:
+          type: boolean
+          default: false
+      required:
+      - mutation
+    PrivacyDeleteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        delete_scope:
+          type: string
+          description: Deletion/redaction scope. Context-specific scopes are narrower
+            than raw_context and must invalidate derived retrieval documents, evidence,
+            and feature vectors that reference the deleted context.
+          enum:
+          - raw_context
+          - location_context
+          - radio_context
+          - place_context
+          - context_features
+          - audio
+          - activity
+          - account
+        entity_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        confirm:
+          type: boolean
+      required:
+      - mutation
+      - delete_scope
+      - confirm
+    SyncPushRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        client_device_id:
+          type: string
+        mutations:
+          type: array
+          items:
+            type: object
+      required:
+      - mutation
+      - client_device_id
+      - mutations
+    CaptureMethod:
+      type: string
+      enum:
+      - manual_timer_button
+      - lock_screen_widget
+      - home_screen_widget
+      - watch
+      - voice
+      - quick_chip
+      - shortcut
+      - nfc_tag
+      - calendar_import
+      - system_detected
+      - review_reconstruction
+      - background_signal
+      - api
+    CaptureTrigger:
+      type: string
+      enum:
+      - user_initiated
+      - timer_event
+      - annotation
+      - checkpoint_event
+      - permission_change
+      - geofence_transition
+      - place_visit
+      - radio_fingerprint_change
+      - motion_change
+      - sync_replay
+      - review
+    GeospatialSourceType:
+      type: string
+      enum:
+      - fused_location
+      - gps
+      - network_location
+      - wifi_derived
+      - wifi_rtt
+      - ble_beacon
+      - ibeacon
+      - uwb
+      - cell
+      - manual_place
+      - geofence
+      - visit
+      - significant_location_change
+      - none
+    RadioSourceType:
+      type: string
+      enum:
+      - wifi_connected_network
+      - wifi_scan
+      - wifi_rtt
+      - ble_scan
+      - ibeacon
+      - uwb
+      - cell
+      - unknown
+    MotionState:
+      type: string
+      enum:
+      - unknown
+      - stationary
+      - walking
+      - running
+      - cycling
+      - driving
+      - in_vehicle
+      - transit
+      - mixed
+    PlaceCategory:
+      type: string
+      enum:
+      - unknown
+      - home
+      - work
+      - office
+      - kitchen
+      - garage
+      - yard
+      - store
+      - gym
+      - vehicle
+      - public
+      - client_site
+      - medical
+      - school
+      - religious
+      - other
+    SensorAvailabilityState:
+      type: string
+      enum:
+      - available
+      - permission_denied
+      - disabled_by_user
+      - disabled_by_system
+      - unsupported
+      - unavailable
+      - not_requested
+      - stale
+    SensorRetentionPolicy:
+      type: string
+      enum:
+      - do_not_store
+      - derived_only
+      - short_ttl_raw
+      - store_with_consent
+    UserPlace:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id001
+        user_id: *id001
+        display_name:
+          type: string
+        category:
+          $ref: '#/components/schemas/PlaceCategory'
+        latitude:
+          type:
+          - number
+          - 'null'
+          minimum: -90
+          maximum: 90
+        longitude:
+          type:
+          - number
+          - 'null'
+          minimum: -180
+          maximum: 180
+        radius_meters:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+        source:
+          $ref: '#/components/schemas/GeospatialSourceType'
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        confirmed_by_user:
+          type: boolean
+        is_sensitive:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+        created_at: &id002
+          type: string
+          format: date-time
+        updated_at: *id002
+      required:
+      - id
+      - user_id
+      - display_name
+      - category
+      - source
+      - privacy_class
+      - confirmed_by_user
+      - is_sensitive
+      - created_at
+      - updated_at
+    GeospatialObservation:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id001
+        user_id: *id001
+        snapshot_id: *id001
+        source:
+          $ref: '#/components/schemas/GeospatialSourceType'
+        observed_at: *id002
+        latitude:
+          type:
+          - number
+          - 'null'
+          minimum: -90
+          maximum: 90
+        longitude:
+          type:
+          - number
+          - 'null'
+          minimum: -180
+          maximum: 180
+        altitude_meters:
+          type:
+          - number
+          - 'null'
+        horizontal_accuracy_meters:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+        vertical_accuracy_meters:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+        speed_mps:
+          type:
+          - number
+          - 'null'
+        course_degrees:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 360
+        is_precise:
+          type: boolean
+        is_stale:
+          type: boolean
+        staleness_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        metadata:
+          type: object
+        created_at: *id002
+      required:
+      - id
+      - user_id
+      - snapshot_id
+      - source
+      - observed_at
+      - is_precise
+      - is_stale
+      - privacy_class
+      - retention_policy
+      - created_at
+    RadioObservation:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id001
+        user_id: *id001
+        snapshot_id: *id001
+        source:
+          $ref: '#/components/schemas/RadioSourceType'
+        observed_at: *id002
+        identifier_hash:
+          type:
+          - string
+          - 'null'
+        label_hash:
+          type:
+          - string
+          - 'null'
+        redacted_display_label:
+          type:
+          - string
+          - 'null'
+          description: User-visible safe label only. Must not contain raw SSID, BSSID,
+            MAC address, beacon identifier, UWB peer identifier, cell identifier,
+            or other raw radio identifier. Use null unless the label is user-provided
+            or has been explicitly redacted.
+        rssi_dbm:
+          type:
+          - integer
+          - 'null'
+        tx_power_dbm:
+          type:
+          - integer
+          - 'null'
+        distance_meters:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+        distance_accuracy_meters:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+        frequency_mhz:
+          type:
+          - integer
+          - 'null'
+        channel:
+          type:
+          - string
+          - 'null'
+        is_connected:
+          type:
+          - boolean
+          - 'null'
+        raw_encrypted_object_ref:
+          type:
+          - string
+          - 'null'
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        metadata:
+          type: object
+        created_at: *id002
+      required:
+      - id
+      - user_id
+      - snapshot_id
+      - source
+      - observed_at
+      - privacy_class
+      - retention_policy
+      - created_at
+    DeviceContextObservation:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id001
+        user_id: *id001
+        snapshot_id: *id001
+        observed_at: *id002
+        motion_state:
+          $ref: '#/components/schemas/MotionState'
+        battery_percent:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          maximum: 100
+        charging_state:
+          type: string
+          enum:
+          - charging
+          - discharging
+          - full
+          - unknown
+        network_state:
+          type: string
+          enum:
+          - offline
+          - wifi
+          - cellular
+          - ethernet
+          - mixed
+          - unknown
+        device_type:
+          type: string
+          enum:
+          - phone
+          - tablet
+          - watch
+          - desktop
+          - browser
+          - unknown
+        app_foreground_state:
+          type: string
+          enum:
+          - foreground
+          - background
+          - locked
+          - extension
+          - unknown
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        metadata:
+          type: object
+        created_at: *id002
+      required:
+      - id
+      - user_id
+      - snapshot_id
+      - observed_at
+      - motion_state
+      - charging_state
+      - network_state
+      - device_type
+      - app_foreground_state
+      - privacy_class
+      - retention_policy
+      - created_at
+    InferredPlaceObservation:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id001
+        user_id: *id001
+        snapshot_id: *id001
+        user_place_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        candidate_label:
+          type:
+          - string
+          - 'null'
+        candidate_category:
+          $ref: '#/components/schemas/PlaceCategory'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        confirmation_state:
+          type: string
+          enum:
+          - auto_logged
+          - needs_confirmation
+          - confirmed
+          - corrected
+          - ignored
+          - deferred_to_review
+        evidence:
+          type: object
+        sensitive_label_detected:
+          type: boolean
+        confirmed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        created_at: *id002
+      required:
+      - id
+      - user_id
+      - snapshot_id
+      - candidate_category
+      - confidence
+      - confirmation_state
+      - evidence
+      - sensitive_label_detected
+      - created_at
+    CaptureContextSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id001
+        user_id: *id001
+        session_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        checkpoint_run_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        user_place_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        capture_method:
+          $ref: '#/components/schemas/CaptureMethod'
+        capture_trigger:
+          $ref: '#/components/schemas/CaptureTrigger'
+        client_captured_at: *id002
+        server_received_at: *id002
+        client_monotonic_millis:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        source_device_id:
+          type: string
+        app_foreground_state:
+          type: string
+          enum:
+          - foreground
+          - background
+          - locked
+          - extension
+          - unknown
+        location_state:
+          $ref: '#/components/schemas/SensorAvailabilityState'
+        radio_state:
+          $ref: '#/components/schemas/SensorAvailabilityState'
+        motion_state_available:
+          $ref: '#/components/schemas/SensorAvailabilityState'
+        device_context_state:
+          $ref: '#/components/schemas/SensorAvailabilityState'
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        context_quality_score:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        permission_summary:
+          type: object
+        metadata:
+          type: object
+        geospatial_observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/GeospatialObservation'
+        radio_observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RadioObservation'
+        device_context_observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceContextObservation'
+        inferred_places:
+          type: array
+          items:
+            $ref: '#/components/schemas/InferredPlaceObservation'
+        client_mutation_id:
+          type: string
+        client_device_id:
+          type: string
+        idempotency_key:
+          type: string
+        created_at: *id002
+      required:
+      - id
+      - user_id
+      - capture_method
+      - capture_trigger
+      - client_captured_at
+      - server_received_at
+      - source_device_id
+      - app_foreground_state
+      - location_state
+      - radio_state
+      - motion_state_available
+      - device_context_state
+      - privacy_class
+      - retention_policy
+      - permission_summary
+      - client_mutation_id
+      - client_device_id
+      - idempotency_key
+      - created_at
+    TemporalFeatureVector:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id001
+        user_id: *id001
+        activity_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        session_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        snapshot_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        feature_schema_version:
+          type: string
+        feature_family:
+          type: string
+          enum:
+          - duration_prediction
+          - start_latency
+          - transition_latency
+          - friction
+          - place_inference
+          - prompt_policy
+          - anomaly_detection
+        features:
+          type: object
+        source_entity_refs:
+          type: array
+          items:
+            type: object
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        model_eligible:
+          type: boolean
+        exclusion_reason:
+          type:
+          - string
+          - 'null'
+        generated_at: *id002
+      required:
+      - id
+      - user_id
+      - feature_schema_version
+      - feature_family
+      - features
+      - source_entity_refs
+      - privacy_class
+      - model_eligible
+      - generated_at
+    CreateCaptureContextSnapshotRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        checkpoint_run_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          description: Optional checkpoint boundary this snapshot was captured around.
+        user_place_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          description: Optional known or user-selected place to attach to the snapshot.
+        capture_method:
+          $ref: '#/components/schemas/CaptureMethod'
+        capture_trigger:
+          $ref: '#/components/schemas/CaptureTrigger'
+        client_captured_at: *id002
+        client_monotonic_millis:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        source_device_id:
+          type: string
+        app_foreground_state:
+          type: string
+          enum:
+          - foreground
+          - background
+          - locked
+          - extension
+          - unknown
+        location_state:
+          $ref: '#/components/schemas/SensorAvailabilityState'
+        radio_state:
+          $ref: '#/components/schemas/SensorAvailabilityState'
+        motion_state_available:
+          $ref: '#/components/schemas/SensorAvailabilityState'
+        device_context_state:
+          $ref: '#/components/schemas/SensorAvailabilityState'
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        context_quality_score:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        permission_summary:
+          type: object
+        geospatial_observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/GeospatialObservationInput'
+        radio_observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RadioObservationInput'
+        device_context_observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceContextObservationInput'
+        metadata:
+          type: object
+      required:
+      - mutation
+      - capture_method
+      - capture_trigger
+      - client_captured_at
+      - source_device_id
+      - app_foreground_state
+      - location_state
+      - radio_state
+      - motion_state_available
+      - device_context_state
+      - privacy_class
+      - retention_policy
+      - permission_summary
+    CreatePlaceRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        display_name:
+          type: string
+          minLength: 1
+        category:
+          $ref: '#/components/schemas/PlaceCategory'
+        latitude:
+          type:
+          - number
+          - 'null'
+          minimum: -90
+          maximum: 90
+        longitude:
+          type:
+          - number
+          - 'null'
+          minimum: -180
+          maximum: 180
+        radius_meters:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+        source:
+          $ref: '#/components/schemas/GeospatialSourceType'
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        confirmed_by_user:
+          type: boolean
+          default: true
+        is_sensitive:
+          type: boolean
+          default: false
+        aliases:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+      required:
+      - mutation
+      - display_name
+      - category
+      - source
+      - privacy_class
+    ResolvePlaceRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        snapshot_id:
+          type: string
+          format: uuid
+        candidate_label:
+          type:
+          - string
+          - 'null'
+        candidate_category:
+          $ref: '#/components/schemas/PlaceCategory'
+        latitude:
+          type:
+          - number
+          - 'null'
+          minimum: -90
+          maximum: 90
+        longitude:
+          type:
+          - number
+          - 'null'
+          minimum: -180
+          maximum: 180
+        radius_meters:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+        include_unconfirmed_candidates:
+          type: boolean
+          default: false
+        existing_place_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+      required:
+      - candidate_category
+      - include_unconfirmed_candidates
+      - privacy_class
+    ResolvePlaceResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        candidates:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              place:
+                oneOf:
+                - $ref: '#/components/schemas/UserPlace'
+                - type: 'null'
+              candidate_label:
+                type:
+                - string
+                - 'null'
+              candidate_category:
+                $ref: '#/components/schemas/PlaceCategory'
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+              match_type:
+                type: string
+                enum:
+                - existing_place
+                - inferred_candidate
+                - manual_candidate
+                - no_match
+              evidence:
+                type: object
+            required:
+            - candidate_category
+            - confidence
+            - match_type
+            - evidence
+        recommended_place_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        requires_confirmation:
+          type: boolean
+      required:
+      - candidates
+      - requires_confirmation
+    UpdatePlaceRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        display_name:
+          type: string
+        category:
+          $ref: '#/components/schemas/PlaceCategory'
+        radius_meters:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        confirmed_by_user:
+          type: boolean
+        is_sensitive:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+      required:
+      - mutation
+    RecomputeFeatureVectorsRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        mutation:
+          $ref: '#/components/schemas/MutationEnvelope'
+        user_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          description: Optional internal/admin override; normally inferred from auth.
+        activity_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        session_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        feature_families:
+          type: array
+          items:
+            type: string
+            enum:
+            - duration_prediction
+            - start_latency
+            - transition_latency
+            - friction
+            - place_inference
+            - prompt_policy
+            - anomaly_detection
+        reason:
+          type: string
+      required:
+      - mutation
+      - feature_families
+      - reason
+    GeospatialObservationInput:
+      type: object
+      additionalProperties: false
+      properties:
+        source:
+          $ref: '#/components/schemas/GeospatialSourceType'
+        observed_at: &id003
+          type: string
+          format: date-time
+        latitude:
+          type:
+          - number
+          - 'null'
+          minimum: -90
+          maximum: 90
+        longitude:
+          type:
+          - number
+          - 'null'
+          minimum: -180
+          maximum: 180
+        altitude_meters:
+          type:
+          - number
+          - 'null'
+        horizontal_accuracy_meters:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+        vertical_accuracy_meters:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+        speed_mps:
+          type:
+          - number
+          - 'null'
+        course_degrees:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 360
+        is_precise:
+          type: boolean
+        is_stale:
+          type: boolean
+        staleness_seconds:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        metadata:
+          type: object
+      required:
+      - source
+      - observed_at
+      - is_precise
+      - is_stale
+      - privacy_class
+      - retention_policy
+    RadioObservationInput:
+      type: object
+      additionalProperties: false
+      properties:
+        source:
+          $ref: '#/components/schemas/RadioSourceType'
+        observed_at: *id003
+        identifier_hash:
+          type:
+          - string
+          - 'null'
+        label_hash:
+          type:
+          - string
+          - 'null'
+        redacted_display_label:
+          type:
+          - string
+          - 'null'
+          description: User-visible safe label only. Must not contain raw SSID, BSSID,
+            MAC address, beacon identifier, UWB peer identifier, cell identifier,
+            or other raw radio identifier. Use null unless the label is user-provided
+            or has been explicitly redacted.
+        rssi_dbm:
+          type:
+          - integer
+          - 'null'
+        tx_power_dbm:
+          type:
+          - integer
+          - 'null'
+        distance_meters:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+        distance_accuracy_meters:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+        frequency_mhz:
+          type:
+          - integer
+          - 'null'
+        channel:
+          type:
+          - string
+          - 'null'
+        is_connected:
+          type:
+          - boolean
+          - 'null'
+        raw_encrypted_object_ref:
+          type:
+          - string
+          - 'null'
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        metadata:
+          type: object
+      required:
+      - source
+      - observed_at
+      - privacy_class
+      - retention_policy
+    DeviceContextObservationInput:
+      type: object
+      additionalProperties: false
+      properties:
+        observed_at: *id003
+        motion_state:
+          $ref: '#/components/schemas/MotionState'
+        battery_percent:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          maximum: 100
+        charging_state:
+          type: string
+          enum:
+          - charging
+          - discharging
+          - full
+          - unknown
+        network_state:
+          type: string
+          enum:
+          - offline
+          - wifi
+          - cellular
+          - ethernet
+          - mixed
+          - unknown
+        device_type:
+          type: string
+          enum:
+          - phone
+          - tablet
+          - watch
+          - desktop
+          - browser
+          - unknown
+        app_foreground_state:
+          type: string
+          enum:
+          - foreground
+          - background
+          - locked
+          - extension
+          - unknown
+        privacy_class:
+          type: string
+          enum:
+          - normal
+          - sensitive
+          - private
+        retention_policy:
+          $ref: '#/components/schemas/SensorRetentionPolicy'
+        metadata:
+          type: object
+      required:
+      - observed_at
+      - motion_state
+      - charging_state
+      - network_state
+      - device_type
+      - app_foreground_state
+      - privacy_class
+      - retention_policy
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

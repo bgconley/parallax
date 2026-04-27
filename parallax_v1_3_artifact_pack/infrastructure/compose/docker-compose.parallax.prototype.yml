@@ -1,0 +1,107 @@
+version: "3.9"
+
+name: parallax
+
+services:
+  # Prototype runtime only. Implementation branches intended for private alpha must
+  # pin tested service image versions before release.
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: parallax-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-parallax}
+      POSTGRES_USER: ${POSTGRES_USER:-parallax}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-parallax_dev_password}
+    volumes:
+      - parallax_postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: parallax-redis
+    ports:
+      - "6379:6379"
+
+  temporal:
+    image: temporalio/auto-setup:1.24
+    container_name: parallax-temporal
+    environment:
+      DB: postgresql
+      DB_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-parallax}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:-parallax_dev_password}
+      POSTGRES_SEEDS: postgres
+    depends_on:
+      - postgres
+    ports:
+      - "7233:7233"
+
+  temporal-ui:
+    image: temporalio/ui:latest
+    container_name: parallax-temporal-ui
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000
+    depends_on:
+      - temporal
+    ports:
+      - "8088:8080"
+
+  minio:
+    image: minio/minio:latest
+    container_name: parallax-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-parallax_dev}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-parallax_dev_password}
+    volumes:
+      - parallax_minio:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  api:
+    image: parallax-api:dev
+    container_name: parallax-api
+    build:
+      context: ../../
+      dockerfile: services/api/Dockerfile
+    env_file:
+      - ../.env
+    depends_on:
+      - postgres
+      - redis
+      - temporal
+      - minio
+    ports:
+      - "8000:8000"
+
+  worker:
+    image: parallax-worker:dev
+    container_name: parallax-worker
+    build:
+      context: ../../
+      dockerfile: services/worker/Dockerfile
+    env_file:
+      - ../.env
+    depends_on:
+      - postgres
+      - redis
+      - temporal
+      - minio
+
+  caddy:
+    image: caddy:2
+    container_name: parallax-caddy
+    volumes:
+      - ../caddy/Caddyfile.example:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - api
+    ports:
+      - "8443:443"
+      - "8080:80"
+
+volumes:
+  parallax_postgres:
+  parallax_minio:

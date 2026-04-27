@@ -1,0 +1,45 @@
+{
+  "scenario": "sponge_detour_during_clean_pots_and_pans",
+  "activity": {
+    "display_name": "Clean pots and pans",
+    "default_timing_mode": "whole_task"
+  },
+  "session": {
+    "mode": "whole_task",
+    "status": "running",
+    "started_at": "2026-04-26T14:00:00Z"
+  },
+  "annotation_request": {
+    "mutation": {
+      "client_mutation_id": "mut_sponge_001",
+      "client_device_id": "ios_device_demo",
+      "client_timestamp": "2026-04-26T14:07:00Z",
+      "idempotency_key": "ios_device_demo:mut_sponge_001",
+      "client_sequence": 12
+    },
+    "input_mode": "text",
+    "raw_text": "The sponge is gross. I need to go downstairs and get a new one.",
+    "timer_elapsed_seconds": 420,
+    "timer_active_seconds": 360,
+    "occurred_at": "2026-04-26T14:07:00Z",
+    "privacy_class": "normal"
+  },
+  "expected_extracted_event": {
+    "span_type": "resource_detour",
+    "friction_category": "resource",
+    "resource_name": "sponge",
+    "location_to": "downstairs",
+    "duration_seconds": null,
+    "count_policy": "wall_only",
+    "count_in_wall_time": true,
+    "count_in_active_time": false,
+    "model_update_scopes": [
+      "friction_pattern",
+      "resource_dependency",
+      "preflight_check"
+    ],
+    "suggested_preflight_text": "Check sponge or scrubber before starting.",
+    "confidence": 0.82,
+    "confirmation_state": "needs_confirmation"
+  }
+}

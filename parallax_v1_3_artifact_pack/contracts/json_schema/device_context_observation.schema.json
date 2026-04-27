@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/device_context_observation.schema.json",
+  "title": "DeviceContextObservation",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "snapshot_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "observed_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    },
+    "motion_state": {
+      "$ref": "common.schema.json#/$defs/motion_state"
+    },
+    "battery_percent": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "charging_state": {
+      "type": "string",
+      "enum": [
+        "charging",
+        "discharging",
+        "full",
+        "unknown"
+      ]
+    },
+    "network_state": {
+      "type": "string",
+      "enum": [
+        "offline",
+        "wifi",
+        "cellular",
+        "ethernet",
+        "mixed",
+        "unknown"
+      ]
+    },
+    "device_type": {
+      "type": "string",
+      "enum": [
+        "phone",
+        "tablet",
+        "watch",
+        "desktop",
+        "browser",
+        "unknown"
+      ]
+    },
+    "app_foreground_state": {
+      "type": "string",
+      "enum": [
+        "foreground",
+        "background",
+        "locked",
+        "extension",
+        "unknown"
+      ]
+    },
+    "privacy_class": {
+      "$ref": "common.schema.json#/$defs/privacy_class"
+    },
+    "retention_policy": {
+      "$ref": "common.schema.json#/$defs/sensor_retention_policy"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "snapshot_id",
+    "observed_at",
+    "motion_state",
+    "charging_state",
+    "network_state",
+    "device_type",
+    "app_foreground_state",
+    "privacy_class",
+    "retention_policy",
+    "created_at"
+  ]
+}

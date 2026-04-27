@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/TemporalQueryAnswer.schema.json",
+  "title": "TemporalQueryAnswer",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "non_negative_integer": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "timing_mode": {
+      "type": "string",
+      "enum": [
+        "estimate_only",
+        "whole_task",
+        "checkpointed",
+        "routine",
+        "calibration",
+        "passive"
+      ]
+    },
+    "timing_session_status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "intent_recorded",
+        "running",
+        "paused",
+        "completed_unreviewed",
+        "reviewed",
+        "discarded",
+        "abandoned"
+      ]
+    },
+    "work_mode": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "home",
+        "wfh",
+        "office",
+        "travel",
+        "weekend",
+        "errand",
+        "hybrid"
+      ]
+    },
+    "actor_mode": {
+      "type": "string",
+      "enum": [
+        "solo",
+        "assisted",
+        "delegated",
+        "unknown"
+      ]
+    },
+    "privacy_class": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "sensitive",
+        "private"
+      ]
+    },
+    "run_quality": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "typical",
+        "useful_unusual",
+        "assisted",
+        "partial",
+        "bad_timer",
+        "corrupted",
+        "do_not_train"
+      ]
+    },
+    "model_inclusion": {
+      "type": "string",
+      "enum": [
+        "not_reviewed",
+        "full",
+        "active_duration_only",
+        "wall_envelope_only",
+        "friction_patterns_only",
+        "query_evidence_only",
+        "exclude"
+      ]
+    },
+    "annotation_input_mode": {
+      "type": "string",
+      "enum": [
+        "text",
+        "voice",
+        "quick_chip",
+        "system_detected",
+        "review_note"
+      ]
+    },
+    "annotation_status": {
+      "type": "string",
+      "enum": [
+        "captured",
+        "transcription_pending",
+        "transcribed",
+        "extraction_pending",
+        "extracted",
+        "needs_confirmation",
+        "confirmed",
+        "corrected",
+        "ignored",
+        "redacted",
+        "deleted"
+      ]
+    },
+    "timing_event_type": {
+      "type": "string",
+      "enum": [
+        "intent_recorded",
+        "session_started",
+        "session_paused",
+        "session_resumed",
+        "session_completed",
+        "session_abandoned",
+        "checkpoint_started",
+        "checkpoint_completed",
+        "checkpoint_skipped",
+        "annotation_captured",
+        "extracted_event_created",
+        "active_work_started",
+        "active_work_completed",
+        "setup_started",
+        "setup_completed",
+        "resource_detour_started",
+        "resource_detour_completed",
+        "interruption_started",
+        "interruption_completed",
+        "waiting_started",
+        "waiting_completed",
+        "side_quest_started",
+        "side_quest_completed",
+        "transition_started",
+        "transition_completed",
+        "bad_timer_marked",
+        "scope_changed",
+        "user_correction_applied",
+        "review_saved",
+        "sync_reconciled"
+      ]
+    },
+    "temporal_span_type": {
+      "type": "string",
+      "enum": [
+        "active_work",
+        "setup",
+        "resource_detour",
+        "interruption",
+        "waiting",
+        "side_quest",
+        "start_latency",
+        "transition",
+        "body_energy",
+        "decision_loop",
+        "attention_drift",
+        "environment_friction",
+        "bad_timer",
+        "scope_change",
+        "other"
+      ]
+    },
+    "friction_category": {
+      "type": "string",
+      "enum": [
+        "none",
+        "resource",
+        "setup",
+        "transition",
+        "interruption",
+        "waiting",
+        "side_quest",
+        "decision",
+        "attention",
+        "body_energy",
+        "environment",
+        "timer_quality",
+        "scope",
+        "unknown"
+      ]
+    },
+    "count_policy": {
+      "type": "string",
+      "enum": [
+        "wall_and_active",
+        "wall_only",
+        "active_only",
+        "separate_start_latency",
+        "separate_transition",
+        "do_not_count",
+        "review_required"
+      ]
+    },
+    "confirmation_state": {
+      "type": "string",
+      "enum": [
+        "auto_logged",
+        "needs_confirmation",
+        "confirmed",
+        "corrected",
+        "ignored",
+        "deferred_to_review"
+      ]
+    },
+    "relationship_kind": {
+      "type": "string",
+      "enum": [
+        "same_as",
+        "alias_of",
+        "part_of",
+        "has_checkpoint",
+        "variant_of",
+        "related_to",
+        "usually_before",
+        "usually_after"
+      ]
+    },
+    "model_update_decision_type": {
+      "type": "string",
+      "enum": [
+        "save_useful_run",
+        "mark_unusual",
+        "save_partial",
+        "active_only",
+        "friction_only",
+        "query_evidence_only",
+        "discard_timing_keep_note",
+        "discard_all"
+      ]
+    },
+    "prediction_basis": {
+      "type": "string",
+      "enum": [
+        "generic_prior",
+        "personal_last_time",
+        "personal_rolling_stats",
+        "personal_model",
+        "hybrid",
+        "insufficient_data"
+      ]
+    },
+    "confidence_label": {
+      "type": "string",
+      "enum": [
+        "very_low",
+        "low",
+        "medium",
+        "high"
+      ]
+    }
+  },
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "answer": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "confidence": {
+      "$ref": "#/$defs/confidence_label"
+    },
+    "sample_size": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "time_window": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "computed_facts": {
+      "type": "object"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entity_type": {
+            "type": "string"
+          },
+          "entity_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entity_type",
+          "entity_id",
+          "summary"
+        ]
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "complete",
+        "failed",
+        "corrected"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "question",
+    "confidence",
+    "sample_size",
+    "computed_facts",
+    "limitations",
+    "evidence",
+    "status"
+  ]
+}

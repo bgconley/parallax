@@ -1,0 +1,11 @@
+case_id,scenario,source_events_or_context,expected_wall_behavior,expected_active_behavior,expected_model_behavior,phase
+TS-001,clean whole-task run,session_started -> session_completed,counts full wall,counts full active,full baseline after review,1-2
+TS-002,pause resume,session_started -> session_paused -> session_resumed -> session_completed,pause included in wall by boundary,paused interval excluded from active,review-dependent wall envelope,1-2
+TS-003,resource detour,sponge detour annotation,counts in wall,excluded from active,friction/preflight only by default,3-4
+TS-004,interruption,phone call interruption,counts in wall,excluded from active,interruption pattern only by default,3-4
+TS-005,waiting,waiting for dishwasher,counts in wall,review-dependent,friction/waiting pattern,3-4
+TS-006,side quest,started unrelated task,counts until boundary corrected,excluded from active,query evidence/friction only by default,3-4
+TS-007,forgot to stop,timer ran after completion,review-dependent,excluded after correction,do not train corrupted duration,2
+TS-008,partial run,user stopped after first checkpoint,partial wall only,partial active only,checkpoint/partial model only,5
+TS-009,start latency,intended start before actual,tracked separate,not active,start latency model only,5
+TS-010,transition latency,between two activities,tracked separate,not active,transition model only,5

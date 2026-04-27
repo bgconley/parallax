@@ -1,0 +1,200 @@
+# anatomy.md
+
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-27T03:16:12.640Z
+> Files: 121 tracked | Anatomy hits: 0 | Misses: 0
+
+## ./
+
+- `.DS_Store` (~2732 tok)
+- `AGENTS.md` — Repository Guidelines (~833 tok)
+- `CLAUDE.md` — OpenWolf (~57 tok)
+
+## .claude/
+
+- `settings.json` (~441 tok)
+
+## .claude/rules/
+
+- `openwolf.md` (~313 tok)
+
+## parallax_v1_3_artifact_pack/
+
+- `.DS_Store` (~2186 tok)
+- `AGENT_START_HERE.md` — Agent Start Here — Parallax v1.3 (~1277 tok)
+- `CHECKSUMS.sha256` (~3549 tok)
+- `MANIFEST.txt` — Parallax v1.3 artifact manifest (~3602 tok)
+- `README.md` — Project documentation (~1446 tok)
+- `VALIDATION_REPORT.md` — Validation Report — Parallax v1.3 Artifact Pack (~2178 tok)
+- `VERSION.txt` (~16 tok)
+
+## parallax_v1_3_artifact_pack/contracts/design/
+
+- `design_tokens.css` — Styles: 83 vars (~1006 tok)
+- `design_tokens.json` (~1561 tok)
+- `README.md` — Project documentation (~89 tok)
+
+## parallax_v1_3_artifact_pack/contracts/events/
+
+- `parallax_event_contracts_v1_3.yaml` (~1523 tok)
+
+## parallax_v1_3_artifact_pack/contracts/jobs/
+
+- `parallax_workflows_v1_3.yaml` (~1807 tok)
+
+## parallax_v1_3_artifact_pack/contracts/json_schema/
+
+- `activity_profile.schema.json` (~16666 tok)
+- `activity.schema.json` (~1947 tok)
+- `capture_context_snapshot.schema.json` (~1089 tok)
+- `common.schema.json` (~2522 tok)
+- `context_capture_policy.schema.json` (~557 tok)
+- `device_context_observation.schema.json` (~588 tok)
+- `extracted_context_event.schema.json` (~2268 tok)
+- `geospatial_observation.schema.json` (~614 tok)
+- `inferred_place_observation.schema.json` (~452 tok)
+- `model_update_decision.schema.json` (~1874 tok)
+- `mutation_envelope.schema.json` (~1811 tok)
+- `preflight_check.schema.json` (~1978 tok)
+- `privacy_settings.schema.json` (~1968 tok)
+- `radio_observation.schema.json` (~680 tok)
+- `temporal_context_annotation.schema.json` (~2256 tok)
+- `temporal_feature_vector.schema.json` (~544 tok)
+- `temporal_prediction.schema.json` (~2162 tok)
+- `temporal_query_answer.schema.json` (~2154 tok)
+- `timing_event_span.schema.json` (~2099 tok)
+- `timing_event.schema.json` (~2107 tok)
+- `timing_review_flag.schema.json` (~490 tok)
+- `timing_session.schema.json` (~7786 tok)
+- `user_place.schema.json` (~478 tok)
+- `workflow_payloads.schema.json` (~1857 tok)
+
+## parallax_v1_3_artifact_pack/contracts/openapi/
+
+- `parallax_api_v1_3.yaml` (~37370 tok)
+
+## parallax_v1_3_artifact_pack/contracts/pydantic/
+
+- `parallax_contracts_v1_3.py` — Pydantic-compatible core and context contracts for Parallax v1.3. (~6707 tok)
+
+## parallax_v1_3_artifact_pack/database/
+
+- `README.md` — Project documentation (~1000 tok)
+
+## parallax_v1_3_artifact_pack/database/migrations/
+
+- `0001_extensions_and_enums.sql` — Parallax v1.3 migration 0001 (~1196 tok)
+- `0002_identity_privacy_audit.sql` — Parallax v1.3 migration 0002 (~679 tok)
+- `0003_activity_identity.sql` — Parallax v1.3 migration 0003 (~709 tok)
+- `0004_timing_core.sql` — Parallax v1.3 migration 0004 (~2537 tok)
+- `0005_context_extraction_preflight.sql` — Parallax v1.3 migration 0005 (~1919 tok)
+- `0006_reviews_predictions_evidence.sql` — Parallax v1.3 migration 0006 (~1892 tok)
+- `0007_retrieval_pgvector.sql` — Parallax v1.3 migration 0007 (~958 tok)
+- `0008_jobs_sync_model_audit.sql` — Parallax v1.3 migration 0008 (~1144 tok)
+- `0011_capture_context_geospatial_sensor_fusion.sql` — Parallax v1.3 migration 0011 (~3788 tok)
+- `0014_timing_review_flags.sql` — Parallax v1.3 migration 0014 (~457 tok)
+- `9999_seed_dev_data.sql` — Parallax v1.3 migration 9999 (~291 tok)
+
+## parallax_v1_3_artifact_pack/database/optional_profiles/
+
+- `0009_timescale_optional_analytics_profile.sql` — Parallax v1.3 migration 0009 (~622 tok)
+- `0010_paradedb_optional_search_profile.sql` — Parallax v1.3 migration 0010 (~123 tok)
+- `0012_postgis_optional_geospatial_profile.sql` — Parallax v1.3 migration 0012 (~542 tok)
+- `0013_timescale_capture_context_profile.sql` — Parallax v1.3 migration 0013 (~610 tok)
+
+## parallax_v1_3_artifact_pack/database/queries/
+
+- `activity_profile.sql` — Activity Profile query examples. (~306 tok)
+- `ask_about_time_queries.sql` — Ask About Time deterministic fact examples. (~338 tok)
+- `context_geospatial_queries.sql` — Parallax v1.3 context/geospatial query examples. (~562 tok)
+- `privacy_export_delete_queries.sql` — Privacy export/redaction/delete examples. (~2226 tok)
+- `search_retrieval_queries.sql` — Retrieval examples. (~213 tok)
+- `timing_semantics_examples.sql` — Timing semantics examples. (~237 tok)
+
+## parallax_v1_3_artifact_pack/database/rollback/
+
+- `README.md` — Project documentation (~218 tok)
+
+## parallax_v1_3_artifact_pack/docs/
+
+- `00_pack_summary.md` — 00 — Pack Summary (~897 tok)
+- `01_app_system_spec.md` — 01 — Complete App and System Specification (~2432 tok)
+- `02_temporal_domain_model.md` — 02 — Temporal Domain Model (~3390 tok)
+- `03_phased_implementation_plan.md` — 03 — Phased Implementation Plan (~4273 tok)
+- `04_user_stories_acceptance_criteria.md` — 04 — User Stories and Acceptance Criteria (~2701 tok)
+- `05_design_language_figma_handoff.md` — 05 — Design Language and Figma Handoff Specification (~2347 tok)
+- `06_architecture_runtime.md` — 06 — Architecture and Runtime Specification (~1541 tok)
+- `07_data_model_semantics.md` — 07 — Data Model and Temporal Semantics (~1744 tok)
+- `08_api_and_offline_sync_spec.md` — 08 — API and Offline Sync Specification (~1556 tok)
+- `09_ai_ml_retrieval_and_eval_spec.md` — 09 — AI, Retrieval, and Evaluation Specification (~1518 tok)
+- `10_security_privacy_nfr.md` — 10 — Security, Privacy, and Nonfunctional Requirements (~1535 tok)
+- `11_observability_operations_runbook.md` — 11 — Observability, Operations, and Runbooks (~1206 tok)
+- `12_testing_qa_release_rollback.md` — 12 — Testing, QA, Evaluation, Release, Migration, and Rollback Strategy (~1176 tok)
+- `13_repository_layout_coding_standards.md` — 13 — Repository Layout and Coding Standards (~851 tok)
+- `14_adrs.md` — 14 — Architectural Decision Records Summary (~1436 tok)
+- `15_risk_register_open_questions.md` — 15 — Risk Register and Open Questions (~1060 tok)
+- `16_traceability_matrix.md` — 16 — Requirements Traceability Matrix (~773 tok)
+- `17_agentic_coder_review_and_drift_prompts.md` — 17 — Agentic Coder Kickoff, Review, and Drift-Control Prompts (~1084 tok)
+- `18_timing_analytics_and_context_intelligence.md` — 18 — Timing Analytics and Context Intelligence (~2441 tok)
+- `19_capture_workflows_and_sensor_fusion.md` — 19 — Capture Workflows, Real-World Scenarios, and Sensor Fusion (~2188 tok)
+- `20_mobile_location_radio_privacy_reference.md` — 20 — Mobile Location, Radio Context, and Privacy Reference (~1650 tok)
+- `21_current_platform_and_extension_references.md` — 21 — Current Platform and Extension Reference Links (~683 tok)
+- `22_v1_3_gap_closure_summary.md` — 22 — v1.3 Gap Closure Summary (~1576 tok)
+- `23_agentic_implementation_guardrails.md` — 23 — Agentic Implementation Guardrails (~1628 tok)
+
+## parallax_v1_3_artifact_pack/examples/payloads/
+
+- `sample_activity_profile_response.json` (~435 tok)
+- `sample_capture_context_snapshot.json` (~1176 tok)
+- `sample_context_capture_policy.json` (~174 tok)
+- `sample_create_place_request.json` (~156 tok)
+- `sample_place_change_forgotten_timer_scenario.json` (~170 tok)
+- `sample_sponge_detour_run.json` (~394 tok)
+- `sample_sync_push.json` (~266 tok)
+- `sample_temporal_feature_vector.json` (~290 tok)
+- `sample_temporal_query_answer.json` (~299 tok)
+- `sample_timing_review_flag.json` (~208 tok)
+
+## parallax_v1_3_artifact_pack/examples/reference_mockups/
+
+- `README.md` — Project documentation (~115 tok)
+
+## parallax_v1_3_artifact_pack/infrastructure/caddy/
+
+- `Caddyfile.example` (~28 tok)
+
+## parallax_v1_3_artifact_pack/infrastructure/compose/
+
+- `docker-compose.parallax.prototype.yml` — Docker Compose: 9 services (~694 tok)
+
+## parallax_v1_3_artifact_pack/infrastructure/object_storage/
+
+- `object_storage_plan.md` — Object Storage Plan (~273 tok)
+
+## parallax_v1_3_artifact_pack/infrastructure/zfs/
+
+- `create_parallax_datasets.sh` (~334 tok)
+- `zfs_dataset_plan.md` — ZFS Dataset Plan (~375 tok)
+
+## parallax_v1_3_artifact_pack/scripts/
+
+- `bootstrap_dev.sh` (~116 tok)
+- `generate_manifest.py` — digest, main (~236 tok)
+- `validate_pack.py` — sha, parse_manifest, resolve_openapi_ref, schema_requires_mutation + 2 more (~2812 tok)
+
+## parallax_v1_3_artifact_pack/source_inputs/
+
+- `source_alignment_summary.md` — Source Artifact Alignment Summary (~494 tok)
+
+## parallax_v1_3_artifact_pack/tests_or_eval/
+
+- `accessibility_checklist.md` — Accessibility Checklist (~107 tok)
+- `capture_workflow_scenario_matrix.csv` (~197 tok)
+- `context_extraction_eval_cases.jsonl` (~176 tok)
+- `geospatial_context_eval_cases.jsonl` (~153 tok)
+- `privacy_review_checklist.md` — Privacy Review Checklist (~228 tok)
+- `query_grounding_eval_cases.jsonl` (~118 tok)
+- `release_gate_checklist.md` — Release Gate Checklist (~224 tok)
+- `sensor_privacy_test_matrix.csv` (~132 tok)
+- `temporal_semantics_test_matrix.csv` (~371 tok)
+- `test_plan.md` — Test and QA Plan (~183 tok)
+- `timing_analytics_feature_tests.csv` (~81 tok)

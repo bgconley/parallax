@@ -1,0 +1,178 @@
+version: 1.3.0
+project: Parallax
+engine: Temporal workflow engine
+description: Durable workflow and background job contract for Parallax v1.3.
+workflow_rules:
+- Workflow code must be deterministic.
+- Database calls, model calls, HTTP calls, and object storage calls are activities.
+- Activities must be idempotent.
+- Source timing events must not wait on workflows.
+- Context workflows must be non-blocking and must not own duration facts.
+- Place/context inference must apply privacy policy before model or clustering calls.
+workflows:
+- name: ProcessContextAnnotationWorkflow
+  trigger: context.annotation_captured or explicit extraction request
+  input:
+    user_id: uuid
+    annotation_id: uuid
+    force: boolean
+  steps:
+  - load annotation and privacy settings
+  - transcribe audio if needed and allowed
+  - redact/filter sensitive data
+  - call context extractor through AI orchestrator
+  - validate structured output
+  - persist extracted context event candidates
+  - set confirmation state by confidence policy
+  - emit context.extracted_event_created
+  - queue timeline/profile recompute if safe
+  failure_behavior: leave annotation pending or failed with retryable metadata; never
+    delete raw annotation automatically
+- name: FinalizeTimingRunWorkflow
+  trigger: timing.session_completed or timing.review_saved
+  input:
+    user_id: uuid
+    session_id: uuid
+    review_decision_id: uuid|null
+  steps:
+  - reconstruct timeline from timing events
+  - derive spans and totals
+  - apply corrections
+  - apply review inclusion decision
+  - detect anomalies
+  - write session aggregate fields
+  - emit profile recompute event
+  failure_behavior: mark session needs_timeline_recompute and retry
+- name: RecomputeActivityProfileWorkflow
+  trigger: review saved, correction, alias merge, checkpoint change
+  input:
+    user_id: uuid
+    activity_id: uuid
+    reason: string
+  steps:
+  - load reviewed sessions
+  - compute robust stats
+  - aggregate friction and preflight candidates
+  - write activity_stats_snapshot
+  - refresh retrieval documents
+  failure_behavior: keep previous stats snapshot and record workflow failure
+- name: AnswerTemporalQueryWorkflow
+  trigger: temporal query request
+  input:
+    user_id: uuid
+    answer_id: uuid
+    question: string
+    activity_id: uuid|null
+  steps:
+  - classify query intent
+  - resolve activity aliases
+  - compute deterministic facts
+  - assemble evidence bundle
+  - optionally retrieve/rerank evidence
+  - call narrator with facts/evidence only
+  - validate answer schema
+  - persist answer and evidence
+  failure_behavior: return failed or deterministic-only answer; do not fabricate
+- name: DataExportDeletionWorkflow
+  trigger: privacy export/redact/delete request
+  input:
+    user_id: uuid
+    request_type: export|redact|delete
+    entity_type: string|null
+    entity_id: uuid|null
+  steps:
+  - verify request
+  - snapshot/export scoped data if requested
+  - redact/delete requested raw data
+  - delete related retrieval documents and embeddings
+  - handle object storage artifacts
+  - write audit events
+  - record backup retention caveat
+  failure_behavior: retry idempotently and preserve audit trail
+- name: RefreshRetrievalDocumentWorkflow
+  trigger: profile recompute, correction, query evidence update
+  input:
+    user_id: uuid
+    entity_type: string
+    entity_id: uuid
+    document_kind: string
+  steps:
+  - load privacy settings
+  - create safe text summary
+  - upsert retrieval_document
+  - create embedding when allowed
+  - record embedding model profile
+  failure_behavior: leave document stale and retry
+- name: RunEvaluationBatchWorkflow
+  trigger: manual or CI eval run
+  input:
+    eval_family: context_extraction|query_grounding|temporal_semantics|estimator
+    dataset_ref: string
+  steps:
+  - load eval cases
+  - run target component
+  - score outputs
+  - write eval artifact
+  - fail release gate when below threshold
+  failure_behavior: fail batch and block release gate
+- name: NormalizeCaptureContextWorkflow
+  trigger: context.capture_snapshot_created
+  input:
+    user_id: uuid
+    snapshot_id: uuid
+  steps:
+  - load snapshot and privacy policy
+  - normalize geospatial/radio/device observations
+  - hash or discard raw radio identifiers according to retention policy
+  - mark stale or unsupported observations
+  - resolve pending timing event and annotation snapshot references
+  - emit observation events
+  - queue place inference when eligible
+  - queue feature vector recompute when eligible
+  failure_behavior: leave snapshot accepted but unprocessed with retryable metadata;
+    never block timing events
+- name: InferPlaceFromContextWorkflow
+  trigger: place.inference_requested or eligible capture snapshot
+  input:
+    user_id: uuid
+    snapshot_id: uuid
+    force: boolean
+  steps:
+  - load permitted context observations
+  - load user-confirmed places
+  - cluster or match user-scoped place candidates
+  - detect sensitive-label risk
+  - persist inferred_place_observation
+  - request user confirmation when needed
+  - emit place.inferred
+  failure_behavior: record inference failure and keep timing/session data unchanged
+- name: GenerateTemporalFeatureVectorWorkflow
+  trigger: review saved, place confirmed, privacy setting changed, or explicit recompute
+    request
+  input:
+    user_id: uuid
+    activity_id: uuid|null
+    session_id: uuid|null
+    feature_families: list[string]
+    reason: string
+  steps:
+  - load reviewed source timing data
+  - load permitted context snapshots and observations
+  - apply privacy/retention eligibility filters
+  - generate feature vector rows
+  - invalidate stale vectors when privacy settings changed
+  - emit analytics.feature_vector_generated
+  failure_behavior: preserve previous feature vectors and record recompute failure
+- name: DetectForgottenTimerWorkflow
+  trigger: timing.session_completed or capture context indicates material place/motion
+    change
+  input:
+    user_id: uuid
+    session_id: uuid
+  steps:
+  - load timing events, spans, and context snapshots
+  - detect long idle gaps, place transitions, app/device state anomalies, and wall/active
+    outliers
+  - persist timing_review_flag row when confidence is sufficient
+  - emit timing.possible_forgotten_timer_flagged
+  failure_behavior: do not mutate session totals; leave normal review path intact

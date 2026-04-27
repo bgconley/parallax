@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/user_place.schema.json",
+  "title": "UserPlace",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "$ref": "common.schema.json#/$defs/place_category"
+    },
+    "latitude": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": -90,
+      "maximum": 90
+    },
+    "longitude": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": -180,
+      "maximum": 180
+    },
+    "radius_meters": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "source": {
+      "$ref": "common.schema.json#/$defs/geospatial_source_type"
+    },
+    "privacy_class": {
+      "$ref": "common.schema.json#/$defs/privacy_class"
+    },
+    "confirmed_by_user": {
+      "type": "boolean"
+    },
+    "is_sensitive": {
+      "type": "boolean"
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    },
+    "updated_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "display_name",
+    "category",
+    "source",
+    "privacy_class",
+    "confirmed_by_user",
+    "is_sensitive",
+    "created_at",
+    "updated_at"
+  ]
+}

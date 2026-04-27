@@ -1,0 +1,2 @@
+{"case_id": "QG-001", "question": "How long does cleaning pots and pans usually take?", "must_include": ["sample_size", "time_window", "confidence", "active_p50_seconds", "wall_p80_seconds"], "must_not_include": ["unsupported invented causes"]}
+{"case_id": "QG-002", "question": "What usually delays pots and pans?", "must_include": ["evidence", "limitations", "friction_category"], "must_not_include": ["raw private quote when disabled"]}

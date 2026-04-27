@@ -1,0 +1,21 @@
+{
+  "id": "00000000-0000-0000-0000-000000000801",
+  "user_id": "00000000-0000-0000-0000-000000000001",
+  "session_id": "00000000-0000-0000-0000-000000000501",
+  "snapshot_id": "00000000-0000-0000-0000-000000000601",
+  "flag_type": "possible_forgotten_timer",
+  "status": "open",
+  "severity": "medium",
+  "confidence": 0.82,
+  "reason_code": "place_changed_after_long_idle_gap",
+  "user_message": "This run may have continued after you left the place where it started.",
+  "evidence": {
+    "idle_gap_seconds": 2700,
+    "start_place_category": "kitchen",
+    "completion_place_category": "store",
+    "context_quality_score": 0.76
+  },
+  "created_at": "2026-04-26T15:02:00Z",
+  "resolved_at": null,
+  "resolution_note": null
+}

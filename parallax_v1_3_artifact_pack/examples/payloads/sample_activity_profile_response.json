@@ -1,0 +1,54 @@
+{
+  "activity": {
+    "id": "00000000-0000-0000-0000-000000000101",
+    "user_id": "00000000-0000-0000-0000-000000000001",
+    "display_name": "Clean pots and pans",
+    "canonical_key": "clean_pots_and_pans",
+    "description": null,
+    "status": "active",
+    "merged_into_activity_id": null,
+    "default_timing_mode": "whole_task",
+    "privacy_class": "normal",
+    "created_at": "2026-04-26T14:00:00Z",
+    "updated_at": "2026-04-26T14:00:00Z"
+  },
+  "latest_stats": {
+    "sample_size": 6,
+    "confidence": "medium",
+    "active_p50_seconds": 720,
+    "active_p80_seconds": 900,
+    "wall_p50_seconds": 960,
+    "wall_p80_seconds": 1320,
+    "start_latency_p80_seconds": 300,
+    "top_friction": [
+      {
+        "friction_category": "resource",
+        "event_count": 3,
+        "p80_seconds": 300
+      },
+      {
+        "friction_category": "interruption",
+        "event_count": 2,
+        "p80_seconds": 420
+      }
+    ]
+  },
+  "preflight_checks": [
+    {
+      "id": "00000000-0000-0000-0000-000000000201",
+      "user_id": "00000000-0000-0000-0000-000000000001",
+      "activity_id": "00000000-0000-0000-0000-000000000101",
+      "check_text": "Check sponge or scrubber before starting.",
+      "state": "active",
+      "source": "resource_dependency",
+      "confidence": 0.81,
+      "failure_count": 3,
+      "last_triggered_at": "2026-04-25T13:00:00Z",
+      "source_event_id": null
+    }
+  ],
+  "recent_sessions": [],
+  "limitations": [
+    "Only 6 reviewed runs. Estimates may still shift."
+  ]
+}

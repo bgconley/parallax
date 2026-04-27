@@ -1,0 +1,29 @@
+{
+  "id": "00000000-0000-0000-0000-000000000301",
+  "user_id": "00000000-0000-0000-0000-000000000001",
+  "question": "What usually delays pots and pans?",
+  "answer": "The most common delay in the reviewed runs is resource friction, especially sponge or scrubber issues. In 6 reviewed runs, 3 had resource-detour evidence. Confidence is medium because the sample is still small.",
+  "confidence": "medium",
+  "sample_size": 6,
+  "time_window": "last 180 days",
+  "computed_facts": {
+    "resource_event_count": 3,
+    "reviewed_run_count": 6,
+    "resource_detour_p80_seconds": 300
+  },
+  "limitations": [
+    "Only reviewed runs are included.",
+    "The sample is still small.",
+    "Private raw notes were not quoted."
+  ],
+  "evidence": [
+    {
+      "entity_type": "temporal_extracted_context_event",
+      "entity_id": "00000000-0000-0000-0000-000000000401",
+      "summary": "Resource detour involving sponge; counted as wall time only.",
+      "occurred_at": "2026-04-25T13:07:00Z",
+      "score": 0.91
+    }
+  ],
+  "status": "complete"
+}

@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/radio_observation.schema.json",
+  "title": "RadioObservation",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "snapshot_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "source": {
+      "$ref": "common.schema.json#/$defs/radio_source_type"
+    },
+    "observed_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    },
+    "identifier_hash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "label_hash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "redacted_display_label": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "User-visible safe label only. Must not contain raw SSID, BSSID, MAC address, beacon identifier, UWB peer identifier, cell identifier, or other raw radio identifier. Use null unless the label is user-provided or has been explicitly redacted."
+    },
+    "rssi_dbm": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "tx_power_dbm": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "distance_meters": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "distance_accuracy_meters": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "frequency_mhz": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "channel": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "is_connected": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "raw_encrypted_object_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "privacy_class": {
+      "$ref": "common.schema.json#/$defs/privacy_class"
+    },
+    "retention_policy": {
+      "$ref": "common.schema.json#/$defs/sensor_retention_policy"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "snapshot_id",
+    "source",
+    "observed_at",
+    "privacy_class",
+    "retention_policy",
+    "created_at"
+  ]
+}

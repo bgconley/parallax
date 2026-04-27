@@ -1,0 +1,4 @@
+{"case_id": "geo-001", "input": "start and completion same confirmed kitchen place", "expected": "no place-change review flag"}
+{"case_id": "geo-002", "input": "completion context at different confirmed place after long inactive gap", "expected": "possible forgotten timer review flag"}
+{"case_id": "geo-003", "input": "permission denied for location and radio", "expected": "no inference; timing still valid"}
+{"case_id": "geo-004", "input": "unconfirmed candidate category medical", "expected": "requires user confirmation; do not store sensitive label automatically"}

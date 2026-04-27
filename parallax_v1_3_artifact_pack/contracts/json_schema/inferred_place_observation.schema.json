@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/inferred_place_observation.schema.json",
+  "title": "InferredPlaceObservation",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "snapshot_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "user_place_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "candidate_label": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "candidate_category": {
+      "$ref": "common.schema.json#/$defs/place_category"
+    },
+    "confidence": {
+      "$ref": "common.schema.json#/$defs/confidence_score"
+    },
+    "confirmation_state": {
+      "$ref": "common.schema.json#/$defs/confirmation_state"
+    },
+    "evidence": {
+      "type": "object"
+    },
+    "sensitive_label_detected": {
+      "type": "boolean"
+    },
+    "confirmed_at": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/date_time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "snapshot_id",
+    "candidate_category",
+    "confidence",
+    "confirmation_state",
+    "evidence",
+    "sensitive_label_detected",
+    "created_at"
+  ]
+}

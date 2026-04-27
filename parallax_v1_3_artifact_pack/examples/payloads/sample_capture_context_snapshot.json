@@ -1,0 +1,124 @@
+{
+  "id": "11111111-1111-4111-8111-111111111111",
+  "user_id": "22222222-2222-4222-8222-222222222222",
+  "session_id": "33333333-3333-4333-8333-333333333333",
+  "checkpoint_run_id": null,
+  "user_place_id": "44444444-4444-4444-8444-444444444444",
+  "capture_method": "voice",
+  "capture_trigger": "annotation",
+  "client_captured_at": "2026-04-26T10:12:03-04:00",
+  "server_received_at": "2026-04-26T14:12:05Z",
+  "client_monotonic_millis": 183742993,
+  "source_device_id": "ios-phone-demo",
+  "app_foreground_state": "foreground",
+  "location_state": "available",
+  "radio_state": "available",
+  "motion_state_available": "available",
+  "device_context_state": "available",
+  "privacy_class": "normal",
+  "retention_policy": "derived_only",
+  "context_quality_score": 0.82,
+  "permission_summary": {
+    "location": "when_in_use_approximate",
+    "nearby_radio": "enabled",
+    "motion": "enabled"
+  },
+  "metadata": {
+    "client_sdk": "parallax-ios-alpha"
+  },
+  "geospatial_observations": [
+    {
+      "id": "55555555-5555-4555-8555-555555555555",
+      "user_id": "22222222-2222-4222-8222-222222222222",
+      "snapshot_id": "11111111-1111-4111-8111-111111111111",
+      "source": "fused_location",
+      "observed_at": "2026-04-26T10:12:00-04:00",
+      "latitude": 40.712776,
+      "longitude": -74.005974,
+      "altitude_meters": null,
+      "horizontal_accuracy_meters": 65.0,
+      "vertical_accuracy_meters": null,
+      "speed_mps": 0.1,
+      "course_degrees": null,
+      "is_precise": false,
+      "is_stale": false,
+      "staleness_seconds": 3,
+      "privacy_class": "normal",
+      "retention_policy": "derived_only",
+      "metadata": {
+        "accuracy_bucket": "coarse"
+      },
+      "created_at": "2026-04-26T14:12:05Z"
+    }
+  ],
+  "radio_observations": [
+    {
+      "id": "66666666-6666-4666-8666-666666666666",
+      "user_id": "22222222-2222-4222-8222-222222222222",
+      "snapshot_id": "11111111-1111-4111-8111-111111111111",
+      "source": "wifi_connected_network",
+      "observed_at": "2026-04-26T10:12:00-04:00",
+      "identifier_hash": "per-user-salted-hash-of-bssid",
+      "label_hash": "per-user-salted-hash-of-ssid",
+      "redacted_display_label": null,
+      "rssi_dbm": -53,
+      "tx_power_dbm": null,
+      "distance_meters": null,
+      "distance_accuracy_meters": null,
+      "frequency_mhz": 5180,
+      "channel": "36",
+      "is_connected": true,
+      "raw_encrypted_object_ref": null,
+      "privacy_class": "sensitive",
+      "retention_policy": "derived_only",
+      "metadata": {
+        "raw_identifier_stored": false
+      },
+      "created_at": "2026-04-26T14:12:05Z"
+    }
+  ],
+  "device_context_observations": [
+    {
+      "id": "77777777-7777-4777-8777-777777777777",
+      "user_id": "22222222-2222-4222-8222-222222222222",
+      "snapshot_id": "11111111-1111-4111-8111-111111111111",
+      "observed_at": "2026-04-26T10:12:00-04:00",
+      "motion_state": "stationary",
+      "battery_percent": 78,
+      "charging_state": "discharging",
+      "network_state": "wifi",
+      "device_type": "phone",
+      "app_foreground_state": "foreground",
+      "privacy_class": "normal",
+      "retention_policy": "derived_only",
+      "metadata": {},
+      "created_at": "2026-04-26T14:12:05Z"
+    }
+  ],
+  "inferred_places": [
+    {
+      "id": "88888888-8888-4888-8888-888888888888",
+      "user_id": "22222222-2222-4222-8222-222222222222",
+      "snapshot_id": "11111111-1111-4111-8111-111111111111",
+      "user_place_id": "44444444-4444-4444-8444-444444444444",
+      "candidate_label": "Kitchen",
+      "candidate_category": "kitchen",
+      "confidence": 0.74,
+      "confirmation_state": "needs_confirmation",
+      "evidence": {
+        "signals": [
+          "coarse_place_match",
+          "wifi_hash_match",
+          "stationary_motion"
+        ]
+      },
+      "sensitive_label_detected": false,
+      "confirmed_at": null,
+      "created_at": "2026-04-26T14:12:05Z"
+    }
+  ],
+  "client_mutation_id": "ctx-001",
+  "client_device_id": "ios-phone-demo",
+  "idempotency_key": "ctx-001-ios-phone-demo",
+  "created_at": "2026-04-26T14:12:05Z"
+}

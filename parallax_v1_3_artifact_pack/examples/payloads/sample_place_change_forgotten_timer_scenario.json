@@ -1,0 +1,12 @@
+{
+  "scenario": "forgotten_timer_place_change_review",
+  "summary": "User starts cleaning kitchen, leaves house, and completes much later. Context flags review but does not trim automatically.",
+  "expected_behavior": [
+    "session remains completed_unreviewed",
+    "context snapshots show material place change",
+    "review banner asks whether timer kept running",
+    "user correction can trim active span",
+    "model baseline updates only after review decision"
+  ],
+  "privacy_expectation": "Show human explanation only; do not expose raw coordinates or radio hashes in normal UI."
+}

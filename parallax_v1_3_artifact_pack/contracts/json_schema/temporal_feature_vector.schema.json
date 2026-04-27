@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/temporal_feature_vector.schema.json",
+  "title": "TemporalFeatureVector",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "common.schema.json#/$defs/uuid"
+    },
+    "activity_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "session_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "snapshot_id": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "feature_schema_version": {
+      "type": "string"
+    },
+    "feature_family": {
+      "type": "string",
+      "enum": [
+        "duration_prediction",
+        "start_latency",
+        "transition_latency",
+        "friction",
+        "place_inference",
+        "prompt_policy",
+        "anomaly_detection"
+      ]
+    },
+    "features": {
+      "type": "object"
+    },
+    "source_entity_refs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "privacy_class": {
+      "$ref": "common.schema.json#/$defs/privacy_class"
+    },
+    "model_eligible": {
+      "type": "boolean"
+    },
+    "exclusion_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/date_time"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "feature_schema_version",
+    "feature_family",
+    "features",
+    "source_entity_refs",
+    "privacy_class",
+    "model_eligible",
+    "generated_at"
+  ]
+}

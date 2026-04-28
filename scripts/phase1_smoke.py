@@ -176,6 +176,43 @@ def main() -> int:
             if sync_push["operation_count"] != 1:
                 raise AssertionError("sync push did not validate the nested operation")
 
+            synced_activity_name = f"Phase 1 sync replay {user_id.hex[:8]}"
+            sync_create_activity = _expect(
+                client.post(
+                    "/v1/sync/push",
+                    json={
+                        "mutation": _mutation(device_id, "sync-create-activity", 12),
+                        "client_device_id": device_id,
+                        "mutations": [
+                            {
+                                "operation": "create_activity",
+                                "path": "/v1/activities",
+                                "body": {
+                                    "mutation": _mutation(device_id, "sync-nested-activity", 13),
+                                    "display_name": synced_activity_name,
+                                },
+                            }
+                        ],
+                    },
+                ),
+                202,
+            )
+            if sync_create_activity["operation_count"] != 1:
+                raise AssertionError("sync push did not replay the create activity operation")
+
+            activities_response = client.get("/v1/activities")
+            if activities_response.status_code != 200:
+                raise AssertionError(
+                    f"GET /v1/activities returned {activities_response.status_code}: "
+                    f"{activities_response.text}"
+                )
+            activities = activities_response.json()
+            if not isinstance(activities, list):
+                raise AssertionError("expected list response from GET /v1/activities")
+            activity_names = {str(item["display_name"]) for item in activities}
+            if synced_activity_name not in activity_names:
+                raise AssertionError("sync push accepted create activity without applying it")
+
         with psycopg.connect(args.database_url, autocommit=True) as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -218,6 +255,7 @@ def main() -> int:
                 "duplicate_mutation_rows": mutation_count,
                 "out_of_order_recompute_flagged": out_of_order["needs_timeline_recompute"],
                 "sync_push_accepted": sync_push["accepted"],
+                "sync_create_activity_applied": synced_activity_name,
             }
         )
         print(json.dumps({"status": "passed", "phase": "phase1", "summary": summary}, indent=2))

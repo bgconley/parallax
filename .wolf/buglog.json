@@ -132,6 +132,78 @@
       "related_bugs": ["bug-002"],
       "occurrences": 1,
       "last_seen": "2026-04-27T06:29:41Z"
+    },
+    {
+      "id": "bug-012",
+      "timestamp": "2026-04-28T01:53:19Z",
+      "error_message": "Phase 2 review/profile tests failed with 404 because review, discard, and profile endpoints were not implemented yet",
+      "file": "services/api/parallax_api/routes/timing.py, services/api/parallax_api/routes/activities.py",
+      "root_cause": "Phase 1 runtime surface did not include Phase 2 review/counting/profile routes or supporting service/repository behavior.",
+      "fix": "Added Phase 2 schemas, domain span/stat logic, review/discard/profile services, routes, in-memory/Postgres persistence, and acceptance tests.",
+      "tags": ["phase2", "review", "profile", "routes"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T01:53:19Z"
+    },
+    {
+      "id": "bug-013",
+      "timestamp": "2026-04-28T01:53:19Z",
+      "error_message": "ruff and mypy failed after adding Phase 2 smoke and repository protocol changes",
+      "file": "scripts/phase2_smoke.py, services/api/parallax_api/repositories/unit_of_work.py, services/api/parallax_api/services/timing_service.py",
+      "root_cause": "New smoke code had overlong lines and indexed values typed as object; a protocol import block was not sorted.",
+      "fix": "Split long lines, added a typed _dict_value helper for nested response objects, and sorted imports.",
+      "tags": ["ruff", "mypy", "phase2", "smoke"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T01:53:19Z"
+    },
+    {
+      "id": "bug-014",
+      "timestamp": "2026-04-28T01:53:19Z",
+      "error_message": "GPU runtime check hit curl: (56) Recv failure: Connection reset by peer immediately after make dev-up",
+      "file": "runtime verification command",
+      "root_cause": "The API container had started but was not yet ready to accept the immediate curl request after rebuild.",
+      "fix": "Reran health/readiness checks after startup and relied on smoke scripts with health wait loops for phase validation.",
+      "tags": ["gpu-node", "startup-race", "health", "phase2"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T01:53:19Z"
+    },
+    {
+      "id": "bug-015",
+      "timestamp": "2026-04-28T03:39:57Z",
+      "error_message": "make typecheck failed because TimingService no longer exposed review_session or discard_session after adding Phase 3 context-snapshot resolution",
+      "file": "services/api/parallax_api/services/timing_service.py",
+      "root_cause": "A helper function was inserted before the review/discard methods, accidentally moving those methods out of the TimingService class by indentation.",
+      "fix": "Moved the context-snapshot helper below the class and restored review_session and discard_session as TimingService methods.",
+      "tags": ["phase3", "mypy", "timing-service", "indentation"],
+      "related_bugs": ["bug-013"],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T03:39:57Z"
+    },
+    {
+      "id": "bug-016",
+      "timestamp": "2026-04-28T03:39:57Z",
+      "error_message": "make security failed with Bandit B608 for a dynamically assembled SQL filter in PostgresContextRepository.list_review_flags",
+      "file": "services/api/parallax_api/repositories/postgres_context_repository.py",
+      "root_cause": "The query used an f-string to splice a trusted status predicate, which Bandit correctly flagged as a possible SQL injection pattern.",
+      "fix": "Split the method into two static parameterized SQL query variants instead of assembling SQL with string interpolation.",
+      "tags": ["phase3", "bandit", "sql", "security"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T03:39:57Z"
+    },
+    {
+      "id": "bug-017",
+      "timestamp": "2026-04-28T03:39:57Z",
+      "error_message": "GPU make dev-up failed because docker compose could not find /tank/repos/parallax/.env",
+      "file": "AGENTS.md, .wolf/OPENWOLF.md, .wolf/cerebrum.md",
+      "root_cause": "An rsync --delete sync to /tank/repos/parallax did not exclude .env and removed the host-local runtime environment file.",
+      "fix": "Restored .env from .env.example on the GPU node and documented that future rsync validation must exclude .env.",
+      "tags": ["phase3", "gpu-node", "rsync", "env", "compose"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T03:39:57Z"
     }
   ]
 }

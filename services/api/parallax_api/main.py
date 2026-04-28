@@ -6,6 +6,7 @@ from .errors import install_error_handlers
 from .repositories.postgres_unit_of_work import PostgresUnitOfWorkFactory
 from .repositories.unit_of_work import UnitOfWorkFactory
 from .routes.activities import router as activities_router
+from .routes.context import router as context_router
 from .routes.health import router as health_router
 from .routes.sync import router as sync_router
 from .routes.timing import router as timing_router
@@ -25,6 +26,7 @@ def create_app(
     app.include_router(health_router)
     app.include_router(activities_router)
     app.include_router(timing_router)
+    app.include_router(context_router)
     app.include_router(sync_router)
     return app
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from parallax_db.runner import phase0_schema_smoke_checks
+from parallax_db.runner import current_schema_smoke_checks, phase0_schema_smoke_checks
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -52,13 +52,23 @@ def test_phase_docs_record_compose_derivation_and_phase_boundary() -> None:
     phase1_doc = (REPO_ROOT / "docs/architecture/phase1_core_loop.md").read_text()
 
     assert "implementation derivative of the canonical prototype Compose file" in phase0_doc
-    assert "Phase 1 is active only because the user explicitly started it" in agents_doc
+    assert "Phase 3 is active only because the user explicitly started it" in agents_doc
     assert "Out of scope: review decisions" in phase1_doc
 
 
 def test_phase0_runtime_dockerfiles_exist() -> None:
     assert (REPO_ROOT / "services/api/Dockerfile").is_file()
     assert (REPO_ROOT / "services/worker/Dockerfile").is_file()
+
+
+def test_phase0_runtime_dockerfiles_pin_base_image_and_uv_installer() -> None:
+    for dockerfile in [
+        REPO_ROOT / "services/api/Dockerfile",
+        REPO_ROOT / "services/worker/Dockerfile",
+    ]:
+        content = dockerfile.read_text()
+        assert "FROM python:3.12-slim@sha256:" in content
+        assert "python -m pip install --no-cache-dir uv==" in content
 
 
 def test_contract_validation_is_wired_into_ci() -> None:
@@ -79,6 +89,29 @@ def test_static_typecheck_is_available_from_makefile() -> None:
     assert "uv run mypy services packages scripts" in content
 
 
+def test_security_scan_includes_untracked_working_tree_files() -> None:
+    makefile = REPO_ROOT / "Makefile"
+    content = makefile.read_text()
+
+    assert "--no-git-ignore" in content
+
+
+def test_phase2_smoke_is_available_from_makefile() -> None:
+    makefile = REPO_ROOT / "Makefile"
+    content = makefile.read_text()
+
+    assert "phase2-smoke:" in content
+    assert "scripts/phase2_smoke.py" in content
+
+
+def test_phase3_smoke_is_available_from_makefile() -> None:
+    makefile = REPO_ROOT / "Makefile"
+    content = makefile.read_text()
+
+    assert "phase3-smoke:" in content
+    assert "scripts/phase3_smoke.py" in content
+
+
 def test_phase0_schema_smoke_checks_cover_core_tables_and_enums() -> None:
     check_names = {check.name for check in phase0_schema_smoke_checks()}
 
@@ -89,6 +122,16 @@ def test_phase0_schema_smoke_checks_cover_core_tables_and_enums() -> None:
     assert "table:timing_event" in check_names
     assert "enum:timing_session_status" in check_names
     assert "enum:timing_event_type" in check_names
+
+
+def test_current_schema_smoke_checks_cover_phase3_context_tables_and_enums() -> None:
+    check_names = {check.name for check in current_schema_smoke_checks()}
+
+    assert "table:capture_context_snapshot" in check_names
+    assert "table:context_capture_policy" in check_names
+    assert "table:timing_review_flag" in check_names
+    assert "enum:capture_method" in check_names
+    assert "enum:timing_review_flag_status" in check_names
 
 
 def test_migration_script_is_runnable_from_repo_root() -> None:

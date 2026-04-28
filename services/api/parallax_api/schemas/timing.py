@@ -53,6 +53,77 @@ TimingEventType = Literal[
     "review_saved",
     "sync_reconciled",
 ]
+TemporalSpanType = Literal[
+    "active_work",
+    "setup",
+    "resource_detour",
+    "interruption",
+    "waiting",
+    "side_quest",
+    "start_latency",
+    "transition",
+    "body_energy",
+    "decision_loop",
+    "attention_drift",
+    "environment_friction",
+    "bad_timer",
+    "scope_change",
+    "other",
+]
+FrictionCategory = Literal[
+    "none",
+    "resource",
+    "setup",
+    "transition",
+    "interruption",
+    "waiting",
+    "side_quest",
+    "decision",
+    "attention",
+    "body_energy",
+    "environment",
+    "timer_quality",
+    "scope",
+    "unknown",
+]
+CountPolicy = Literal[
+    "wall_and_active",
+    "wall_only",
+    "active_only",
+    "separate_start_latency",
+    "separate_transition",
+    "do_not_count",
+    "review_required",
+]
+RunQuality = Literal[
+    "unknown",
+    "typical",
+    "useful_unusual",
+    "assisted",
+    "partial",
+    "bad_timer",
+    "corrupted",
+    "do_not_train",
+]
+ModelInclusion = Literal[
+    "not_reviewed",
+    "full",
+    "active_duration_only",
+    "wall_envelope_only",
+    "friction_patterns_only",
+    "query_evidence_only",
+    "exclude",
+]
+ModelUpdateDecisionType = Literal[
+    "save_useful_run",
+    "mark_unusual",
+    "save_partial",
+    "active_only",
+    "friction_only",
+    "query_evidence_only",
+    "discard_timing_keep_note",
+    "discard_all",
+]
 
 
 class TimingEvent(ApiModel):
@@ -71,6 +142,25 @@ class TimingEvent(ApiModel):
     capture_context_snapshot_id: UUID | None = None
     capture_context_snapshot_ref: str | None = None
     payload: dict[str, object]
+
+
+class TimingEventSpan(ApiModel):
+    id: UUID
+    user_id: UUID
+    session_id: UUID
+    checkpoint_run_id: UUID | None = None
+    span_type: TemporalSpanType
+    friction_category: FrictionCategory
+    started_at: datetime
+    ended_at: datetime | None = None
+    duration_seconds: int | None = Field(default=None, ge=0)
+    count_policy: CountPolicy
+    count_in_wall_time: bool
+    count_in_active_time: bool
+    model_update_scopes: list[str]
+    linked_annotation_id: UUID | None = None
+    linked_extracted_event_id: UUID | None = None
+    user_corrected: bool
 
 
 class TimingSession(ApiModel):
@@ -95,28 +185,11 @@ class TimingSession(ApiModel):
     side_quest_seconds: int | None = Field(default=None, ge=0)
     start_latency_seconds: int | None = Field(default=None, ge=0)
     transition_seconds: int | None = Field(default=None, ge=0)
-    run_quality: Literal[
-        "unknown",
-        "typical",
-        "useful_unusual",
-        "assisted",
-        "partial",
-        "bad_timer",
-        "corrupted",
-        "do_not_train",
-    ]
-    model_inclusion: Literal[
-        "not_reviewed",
-        "full",
-        "active_duration_only",
-        "wall_envelope_only",
-        "friction_patterns_only",
-        "query_evidence_only",
-        "exclude",
-    ]
+    run_quality: RunQuality
+    model_inclusion: ModelInclusion
     needs_timeline_recompute: bool
     events: list[TimingEvent] = Field(default_factory=list)
-    spans: list[dict[str, object]] = Field(default_factory=list)
+    spans: list[TimingEventSpan] = Field(default_factory=list)
 
 
 class CreateTimingSessionRequest(ApiModel):
@@ -149,3 +222,24 @@ class CompleteTimingSessionRequest(ApiModel):
     capture_context_snapshot_id: UUID | None = None
     capture_context_snapshot_ref: str | None = None
     payload: dict[str, object] = Field(default_factory=dict)
+
+
+class ReviewTimingSessionRequest(ApiModel):
+    mutation: MutationEnvelope
+    decision: ModelUpdateDecisionType
+    model_inclusion: ModelInclusion
+    scopes: list[str]
+    span_overrides: list[dict[str, object]] = Field(default_factory=list)
+    user_note: str | None = None
+
+
+class ModelUpdateDecision(ApiModel):
+    id: UUID
+    user_id: UUID
+    session_id: UUID
+    decision: ModelUpdateDecisionType
+    model_inclusion: ModelInclusion
+    scopes: list[str]
+    reviewed_at: datetime
+    user_note: str | None = None
+    payload: dict[str, object]

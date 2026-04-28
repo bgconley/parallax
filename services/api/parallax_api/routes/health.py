@@ -11,12 +11,12 @@ router = APIRouter(prefix="/v1", tags=["health"])
 
 @router.get("/health")
 def get_health(request: Request) -> JSONResponse:
-    return _dependency_health_response(request)
+    return _dependency_health_response(request, readiness=False)
 
 
 @router.get("/ready")
 def get_ready(request: Request) -> JSONResponse:
-    return _dependency_health_response(request)
+    return _dependency_health_response(request, readiness=True)
 
 
 @router.get("/live")
@@ -24,9 +24,9 @@ def get_live() -> dict[str, str]:
     return {"service": "parallax-api", "status": "live"}
 
 
-def _dependency_health_response(request: Request) -> JSONResponse:
+def _dependency_health_response(request: Request, *, readiness: bool) -> JSONResponse:
     checker: HealthChecker = request.app.state.health_checker
-    report = checker.check()
+    report = checker.check(readiness=readiness)
     status_code = 200 if report.status == "healthy" else 503
     return JSONResponse(
         status_code=status_code,
@@ -34,6 +34,7 @@ def _dependency_health_response(request: Request) -> JSONResponse:
             "service": "parallax-api",
             "status": report.status,
             "checks": report.checks,
+            "metadata": report.metadata,
         },
     )
 

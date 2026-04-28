@@ -3,12 +3,17 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from ..domain.review_decisions import run_quality_for_decision, status_for_decision
 from ..domain.timing_reconstruction import project_timing_session
+from ..domain.timing_spans import TimingEventSpanDraft, TimingSpanTotals
 from ..schemas.timing import (
     AppendTimingEventRequest,
     CompleteTimingSessionRequest,
     CreateTimingSessionRequest,
+    ModelUpdateDecision,
+    ReviewTimingSessionRequest,
     TimingEvent,
+    TimingEventSpan,
     TimingSession,
 )
 from .memory import InMemoryStore
@@ -38,6 +43,7 @@ class TimingRepository:
         )
         self._store.sessions[session.id] = session
         self._store.session_events[session.id] = []
+        self._store.session_spans[session.id] = []
         return session
 
     def get_session(self, user_id: UUID, session_id: UUID) -> TimingSession | None:
@@ -46,8 +52,30 @@ class TimingRepository:
             return None
         events = list(self._store.session_events.get(session_id, []))
         projection = project_timing_session(session, events)
+        session_updates = projection.session_updates
+        if session.status in {"reviewed", "discarded"}:
+            session_updates = {
+                **session_updates,
+                "status": session.status,
+                "run_quality": session.run_quality,
+                "model_inclusion": session.model_inclusion,
+                "active_seconds": session.active_seconds,
+                "wall_seconds": session.wall_seconds,
+                "setup_seconds": session.setup_seconds,
+                "detour_seconds": session.detour_seconds,
+                "interruption_seconds": session.interruption_seconds,
+                "waiting_seconds": session.waiting_seconds,
+                "side_quest_seconds": session.side_quest_seconds,
+                "start_latency_seconds": session.start_latency_seconds,
+                "transition_seconds": session.transition_seconds,
+                "needs_timeline_recompute": session.needs_timeline_recompute,
+            }
         return session.model_copy(
-            update={**projection.session_updates, "events": projection.ordered_events}
+            update={
+                **session_updates,
+                "events": projection.ordered_events,
+                "spans": list(self._store.session_spans.get(session_id, [])),
+            }
         )
 
     def append_event(
@@ -102,3 +130,87 @@ class TimingRepository:
             raise KeyError(session_id)
         self._store.sessions[session_id] = updated.model_copy(update={"events": []})
         return updated
+
+    def replace_derived_spans(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        span_drafts: list[TimingEventSpanDraft],
+    ) -> list[TimingEventSpan]:
+        spans = [
+            TimingEventSpan(
+                id=uuid4(),
+                user_id=user_id,
+                session_id=session_id,
+                checkpoint_run_id=draft.checkpoint_run_id,
+                span_type=draft.span_type,
+                friction_category=draft.friction_category,
+                started_at=draft.started_at,
+                ended_at=draft.ended_at,
+                duration_seconds=draft.duration_seconds,
+                count_policy=draft.count_policy,
+                count_in_wall_time=draft.count_in_wall_time,
+                count_in_active_time=draft.count_in_active_time,
+                model_update_scopes=draft.model_update_scopes,
+                linked_annotation_id=draft.linked_annotation_id,
+                linked_extracted_event_id=draft.linked_extracted_event_id,
+                user_corrected=draft.user_corrected,
+            )
+            for draft in span_drafts
+        ]
+        self._store.session_spans[session_id] = spans
+        return spans
+
+    def review_session(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        request: ReviewTimingSessionRequest,
+        span_drafts: list[TimingEventSpanDraft],
+        totals: TimingSpanTotals,
+    ) -> ModelUpdateDecision:
+        session = self.get_session(user_id, session_id)
+        if session is None:
+            raise KeyError(session_id)
+        self.replace_derived_spans(user_id, session_id, span_drafts)
+        reviewed_at = datetime.now(UTC)
+        decision = ModelUpdateDecision(
+            id=uuid4(),
+            user_id=user_id,
+            session_id=session_id,
+            decision=request.decision,
+            model_inclusion=request.model_inclusion,
+            scopes=request.scopes,
+            reviewed_at=reviewed_at,
+            user_note=request.user_note,
+            payload={
+                "span_overrides": request.span_overrides,
+                "reviewed_totals": {
+                    "wall_seconds": totals.wall_seconds,
+                    "active_seconds": totals.active_seconds,
+                    "detour_seconds": totals.detour_seconds,
+                    "interruption_seconds": totals.interruption_seconds,
+                },
+            },
+        )
+        self._store.review_decisions.setdefault(session_id, []).append(decision)
+        self._store.sessions[session_id] = session.model_copy(
+            update={
+                "status": status_for_decision(request.decision),
+                "run_quality": run_quality_for_decision(request.decision),
+                "model_inclusion": request.model_inclusion,
+                "active_seconds": totals.active_seconds,
+                "wall_seconds": totals.wall_seconds,
+                "setup_seconds": totals.setup_seconds,
+                "detour_seconds": totals.detour_seconds,
+                "interruption_seconds": totals.interruption_seconds,
+                "waiting_seconds": totals.waiting_seconds,
+                "side_quest_seconds": totals.side_quest_seconds,
+                "start_latency_seconds": totals.start_latency_seconds,
+                "transition_seconds": totals.transition_seconds,
+                "needs_timeline_recompute": False,
+                "events": [],
+                "spans": [],
+            }
+        )
+        return decision

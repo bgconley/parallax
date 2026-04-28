@@ -10,6 +10,8 @@ from ..schemas.timing import (
     AppendTimingEventRequest,
     CompleteTimingSessionRequest,
     CreateTimingSessionRequest,
+    ModelUpdateDecision,
+    ReviewTimingSessionRequest,
     TimingEvent,
     TimingSession,
 )
@@ -66,3 +68,23 @@ def complete_timing_session(
     uow_factory: UnitOfWorkFactory = UOW_FACTORY,
 ) -> TimingSession:
     return TimingService(uow_factory).complete_session(auth.user_id, session_id, payload)
+
+
+@router.post("/{session_id}/review", response_model=ModelUpdateDecision)
+def review_timing_session(
+    session_id: UUID,
+    payload: ReviewTimingSessionRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> ModelUpdateDecision:
+    return TimingService(uow_factory).review_session(auth.user_id, session_id, payload)
+
+
+@router.post("/{session_id}/discard", response_model=ModelUpdateDecision)
+def discard_timing_session(
+    session_id: UUID,
+    payload: ReviewTimingSessionRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> ModelUpdateDecision:
+    return TimingService(uow_factory).discard_session(auth.user_id, session_id, payload)

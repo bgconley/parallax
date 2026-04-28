@@ -7,12 +7,17 @@ from uuid import UUID
 import psycopg
 from psycopg.types.json import Jsonb
 
+from ..domain.review_decisions import run_quality_for_decision, status_for_decision
 from ..domain.timing_reconstruction import project_timing_session
+from ..domain.timing_spans import TimingEventSpanDraft, TimingSpanTotals
 from ..schemas.timing import (
     AppendTimingEventRequest,
     CompleteTimingSessionRequest,
     CreateTimingSessionRequest,
+    ModelUpdateDecision,
+    ReviewTimingSessionRequest,
     TimingEvent,
+    TimingEventSpan,
     TimingSession,
 )
 from .postgres_identity import ensure_app_user
@@ -35,12 +40,13 @@ _INSERT_EVENT_SQL = """
 insert into timing_event (
   user_id, session_id, event_type, client_time, timer_elapsed_seconds,
   timer_active_seconds, client_sequence, client_mutation_id,
-  client_device_id, idempotency_key, payload
+  client_device_id, idempotency_key, capture_context_snapshot_id,
+  capture_context_snapshot_ref, payload
 )
-values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 returning id, user_id, session_id, event_type, client_time, server_time, timer_elapsed_seconds,
   timer_active_seconds, client_sequence, client_mutation_id, client_device_id,
-  idempotency_key, payload
+  idempotency_key, capture_context_snapshot_id, capture_context_snapshot_ref, payload
 """
 
 _LOAD_SESSION_SQL = """
@@ -56,10 +62,43 @@ where user_id = %s and id = %s
 _LOAD_EVENTS_SQL = """
 select id, user_id, session_id, event_type, client_time, server_time, timer_elapsed_seconds,
   timer_active_seconds, client_sequence, client_mutation_id, client_device_id,
-  idempotency_key, payload
+  idempotency_key, capture_context_snapshot_id, capture_context_snapshot_ref, payload
 from timing_event
 where user_id = %s and session_id = %s
 order by server_time, id
+"""
+
+_LOAD_SPANS_SQL = """
+select id, user_id, session_id, checkpoint_run_id, span_type, friction_category,
+  started_at, ended_at, duration_seconds, count_policy, count_in_wall_time,
+  count_in_active_time, model_update_scopes, linked_annotation_id,
+  linked_extracted_event_id, user_corrected
+from timing_event_span
+where user_id = %s and session_id = %s
+order by started_at, id
+"""
+
+_INSERT_SPAN_SQL = """
+insert into timing_event_span (
+  user_id, session_id, checkpoint_run_id, start_event_id, end_event_id, span_type,
+  friction_category, started_at, ended_at, duration_seconds, count_policy,
+  count_in_wall_time, count_in_active_time, model_update_scopes,
+  linked_annotation_id, linked_extracted_event_id, user_corrected
+)
+values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+returning id, user_id, session_id, checkpoint_run_id, span_type, friction_category,
+  started_at, ended_at, duration_seconds, count_policy, count_in_wall_time,
+  count_in_active_time, model_update_scopes, linked_annotation_id,
+  linked_extracted_event_id, user_corrected
+"""
+
+_INSERT_REVIEW_SQL = """
+insert into model_update_decision (
+  user_id, session_id, decision, model_inclusion, scopes, user_note, payload
+)
+values (%s, %s, %s, %s, %s, %s, %s)
+returning id, user_id, session_id, decision, model_inclusion, scopes, reviewed_at,
+  user_note, payload
 """
 
 
@@ -96,8 +135,30 @@ class PostgresTimingRepository:
             return None
         events = self._load_events(user_id, session_id)
         projection = project_timing_session(session, events)
+        session_updates = projection.session_updates
+        if session.status in {"reviewed", "discarded"}:
+            session_updates = {
+                **session_updates,
+                "status": session.status,
+                "run_quality": session.run_quality,
+                "model_inclusion": session.model_inclusion,
+                "active_seconds": session.active_seconds,
+                "wall_seconds": session.wall_seconds,
+                "setup_seconds": session.setup_seconds,
+                "detour_seconds": session.detour_seconds,
+                "interruption_seconds": session.interruption_seconds,
+                "waiting_seconds": session.waiting_seconds,
+                "side_quest_seconds": session.side_quest_seconds,
+                "start_latency_seconds": session.start_latency_seconds,
+                "transition_seconds": session.transition_seconds,
+                "needs_timeline_recompute": session.needs_timeline_recompute,
+            }
         return session.model_copy(
-            update={**projection.session_updates, "events": projection.ordered_events}
+            update={
+                **session_updates,
+                "events": projection.ordered_events,
+                "spans": self._load_spans(user_id, session_id),
+            }
         )
 
     def append_event(
@@ -124,6 +185,8 @@ class PostgresTimingRepository:
                     request.mutation.client_mutation_id,
                     request.mutation.client_device_id,
                     request.mutation.idempotency_key,
+                    request.capture_context_snapshot_id,
+                    request.capture_context_snapshot_ref,
                     Jsonb(request.payload),
                 ),
             )
@@ -158,6 +221,146 @@ class PostgresTimingRepository:
             raise KeyError(session_id)
         return session
 
+    def replace_derived_spans(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        span_drafts: list[TimingEventSpanDraft],
+    ) -> list[TimingEventSpan]:
+        spans: list[TimingEventSpan] = []
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                delete from timing_event_span
+                where user_id = %s and session_id = %s and user_corrected = false
+                """,
+                (user_id, session_id),
+            )
+            for draft in span_drafts:
+                cursor.execute(
+                    _INSERT_SPAN_SQL,
+                    (
+                        user_id,
+                        session_id,
+                        draft.checkpoint_run_id,
+                        draft.start_event_id,
+                        draft.end_event_id,
+                        draft.span_type,
+                        draft.friction_category,
+                        draft.started_at,
+                        draft.ended_at,
+                        draft.duration_seconds,
+                        draft.count_policy,
+                        draft.count_in_wall_time,
+                        draft.count_in_active_time,
+                        draft.model_update_scopes,
+                        draft.linked_annotation_id,
+                        draft.linked_extracted_event_id,
+                        draft.user_corrected,
+                    ),
+                )
+                row = cursor.fetchone()
+                if row is None:
+                    raise RuntimeError("timing span insert returned no row")
+                spans.append(_span_from_row(row))
+        return spans
+
+    def review_session(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        request: ReviewTimingSessionRequest,
+        span_drafts: list[TimingEventSpanDraft],
+        totals: TimingSpanTotals,
+    ) -> ModelUpdateDecision:
+        if self._load_session(user_id, session_id) is None:
+            raise KeyError(session_id)
+        self.replace_derived_spans(user_id, session_id, span_drafts)
+        payload = {
+            "span_overrides": request.span_overrides,
+            "reviewed_totals": {
+                "wall_seconds": totals.wall_seconds,
+                "active_seconds": totals.active_seconds,
+                "detour_seconds": totals.detour_seconds,
+                "interruption_seconds": totals.interruption_seconds,
+            },
+        }
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                _INSERT_REVIEW_SQL,
+                (
+                    user_id,
+                    session_id,
+                    request.decision,
+                    request.model_inclusion,
+                    request.scopes,
+                    request.user_note,
+                    Jsonb(payload),
+                ),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise RuntimeError("model update decision insert returned no row")
+            decision = _decision_from_row(row)
+            cursor.execute(
+                """
+                update timing_session
+                set status = %s,
+                    run_quality = %s,
+                    model_inclusion = %s,
+                    active_seconds = %s,
+                    wall_seconds = %s,
+                    setup_seconds = %s,
+                    detour_seconds = %s,
+                    interruption_seconds = %s,
+                    waiting_seconds = %s,
+                    side_quest_seconds = %s,
+                    start_latency_seconds = %s,
+                    transition_seconds = %s,
+                    needs_timeline_recompute = false,
+                    review_payload = %s,
+                    updated_at = now()
+                where user_id = %s and id = %s
+                """,
+                (
+                    status_for_decision(request.decision),
+                    run_quality_for_decision(request.decision),
+                    request.model_inclusion,
+                    totals.active_seconds,
+                    totals.wall_seconds,
+                    totals.setup_seconds,
+                    totals.detour_seconds,
+                    totals.interruption_seconds,
+                    totals.waiting_seconds,
+                    totals.side_quest_seconds,
+                    totals.start_latency_seconds,
+                    totals.transition_seconds,
+                    Jsonb(payload),
+                    user_id,
+                    session_id,
+                ),
+            )
+            cursor.execute(
+                """
+                insert into audit_log (
+                  user_id, actor_user_id, event_name, entity_type, entity_id, metadata
+                )
+                values (%s, %s, 'timing.review_saved', 'timing_session', %s, %s)
+                """,
+                (
+                    user_id,
+                    user_id,
+                    session_id,
+                    Jsonb(
+                        {
+                            "decision": request.decision,
+                            "model_inclusion": request.model_inclusion,
+                        }
+                    ),
+                ),
+            )
+        return decision
+
     def _load_session(self, user_id: UUID, session_id: UUID) -> TimingSession | None:
         with self._connection.cursor() as cursor:
             cursor.execute(
@@ -175,6 +378,15 @@ class PostgresTimingRepository:
             )
             rows = cursor.fetchall()
         return [_event_from_row(row) for row in rows]
+
+    def _load_spans(self, user_id: UUID, session_id: UUID) -> list[TimingEventSpan]:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                _LOAD_SPANS_SQL,
+                (user_id, session_id),
+            )
+            rows = cursor.fetchall()
+        return [_span_from_row(row) for row in rows]
 
     def _update_session_projection(
         self,
@@ -220,3 +432,11 @@ def _event_from_row(row: Mapping[str, Any]) -> TimingEvent:
     data.setdefault("capture_context_snapshot_id", None)
     data.setdefault("capture_context_snapshot_ref", None)
     return TimingEvent.model_validate(data)
+
+
+def _span_from_row(row: Mapping[str, Any]) -> TimingEventSpan:
+    return TimingEventSpan.model_validate(dict(row))
+
+
+def _decision_from_row(row: Mapping[str, Any]) -> ModelUpdateDecision:
+    return ModelUpdateDecision.model_validate(dict(row))

@@ -9,7 +9,7 @@ Phase 1 implements a deliberate subset of the canonical v1.3 OpenAPI surface. La
 - Timing session create/get/event append/complete.
 - Mutation envelope enforcement on mutating endpoints.
 - PostgreSQL-backed replay through `client_mutation_log`.
-- `POST /v1/sync/push` top-level and nested mutation-envelope validation.
+- `POST /v1/sync/push` top-level and nested mutation-envelope validation plus replay of the supported Phase 1 operation payloads.
 - Timer wall/active reconstruction for start, pause, resume, and complete events.
 - Phase-scoped route-surface tests proving runtime endpoints match the Phase 1 canonical subset.
 
@@ -47,4 +47,4 @@ make dev-up
 make phase1-smoke
 ```
 
-The smoke test creates an isolated user, proves duplicate replay creates one source event and one mutation-log row, verifies wall/active reconstruction, accepts out-of-order/impossible event sequences with recompute flagged, validates sync push, and cleans up its test user unless `--keep-data` is passed.
+The smoke test creates an isolated user, proves duplicate replay creates one source event and one mutation-log row, verifies wall/active reconstruction, accepts out-of-order/impossible event sequences with recompute flagged, validates and applies sync push, and cleans up its test user unless `--keep-data` is passed.

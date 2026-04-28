@@ -18,6 +18,8 @@ class StoredMutation:
 
 
 class MutationLogRepository(Protocol):
+    def lock(self, user_id: UUID, mutation: MutationEnvelope) -> None: ...
+
     def get(self, user_id: UUID, mutation: MutationEnvelope) -> StoredMutation | None: ...
 
     def save(

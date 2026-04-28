@@ -190,13 +190,15 @@
 
 ## packages/db/parallax_db/
 
-- `migrations.py` — baseline migration discovery order excluding optional profiles (~80 tok)
-- `runner.py` — baseline SQL migration application and Phase 0 schema smoke checks (~260 tok)
+- `migrations.py` — baseline migration discovery order excluding optional profiles, including Phase 3 context/review migrations (~90 tok)
+- `runner.py` — baseline SQL migration application and current schema smoke checks through Phase 3 (~330 tok)
 
 ## scripts/
 
 - `apply_gpu_node_permissions.sh` — permission-only application for `/srv/parallax` runtime trees (~125 tok)
 - `apply_migrations.py` — repo-root runnable baseline migration CLI with optional schema smoke checks (~120 tok)
+- `phase2_smoke.py` — GPU-node Phase 2 review/profile acceptance smoke covering review, discard, spans, stats snapshots, and SQL proof (~560 tok)
+- `phase3_smoke.py` — GPU-node Phase 3 context capture acceptance smoke covering annotations, capture policy/snapshots, places, review flags, and SQL proof (~760 tok)
 - `setup_gpu_node_storage.sh` — GPU-node ZFS dataset, repo checkout, venv directory, and permission bootstrap (~205 tok)
 
 ## services/api/
@@ -208,13 +210,39 @@
 - `healthcheck.py` — container healthcheck client for `/v1/health` (~65 tok)
 - `main.py` — FastAPI app factory and dependency wiring (~70 tok)
 
+## services/api/parallax_api/routes/
+
+- `context.py` — thin Phase 3 route layer for annotations, context capture policy/snapshots, places, and review flags (~420 tok)
+
+## services/api/parallax_api/domain/
+
+- `activity_stats.py` — pure Activity Profile percentile, confidence, limitation, and top-friction calculation (~210 tok)
+- `review_decisions.py` — canonical review-decision to model-inclusion/status/run-quality policy helpers (~115 tok)
+- `timing_spans.py` — pure timing-event span derivation and active/wall/friction total calculation (~430 tok)
+
+## services/api/parallax_api/repositories/
+
+- `context_repository.py` — in-memory Phase 3 context annotations, policies, snapshots, places, and review flags repository (~520 tok)
+- `postgres_context_repository.py` — PostgreSQL Phase 3 context repository and row mapping for context tables (~970 tok)
+- `postgres_profile_repository.py` — PostgreSQL Activity Profile recomputation and profile loading from reviewed sessions/stats snapshots (~280 tok)
+- `profile_repository.py` — in-memory Activity Profile recomputation and loading for unit/API tests (~140 tok)
+
+## services/api/parallax_api/schemas/
+
+- `context.py` — Pydantic DTOs for Phase 3 context annotations, capture policy/snapshots, places, and review flags (~460 tok)
+- `profile.py` — Pydantic DTOs for Activity Profile stats and response shape (~85 tok)
+
 ## services/api/parallax_api/services/
 
+- `context_service.py` — Phase 3 context orchestration, mutation replay, privacy policy filtering, place handling, and review flags (~750 tok)
+- `profile_service.py` — thin Activity Profile service that maps missing profile/activity to 404 (~45 tok)
 - `health.py` — Postgres/Redis runtime health checks behind a small service interface (~130 tok)
 
 ## services/api/tests/
 
 - `test_health.py` — API health/version tests with injected health checkers (~120 tok)
+- `test_phase2_review_profile.py` — Phase 2 API acceptance tests for review/discard decisions, span counts, replay, and Activity Profile stats (~530 tok)
+- `test_phase3_context_capture.py` — Phase 3 API acceptance tests for annotations, policy filtering, snapshots, places, review flags, and sync replay (~720 tok)
 
 ## services/worker/
 
@@ -232,6 +260,13 @@
 ## docs/architecture/
 
 - `phase0_bootstrap.md` — Phase 0 scope, runtime paths, service boundaries, and verification commands (~220 tok)
+- `phase2_review_profile.md` — Phase 2 implemented endpoint subset, architecture, counting semantics, and verification gate (~150 tok)
+- `phase3_context_capture.md` — Phase 3 implemented endpoint subset, privacy policy behavior, Phase 4 seams, and verification gate (~170 tok)
+
+## docs/superpowers/plans/
+
+- `2026-04-28-phase-2-review-profile.md` — Detailed Phase 2 implementation plan and acceptance mapping (~520 tok)
+- `2026-04-28-phase-3-context-capture.md` — Detailed Phase 3 implementation plan, TDD checklist, and Phase 2/4 seam mapping (~750 tok)
 
 ## parallax_v1_3_artifact_pack/source_inputs/
 

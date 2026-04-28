@@ -16,6 +16,17 @@ class PostgresMutationLogRepository:
     def __init__(self, connection: psycopg.Connection[Any]) -> None:
         self._connection = connection
 
+    def lock(self, user_id: UUID, mutation: MutationEnvelope) -> None:
+        lock_keys = sorted(
+            (
+                f"{user_id}:device:{mutation.client_device_id}:{mutation.client_mutation_id}",
+                f"{user_id}:idempotency:{mutation.idempotency_key}",
+            )
+        )
+        with self._connection.cursor() as cursor:
+            for lock_key in lock_keys:
+                cursor.execute("select pg_advisory_xact_lock(hashtext(%s))", (lock_key,))
+
     def get(self, user_id: UUID, mutation: MutationEnvelope) -> StoredMutation | None:
         with self._connection.cursor() as cursor:
             cursor.execute(

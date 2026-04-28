@@ -22,17 +22,18 @@ You are working in an OpenWolf-managed project. These rules apply every turn.
 - Run frontend testing, Xcode work, SwiftUI work, initial Figma work, and Playwright UI validation on the Mac.
 - Access the GPU node with `ssh -i /Users/brennanconley/vibecode/infx/ubuntu24_ed25519 bgconley@10.25.0.50`.
 - For GPU-node storage, first follow `parallax_v1_3_artifact_pack/infrastructure/zfs/zfs_dataset_plan.md` and `create_parallax_datasets.sh`: use the `parallax` namespace, `/srv/parallax` mountpoints, and the actual node pool name as the script argument.
-- Use `/tank/repos/parallax` for the GPU-node repo checkout and `/tank/venvs/parallax` for Parallax virtualenvs. After Mac-side changes are pushed, pull updates from remote in `/tank/repos/parallax`.
+- Use `/tank/repos/parallax` for the GPU-node repo checkout and `/tank/venvs/parallax` for Parallax virtualenvs. After Mac-side changes are pushed, pull updates from remote in `/tank/repos/parallax`. If rsyncing an uncommitted working tree for GPU validation, exclude `.env`, `.git`, `.venv`, `.DS_Store`, and `__pycache__` so host-local runtime config is preserved.
 - `tank/venvs` is root ext4 on the GPU node, not a ZFS dataset; `/tank/venvs/parallax` is still the accepted Parallax venv path.
 - Use `uv` for GPU-node Parallax Python work. `uv` is at `/home/bgconley/.local/bin/uv`; non-interactive SSH may need `PATH=/home/bgconley/.local/bin:$PATH`. Always set `UV_PROJECT_ENVIRONMENT=/tank/venvs/parallax` so `uv` uses the accepted app venv instead of creating `/tank/repos/parallax/.venv`.
 - Parallax runtime datasets are mounted as `tank/parallax/*` under `/srv/parallax`. Use `scripts/setup_gpu_node_storage.sh` for dataset/bootstrap setup and `scripts/apply_gpu_node_permissions.sh` when only ownership/modes need to be applied.
 - Remote sudo over SSH needs a TTY. Use `ssh -tt ... 'sudo -v && sudo <command>'`; do not prefix the Mac-side SSH command with local `sudo`.
 - Current runtime permission policy: `/srv/parallax` `root:root 0755`; `postgres` and `postgres_wal` numeric `999:999 0700`; `objects`, `exports`, `models`, `hf_cache`, and `logs` numeric `10001:bgconley 0770`; `config` and `observability` `bgconley:bgconley 0755`; `backups` `root:bgconley 0750`.
 - Host passwd/group names for numeric UID/GID `999` may display as unrelated local accounts. Treat the numeric IDs as the source of truth until the pinned Postgres image is verified.
-- Do not begin Phase 1 or any later phase without explicit user instruction. Phase 0 must be proven with repo validation, Compose render/start, health readiness, baseline migrations, and GPU-node validation first.
+- Do not begin any later phase without explicit user instruction. Phase 0, Phase 1, and Phase 2 are complete; Phase 3 is active only because the user explicitly started it. Do not start Phase 4 without user instruction. Phase gates must be proven with repo validation, Compose render/start, health readiness, baseline migrations, and GPU-node validation.
 - Phase 0 Compose uses Parallax-specific localhost ports to avoid conflicts with other GPU-node stacks: API `18000`, Postgres `15432`, Redis `16379`, Temporal `17233`, Temporal UI `18088`, MinIO `19000/19001`, and Caddy `18080/18443`.
 - Baseline migrations are run with `scripts/apply_migrations.py`; the runner reads `migrations/` only and excludes optional profiles unless explicitly enabled later.
 - Temporal auto-setup `1.24` requires `DB=postgres12`, not `DB=postgresql`.
+- Deferred release work that must be implemented at the right later phase: production/private-alpha auth provider and JWT/session validation, remaining canonical v1.3 endpoint surface, backup/restore plus WAL/archive proof, load/performance SLO validation, later-phase Temporal workflows, and production traffic/log privacy-scrub proof. Do not pull these into Phase 3 unless the user explicitly starts that scope.
 
 ## After Actions
 

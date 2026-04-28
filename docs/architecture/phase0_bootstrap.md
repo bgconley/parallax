@@ -9,7 +9,8 @@ That file is an implementation derivative of the canonical prototype Compose fil
 `parallax_v1_3_artifact_pack/infrastructure/compose/`. The derivative keeps the same
 Phase 0 service set, but adapts it for the accepted GPU-node runtime by using
 Parallax-specific localhost ports, `/srv/parallax` bind mounts, root `.env` loading,
-service health checks, pinned external service images, and API/worker Dockerfiles.
+service health checks, pinned service images, and API/worker Dockerfiles with pinned
+base-image digests and `uv` installer versions.
 
 Services bind stateful paths to the canonical GPU-node ZFS mountpoints under `/srv/parallax`:
 
@@ -23,7 +24,7 @@ Host ports are Parallax-specific localhost ports so the stack can coexist with o
 ## Code Boundaries
 
 - `services/api/parallax_api/routes/health.py`: thin HTTP response construction only.
-- `services/api/parallax_api/services/health.py`: runtime dependency checks for Postgres, Redis, Temporal, and object storage.
+- `services/api/parallax_api/services/health.py`: runtime dependency checks for Postgres, Redis, Temporal, object storage, and migration readiness.
 - `packages/db/parallax_db/runner.py`: baseline SQL migration application and schema smoke checks.
 - `scripts/apply_migrations.py`: repo-root CLI wrapper for the migration runner.
 - `services/worker/parallax_worker/main.py`: Phase 0 worker process placeholder only; no domain workflows yet.

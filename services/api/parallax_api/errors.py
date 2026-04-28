@@ -6,6 +6,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from .validation_errors import safe_validation_errors
+
 
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
@@ -27,7 +29,7 @@ def install_error_handlers(app: FastAPI) -> None:
             detail={
                 "error_code": "validation_error",
                 "message": "request validation failed",
-                "details": {"errors": exc.errors()},
+                "details": {"errors": safe_validation_errors(exc.errors())},
                 "retryable": False,
             },
             fallback_code="validation_error",

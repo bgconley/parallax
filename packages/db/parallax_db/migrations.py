@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-BASELINE_MIGRATION_PREFIXES = ("0001", "0002", "0003", "0004", "0005", "0006", "0008")
+BASELINE_MIGRATION_PREFIXES = (
+    "0001",
+    "0002",
+    "0003",
+    "0004",
+    "0005",
+    "0006",
+    "0008",
+    "0011",
+    "0014",
+)
 
 
 def discover_baseline_migrations(migrations_dir: Path) -> list[Path]:

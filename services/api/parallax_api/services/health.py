@@ -6,6 +6,8 @@ from http.client import HTTPConnection, HTTPSConnection
 from typing import Protocol
 from urllib.parse import urlparse
 
+from parallax_db.runner import phase0_schema_smoke_checks
+
 from ..settings import ApiSettings, get_settings
 
 
@@ -13,10 +15,11 @@ from ..settings import ApiSettings, get_settings
 class HealthReport:
     status: str
     checks: dict[str, str]
+    metadata: dict[str, str]
 
 
 class HealthChecker(Protocol):
-    def check(self) -> HealthReport: ...
+    def check(self, *, readiness: bool = False) -> HealthReport: ...
 
 
 class RuntimeHealthChecker:
@@ -25,7 +28,7 @@ class RuntimeHealthChecker:
     def __init__(self, settings: ApiSettings | None = None) -> None:
         self._settings = settings or get_settings()
 
-    def check(self) -> HealthReport:
+    def check(self, *, readiness: bool = False) -> HealthReport:
         checks = {
             "api": "ok",
             "postgres": self._check_postgres(),
@@ -33,8 +36,17 @@ class RuntimeHealthChecker:
             "temporal": self._check_temporal(),
             "object_storage": self._check_object_storage(),
         }
+        if readiness:
+            checks["migration_state"] = self._check_migration_state()
         status = "healthy" if all(value == "ok" for value in checks.values()) else "unhealthy"
-        return HealthReport(status=status, checks=checks)
+        return HealthReport(status=status, checks=checks, metadata=self._metadata())
+
+    def _metadata(self) -> dict[str, str]:
+        return {
+            "app_version": self._settings.api_version,
+            "api_contract_version": self._settings.contract_version,
+            "environment": self._settings.env,
+        }
 
     def _check_postgres(self) -> str:
         import psycopg
@@ -44,6 +56,22 @@ class RuntimeHealthChecker:
                 with connection.cursor() as cursor:
                     cursor.execute("select 1")
                     cursor.fetchone()
+            return "ok"
+        except Exception:
+            return "error"
+
+    def _check_migration_state(self) -> str:
+        import psycopg
+
+        try:
+            checks = phase0_schema_smoke_checks()
+            with psycopg.connect(self._settings.database_url, connect_timeout=2) as connection:
+                for check in checks:
+                    with connection.cursor() as cursor:
+                        cursor.execute(check.sql, check.params)
+                        row = cursor.fetchone()
+                    if not row or not row[0]:
+                        return "error"
             return "ok"
         except Exception:
             return "error"

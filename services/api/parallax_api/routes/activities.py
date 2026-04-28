@@ -12,7 +12,9 @@ from ..schemas.activity import (
     ResolveActivityRequest,
     ResolveActivityResponse,
 )
+from ..schemas.profile import ActivityProfile
 from ..services.activity_service import ActivityService
+from ..services.profile_service import ProfileService
 
 router = APIRouter(prefix="/v1/activities", tags=["activities"])
 
@@ -60,3 +62,12 @@ def get_activity(
     uow_factory: UnitOfWorkFactory = UOW_FACTORY,
 ) -> Activity:
     return ActivityService(uow_factory).get_activity(auth.user_id, activity_id)
+
+
+@router.get("/{activity_id}/profile", response_model=ActivityProfile)
+def get_activity_profile(
+    activity_id: UUID,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> ActivityProfile:
+    return ProfileService(uow_factory).get_activity_profile(auth.user_id, activity_id)

@@ -4,7 +4,7 @@ from parallax_api.services.health import HealthReport
 
 
 class HealthyChecker:
-    def check(self) -> HealthReport:
+    def check(self, *, readiness: bool = False) -> HealthReport:
         return HealthReport(
             status="healthy",
             checks={
@@ -14,11 +14,16 @@ class HealthyChecker:
                 "temporal": "ok",
                 "object_storage": "ok",
             },
+            metadata={
+                "app_version": "0.1.0",
+                "api_contract_version": "1.3.0",
+                "environment": "development",
+            },
         )
 
 
 class UnhealthyChecker:
-    def check(self) -> HealthReport:
+    def check(self, *, readiness: bool = False) -> HealthReport:
         return HealthReport(
             status="unhealthy",
             checks={
@@ -27,6 +32,28 @@ class UnhealthyChecker:
                 "redis": "ok",
                 "temporal": "ok",
                 "object_storage": "ok",
+            },
+            metadata={
+                "app_version": "0.1.0",
+                "api_contract_version": "1.3.0",
+                "environment": "development",
+            },
+        )
+
+
+class RecordingChecker:
+    def __init__(self) -> None:
+        self.readiness_values: list[bool] = []
+
+    def check(self, *, readiness: bool = False) -> HealthReport:
+        self.readiness_values.append(readiness)
+        return HealthReport(
+            status="healthy",
+            checks={"api": "ok", "postgres": "ok", "migration_state": "ok"},
+            metadata={
+                "app_version": "0.1.0",
+                "api_contract_version": "1.3.0",
+                "environment": "development",
             },
         )
 
@@ -46,6 +73,11 @@ def test_health_endpoint_reports_runtime_dependencies() -> None:
             "redis": "ok",
             "temporal": "ok",
             "object_storage": "ok",
+        },
+        "metadata": {
+            "app_version": "0.1.0",
+            "api_contract_version": "1.3.0",
+            "environment": "development",
         },
     }
 
@@ -68,6 +100,16 @@ def test_readiness_uses_runtime_dependency_checks() -> None:
     assert response.status_code == 503
     assert response.json()["status"] == "unhealthy"
     assert response.json()["checks"]["postgres"] == "error"
+
+
+def test_readiness_requests_migration_aware_check() -> None:
+    checker = RecordingChecker()
+    client = TestClient(create_app(health_checker=checker))
+
+    response = client.get("/v1/ready")
+
+    assert response.status_code == 200
+    assert checker.readiness_values == [True]
 
 
 def test_liveness_does_not_depend_on_downstream_services() -> None:

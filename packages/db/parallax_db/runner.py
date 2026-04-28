@@ -30,6 +30,14 @@ def phase0_schema_smoke_checks() -> list[SchemaSmokeCheck]:
     ]
 
 
+def current_schema_smoke_checks() -> list[SchemaSmokeCheck]:
+    return [
+        *phase0_schema_smoke_checks(),
+        *(_table_check(name) for name in _PHASE3_TABLES),
+        *(_enum_check(name) for name in _PHASE3_ENUMS),
+    ]
+
+
 def apply_baseline_migrations(database_url: str, migrations_dir: Path) -> list[AppliedMigration]:
     applied: list[AppliedMigration] = []
     migrations = discover_baseline_migrations(migrations_dir)
@@ -61,7 +69,7 @@ def run_schema_smoke_checks(
     checks: Iterable[SchemaSmokeCheck] | None = None,
 ) -> list[str]:
     failures: list[str] = []
-    selected_checks = list(checks or phase0_schema_smoke_checks())
+    selected_checks = list(checks or current_schema_smoke_checks())
     with psycopg.connect(database_url, autocommit=True) as connection:
         for check in selected_checks:
             with connection.cursor() as cursor:
@@ -152,4 +160,29 @@ _PHASE0_ENUMS = (
     "timing_event_type",
     "model_update_decision_type",
     "job_status",
+)
+
+_PHASE3_TABLES = (
+    "context_capture_policy",
+    "capture_context_snapshot",
+    "geospatial_observation",
+    "radio_observation",
+    "device_context_observation",
+    "inferred_place_observation",
+    "temporal_feature_vector",
+    "user_place",
+    "timing_review_flag",
+)
+
+_PHASE3_ENUMS = (
+    "capture_method",
+    "capture_trigger",
+    "geospatial_source_type",
+    "radio_source_type",
+    "motion_state",
+    "place_category",
+    "sensor_availability_state",
+    "sensor_retention_policy",
+    "timing_review_flag_type",
+    "timing_review_flag_status",
 )

@@ -26,6 +26,7 @@ class MutationReplayService:
         result_type: type[T],
         apply: Callable[[], tuple[UUID | None, T]],
     ) -> T:
+        self._mutation_log.lock(user_id, mutation)
         existing = self._mutation_log.get(user_id, mutation)
         if existing is not None:
             return result_type.model_validate(existing.result)

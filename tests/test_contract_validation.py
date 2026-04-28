@@ -25,5 +25,7 @@ def test_baseline_migration_discovery_excludes_optional_profiles() -> None:
         "0005",
         "0006",
         "0008",
+        "0011",
+        "0014",
     ]
     assert all("optional_profiles" not in path.as_posix() for path in migrations)

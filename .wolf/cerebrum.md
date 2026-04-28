@@ -13,7 +13,7 @@
 - Use `/tank/repos/parallax` for the GPU-node repo checkout and `/tank/venvs/parallax` for Parallax virtualenvs. Pull remote updates into `/tank/repos/parallax` after Mac-side pushes.
 - The existing `/tank/venvs/parallax` path is acceptable even though `tank/venvs` is root ext4 rather than ZFS.
 - Use `uv` for GPU-node Parallax Python work, with `UV_PROJECT_ENVIRONMENT=/tank/venvs/parallax`.
-- Do not begin Phase 1 or any later phase without explicit user instruction. Close and verify the current phase acceptance gate first.
+- Do not begin any later phase without explicit user instruction. Phase 3 is active because the user explicitly started it; close and verify the current phase acceptance gate before advancing, and do not start Phase 4 without explicit instruction.
 
 ## Key Learnings
 
@@ -30,6 +30,10 @@
 - **Baseline migration runner:** `scripts/apply_migrations.py` applies only the baseline `migrations/` files discovered by `packages/db/parallax_db/runner.py`; optional profiles remain excluded until explicitly enabled.
 - **Temporal image quirk:** `temporalio/auto-setup:1.24` rejects `DB=postgresql`; use `DB=postgres12`.
 - **Artifact SQL correction:** PostgreSQL expression uniqueness must be represented as a unique expression index, not a table-level `UNIQUE(activity_id, lower(resource_name))` constraint.
+- **Deferred release hardening:** After Phase 0/1 hardening, remaining later-scope items are production/private-alpha auth provider and JWT/session validation, remaining canonical v1.3 endpoints, backup/restore plus WAL/archive proof, load/performance SLO validation, later-phase Temporal workflows, and production traffic/log privacy-scrub proof. Keep them visible but do not implement them during Phase 2 unless their phase or a release-hardening scope is explicitly started.
+- **Phase 2 architecture:** Review/counting/profile code is split into pure domain modules (`timing_spans.py`, `activity_stats.py`, `review_decisions.py`), thin services/routes, and in-memory/Postgres repositories. Resource detours and interruptions are wall-only by default and excluded from active duration.
+- **Phase 3 architecture:** Context capture code has a dedicated schema/repository/service/route slice; timing code only resolves and persists `capture_context_snapshot_id/ref`. Annotations create `annotation_captured` source events but stay pending for Phase 4 extraction.
+- **GPU working-tree sync:** When rsyncing local uncommitted work to `/tank/repos/parallax`, exclude `.env` along with `.git`, `.venv`, `.DS_Store`, and `__pycache__`; otherwise `--delete` removes the GPU node's host-local Compose env file.
 
 ## Do-Not-Repeat
 
@@ -44,6 +48,7 @@
 - [2026-04-27] Do not bind Parallax Phase 0 services to common host ports such as `5432`, `6379`, or `8000` on the GPU node; Structura and other stacks may already use them.
 - [2026-04-27] Do not use `DB=postgresql` with `temporalio/auto-setup:1.24`; it exits with "Unsupported driver specified". Use `DB=postgres12`.
 - [2026-04-27] Do not put expression uniqueness inside a PostgreSQL table-level `UNIQUE` constraint. Use a unique expression index after table creation.
+- [2026-04-28] Do not rsync to `/tank/repos/parallax` with `--delete` unless `.env` is excluded; GPU `make dev-up` requires the host-local env file.
 
 ## Decision Log
 
@@ -53,3 +58,6 @@
 - [2026-04-27] GPU-node dependency management follows the repository `uv.lock`: run `PATH=/home/bgconley/.local/bin:$PATH UV_PROJECT_ENVIRONMENT=/tank/venvs/parallax uv sync --frozen --all-groups` from `/tank/repos/parallax`.
 - [2026-04-27] Phase 0 Compose starts detached via `make dev-up`; use `make dev-logs` for logs and `make dev-down` for shutdown.
 - [2026-04-27] API health readiness lives in `services/api/parallax_api/services/health.py`; route handlers stay thin and report Postgres/Redis dependency status without exposing raw connection details.
+- [2026-04-27] Phase 0/1 hardening closed the actionable current-scope audit findings; remaining auth provider, full endpoint surface, backup/restore, performance, Temporal workflow, and production privacy-scrub work is deferred to the appropriate later phase or explicit release-hardening pass.
+- [2026-04-28] Phase 2 uses synchronous baseline Activity Profile recomputation inside the API transaction path after review/discard because Temporal workflow implementation is a later-phase concern; the smoke test proves persisted spans, model-update decisions, and stats snapshots on the GPU node.
+- [2026-04-28] Phase 3 baseline includes migrations `0011_capture_context_geospatial_sensor_fusion.sql` and `0014_timing_review_flags.sql` in the root migration stream. Optional PostGIS/Timescale context profiles remain excluded.

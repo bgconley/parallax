@@ -39,3 +39,17 @@ def test_invalid_auth_header_is_rejected_without_internal_error() -> None:
     assert response.status_code == 401
     assert response.json()["error_code"] == "invalid_auth_context"
     assert "request_id" in response.json()
+
+
+def test_dev_header_auth_is_rejected_outside_development(monkeypatch) -> None:
+    monkeypatch.setenv("PARALLAX_ENV", "production")
+    client = TestClient(make_app())
+
+    response = client.post(
+        "/v1/activities",
+        headers={"X-Parallax-User-Id": "00000000-0000-0000-0000-0000000000f1"},
+        json=activity_payload(),
+    )
+
+    assert response.status_code == 503
+    assert response.json()["error_code"] == "auth_provider_not_configured"

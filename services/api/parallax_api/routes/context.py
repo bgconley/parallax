@@ -22,7 +22,15 @@ from ..schemas.context import (
     UpdateTimingReviewFlagRequest,
     UserPlace,
 )
+from ..schemas.extraction import (
+    ConfirmExtractedEventRequest,
+    CorrectExtractedEventRequest,
+    ExtractAnnotationRequest,
+    ExtractAnnotationResponse,
+    ExtractedContextEvent,
+)
 from ..services.context_service import ContextService
+from ..services.extraction_service import ExtractionService
 
 router = APIRouter(tags=["context"])
 
@@ -56,6 +64,46 @@ def get_context_annotation(
     uow_factory: UnitOfWorkFactory = UOW_FACTORY,
 ) -> TemporalContextAnnotation:
     return ContextService(uow_factory).get_annotation(auth.user_id, annotation_id)
+
+
+@router.post(
+    "/v1/timing/annotations/{annotation_id}/extract",
+    response_model=ExtractAnnotationResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def extract_context_annotation(
+    annotation_id: UUID,
+    payload: ExtractAnnotationRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> ExtractAnnotationResponse:
+    return ExtractionService(uow_factory).extract_annotation(auth.user_id, annotation_id, payload)
+
+
+@router.post(
+    "/v1/timing/extracted-events/{event_id}/confirm",
+    response_model=ExtractedContextEvent,
+)
+def confirm_extracted_context_event(
+    event_id: UUID,
+    payload: ConfirmExtractedEventRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> ExtractedContextEvent:
+    return ExtractionService(uow_factory).confirm_extracted_event(auth.user_id, event_id, payload)
+
+
+@router.post(
+    "/v1/timing/extracted-events/{event_id}/correct",
+    response_model=ExtractedContextEvent,
+)
+def correct_extracted_context_event(
+    event_id: UUID,
+    payload: CorrectExtractedEventRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> ExtractedContextEvent:
+    return ExtractionService(uow_factory).correct_extracted_event(auth.user_id, event_id, payload)
 
 
 @router.get("/v1/privacy/context-capture-policy", response_model=ContextCapturePolicy)

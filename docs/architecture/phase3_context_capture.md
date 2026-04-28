@@ -14,7 +14,7 @@ The scope is limited to `docs/03_phased_implementation_plan.md` Phase 3. Structu
 
 ## Architecture
 
-Routes stay thin and delegate to `ContextService`. Context schemas live in `schemas/context.py`; context persistence lives behind a dedicated `contexts` unit-of-work repository. Timing repositories remain responsible for source timing events and session projections; their only Phase 3 change is persisting and loading `capture_context_snapshot_id` and `capture_context_snapshot_ref`.
+Routes stay thin and delegate to `ContextService`. Context schemas live in `schemas/context.py`; context persistence lives behind a dedicated `contexts` unit-of-work repository. The Postgres implementation is a facade over cohesive annotation, policy, snapshot, place, and review-flag persistence modules so Phase 4 extraction work does not accumulate in one file. Timing repositories remain responsible for source timing events and session projections; their only Phase 3 change is persisting and loading `capture_context_snapshot_id` and `capture_context_snapshot_ref`.
 
 ## Semantics
 

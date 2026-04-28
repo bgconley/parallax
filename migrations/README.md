@@ -2,7 +2,7 @@
 
 Baseline migrations are copied from the v1.3 artifact pack and applied in feature-phase order. The baseline runner reads only this directory and intentionally excludes `parallax_v1_3_artifact_pack/database/optional_profiles/`.
 
-For the first temporal core path, apply:
+Current baseline order:
 
 1. `0001_extensions_and_enums.sql`
 2. `0002_identity_privacy_audit.sql`
@@ -11,3 +11,10 @@ For the first temporal core path, apply:
 5. `0005_context_extraction_preflight.sql`
 6. `0006_reviews_predictions_evidence.sql`
 7. `0008_jobs_sync_model_audit.sql`
+8. `0011_capture_context_geospatial_sensor_fusion.sql`
+9. `0014_timing_review_flags.sql`
+
+`scripts/apply_migrations.py --smoke` runs the current implementation schema
+smoke, not only the original Phase 0 checks. The current smoke covers Phase 0
+core tables/enums, Phase 2 profile tables, Phase 3 context capture tables/enums,
+and Phase 4 extraction, correction, model-invocation, and preflight tables/enums.

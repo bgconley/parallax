@@ -26,7 +26,7 @@ def main() -> int:
         default=Path("migrations"),
         help="Directory containing baseline SQL migrations.",
     )
-    parser.add_argument("--smoke", action="store_true", help="Run Phase 0 schema smoke checks.")
+    parser.add_argument("--smoke", action="store_true", help="Run current schema smoke checks.")
     args = parser.parse_args()
 
     if not args.database_url:

@@ -4,7 +4,6 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from ..schemas.context import (
-    AnnotationStatus,
     CaptureContextSnapshot,
     ContextCapturePolicy,
     CreateAnnotationRequest,
@@ -26,13 +25,30 @@ from ..schemas.context import (
     UpdatePlaceRequest,
     UserPlace,
 )
-from ..schemas.timing import AppendTimingEventRequest, TimingEvent
+from ..schemas.extraction import (
+    CorrectExtractedEventRequest,
+    ExtractedContextEvent,
+    ModelInvocationRecord,
+    TemporalCorrection,
+)
+from .context_annotation_state import (
+    annotation_source_event,
+    initial_annotation_status,
+    resolve_annotation_snapshot_link,
+)
+from .context_extraction_repository import ContextExtractionRepository
+from .context_place_inference import (
+    infer_places_for_snapshot,
+    inferred_candidates_for_snapshot,
+)
+from .context_policy_defaults import default_context_capture_policy
 from .memory import InMemoryStore
 
 
 class ContextRepository:
     def __init__(self, store: InMemoryStore) -> None:
         self._store = store
+        self._extraction = ContextExtractionRepository(store)
 
     def get_annotation(
         self,
@@ -42,7 +58,7 @@ class ContextRepository:
         annotation = self._store.annotations.get(annotation_id)
         if annotation is None or annotation.user_id != user_id:
             return None
-        return _resolve_annotation_snapshot_link(self._store, annotation)
+        return resolve_annotation_snapshot_link(self._store, annotation)
 
     def create_annotation(
         self,
@@ -65,7 +81,7 @@ class ContextRepository:
             timer_active_seconds=request.timer_active_seconds,
             occurred_at=request.occurred_at,
             privacy_class=request.privacy_class,
-            status=_initial_annotation_status(request),
+            status=initial_annotation_status(request),
             client_mutation_id=request.mutation.client_mutation_id,
             client_device_id=request.mutation.client_device_id,
             idempotency_key=request.mutation.idempotency_key,
@@ -83,7 +99,7 @@ class ContextRepository:
         self._store.annotations[annotation.id] = annotation
         self._store.session_annotations.setdefault(session_id, []).append(annotation.id)
         self._store.session_events.setdefault(session_id, []).append(
-            _annotation_source_event(user_id, session_id, request, annotation, now)
+            annotation_source_event(user_id, session_id, request, annotation, now)
         )
         return annotation
 
@@ -91,7 +107,7 @@ class ContextRepository:
         existing = self._store.context_policies.get(user_id)
         if existing is not None:
             return existing
-        policy = _default_context_capture_policy(user_id)
+        policy = default_context_capture_policy(user_id)
         self._store.context_policies[user_id] = policy
         return policy
 
@@ -186,6 +202,10 @@ class ContextRepository:
         self._store.capture_snapshots[snapshot.id] = snapshot
         self._store.session_snapshots.setdefault(session_id, []).append(snapshot.id)
         self.resolve_pending_snapshot_references(user_id, snapshot)
+        inferred_places = infer_places_for_snapshot(self._store, snapshot)
+        if inferred_places:
+            snapshot = snapshot.model_copy(update={"inferred_places": inferred_places})
+            self._store.capture_snapshots[snapshot.id] = snapshot
         return snapshot
 
     def list_capture_context_snapshots(
@@ -285,6 +305,9 @@ class ContextRepository:
         return updated
 
     def resolve_place(self, user_id: UUID, request: ResolvePlaceRequest) -> ResolvePlaceResponse:
+        inferred = inferred_candidates_for_snapshot(self._store, user_id, request)
+        if inferred is not None:
+            return inferred
         existing = (
             self.get_place(user_id, request.existing_place_id)
             if request.existing_place_id
@@ -329,6 +352,66 @@ class ContextRepository:
             requires_confirmation=True,
         )
 
+    def update_annotation_status(
+        self,
+        user_id: UUID,
+        annotation_id: UUID,
+        status: str,
+        metadata_update: dict[str, object],
+    ) -> TemporalContextAnnotation | None:
+        annotation = self.get_annotation(user_id, annotation_id)
+        if annotation is None:
+            return None
+        self._extraction.update_annotation_status(user_id, annotation_id, status, metadata_update)
+        return self.get_annotation(user_id, annotation_id)
+
+    def record_model_invocation(
+        self,
+        invocation: ModelInvocationRecord,
+    ) -> ModelInvocationRecord:
+        return self._extraction.record_model_invocation(invocation)
+
+    def create_extracted_event(
+        self,
+        event: ExtractedContextEvent,
+    ) -> ExtractedContextEvent:
+        return self._extraction.create_extracted_event(event)
+
+    def get_extracted_event(
+        self,
+        user_id: UUID,
+        event_id: UUID,
+    ) -> ExtractedContextEvent | None:
+        return self._extraction.get_extracted_event(user_id, event_id)
+
+    def update_extracted_event_confirmation(
+        self,
+        user_id: UUID,
+        event_id: UUID,
+        confirmation_state: str,
+    ) -> ExtractedContextEvent | None:
+        return self._extraction.update_extracted_event_confirmation(
+            user_id,
+            event_id,
+            confirmation_state,
+        )
+
+    def correct_extracted_event(
+        self,
+        user_id: UUID,
+        event_id: UUID,
+        request: CorrectExtractedEventRequest,
+    ) -> tuple[ExtractedContextEvent, TemporalCorrection] | None:
+        return self._extraction.correct_extracted_event(user_id, event_id, request)
+
+    def create_preflight_check(
+        self,
+        user_id: UUID,
+        activity_id: UUID,
+        source_event: ExtractedContextEvent,
+    ) -> None:
+        self._extraction.create_preflight_check(user_id, activity_id, source_event)
+
     def list_review_flags(
         self,
         user_id: UUID,
@@ -364,89 +447,3 @@ class ContextRepository:
         )
         self._store.review_flags[flag_id] = updated
         return updated
-
-
-def _default_context_capture_policy(user_id: UUID) -> ContextCapturePolicy:
-    now = datetime.now(UTC)
-    return ContextCapturePolicy(
-        id=uuid4(),
-        user_id=user_id,
-        location_enabled=False,
-        precise_location_enabled=False,
-        background_location_enabled=False,
-        radio_context_enabled=False,
-        motion_context_enabled=False,
-        device_context_enabled=True,
-        raw_location_retention_days=None,
-        raw_radio_retention_days=None,
-        default_location_retention_policy="derived_only",
-        default_radio_retention_policy="derived_only",
-        per_run_context_default=True,
-        updated_at=now,
-        created_at=now,
-    )
-
-
-def _initial_annotation_status(request: CreateAnnotationRequest) -> AnnotationStatus:
-    if request.input_mode == "voice" and request.raw_text is None:
-        return "transcription_pending"
-    if request.raw_text is not None or request.input_mode in {"quick_chip", "review_note"}:
-        return "extraction_pending"
-    return "captured"
-
-
-def _annotation_source_event(
-    user_id: UUID,
-    session_id: UUID,
-    request: CreateAnnotationRequest,
-    annotation: TemporalContextAnnotation,
-    server_time: datetime,
-) -> TimingEvent:
-    event_request = AppendTimingEventRequest(
-        mutation=request.mutation,
-        event_type="annotation_captured",
-        client_time=request.occurred_at,
-        timer_elapsed_seconds=request.timer_elapsed_seconds,
-        timer_active_seconds=request.timer_active_seconds,
-        capture_context_snapshot_id=annotation.capture_context_snapshot_id,
-        capture_context_snapshot_ref=request.capture_context_snapshot_ref,
-        payload={"annotation_id": str(annotation.id), "input_mode": request.input_mode},
-    )
-    return TimingEvent(
-        id=uuid4(),
-        user_id=user_id,
-        session_id=session_id,
-        event_type=event_request.event_type,
-        client_time=event_request.client_time,
-        server_time=server_time,
-        timer_elapsed_seconds=event_request.timer_elapsed_seconds,
-        timer_active_seconds=event_request.timer_active_seconds,
-        client_sequence=event_request.mutation.client_sequence,
-        client_mutation_id=event_request.mutation.client_mutation_id,
-        client_device_id=event_request.mutation.client_device_id,
-        idempotency_key=event_request.mutation.idempotency_key,
-        capture_context_snapshot_id=event_request.capture_context_snapshot_id,
-        capture_context_snapshot_ref=event_request.capture_context_snapshot_ref,
-        payload=event_request.payload,
-    )
-
-
-def _resolve_annotation_snapshot_link(
-    store: InMemoryStore,
-    annotation: TemporalContextAnnotation,
-) -> TemporalContextAnnotation:
-    if (
-        annotation.capture_context_snapshot_id is not None
-        or annotation.capture_context_snapshot_ref is None
-    ):
-        return annotation
-    for snapshot in store.capture_snapshots.values():
-        if (
-            snapshot.user_id == annotation.user_id
-            and annotation.capture_context_snapshot_ref
-            in {snapshot.client_mutation_id, snapshot.idempotency_key}
-        ):
-            updated = annotation.model_copy(update={"capture_context_snapshot_id": snapshot.id})
-            store.annotations[annotation.id] = updated
-            return updated
-    return annotation

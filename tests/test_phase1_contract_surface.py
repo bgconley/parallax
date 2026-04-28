@@ -24,6 +24,9 @@ IMPLEMENTED_ENDPOINTS = {
     ("POST", "/v1/timing/sessions/{session_id}/discard"),
     ("POST", "/v1/timing/sessions/{session_id}/annotations"),
     ("GET", "/v1/timing/annotations/{annotation_id}"),
+    ("POST", "/v1/timing/annotations/{annotation_id}/extract"),
+    ("POST", "/v1/timing/extracted-events/{event_id}/confirm"),
+    ("POST", "/v1/timing/extracted-events/{event_id}/correct"),
     ("GET", "/v1/privacy/context-capture-policy"),
     ("PATCH", "/v1/privacy/context-capture-policy"),
     ("POST", "/v1/timing/sessions/{session_id}/capture-context"),
@@ -38,7 +41,7 @@ IMPLEMENTED_ENDPOINTS = {
 }
 
 
-def test_runtime_surface_matches_phase2_canonical_subset() -> None:
+def test_runtime_surface_matches_active_phase_canonical_subset() -> None:
     runtime_endpoints = {
         (method, route.path)
         for route in create_app().routes
@@ -59,6 +62,7 @@ def test_implemented_surface_is_declared_as_subset_of_full_canonical_openapi() -
     }
     phase1_doc = (ROOT / "docs/architecture/phase1_core_loop.md").read_text()
     phase2_doc = (ROOT / "docs/architecture/phase2_review_profile.md").read_text()
+    phase_scope_doc = (ROOT / "docs/architecture/api_surface_phase_scope.md").read_text()
 
     assert IMPLEMENTED_ENDPOINTS <= canonical_endpoints
     assert canonical_endpoints - IMPLEMENTED_ENDPOINTS
@@ -70,3 +74,7 @@ def test_implemented_surface_is_declared_as_subset_of_full_canonical_openapi() -
 
     assert "Phase 2 extends the implemented canonical subset" in phase2_doc
     assert "Phase 3 extends the implemented canonical subset" in phase3_doc
+    assert "not the full v1.3 release contract" in phase_scope_doc
+    assert "Phase 5 and later endpoints remain unimplemented" in phase_scope_doc
+    for method, path in sorted(canonical_endpoints - IMPLEMENTED_ENDPOINTS):
+        assert f"- `{method} {path}`" in phase_scope_doc

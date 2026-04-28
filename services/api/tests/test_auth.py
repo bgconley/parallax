@@ -1,3 +1,12 @@
+from __future__ import annotations
+
+import base64
+import hashlib
+import hmac
+import json
+import time
+from collections.abc import Mapping
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from parallax_api.main import create_app
@@ -19,6 +28,26 @@ def activity_payload() -> dict[str, object]:
         },
         "display_name": "Auth test activity",
     }
+
+
+def encode_hs256_jwt(claims: dict[str, object], secret: str) -> str:
+    header = {"alg": "HS256", "typ": "JWT"}
+    signing_input = ".".join(
+        [
+            base64url_json(header),
+            base64url_json(claims),
+        ]
+    )
+    signature = hmac.new(secret.encode("utf-8"), signing_input.encode("ascii"), hashlib.sha256)
+    return f"{signing_input}.{base64url(signature.digest())}"
+
+
+def base64url_json(value: Mapping[str, object]) -> str:
+    return base64url(json.dumps(value, separators=(",", ":")).encode("utf-8"))
+
+
+def base64url(value: bytes) -> str:
+    return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
 
 
 def test_missing_auth_header_is_rejected_with_structured_error() -> None:
@@ -50,6 +79,130 @@ def test_dev_header_auth_is_rejected_outside_development(monkeypatch) -> None:
         headers={"X-Parallax-User-Id": "00000000-0000-0000-0000-0000000000f1"},
         json=activity_payload(),
     )
+
+    assert response.status_code == 503
+    assert response.json()["error_code"] == "auth_provider_not_configured"
+
+
+def test_external_bearer_auth_accepts_signed_jwt_in_production(monkeypatch) -> None:
+    user_id = "00000000-0000-0000-0000-0000000000f2"
+    secret = "private-alpha-test-secret-32-bytes-min"
+    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
+    monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", secret)
+    token = encode_hs256_jwt({"sub": user_id, "exp": int(time.time()) + 300}, secret)
+    client = TestClient(make_app())
+
+    response = client.post(
+        "/v1/activities",
+        headers={"Authorization": f"Bearer {token}"},
+        json=activity_payload(),
+    )
+
+    assert response.status_code == 201
+    assert response.json()["user_id"] == user_id
+
+
+def test_external_bearer_auth_rejects_expired_jwt(monkeypatch) -> None:
+    secret = "private-alpha-test-secret-32-bytes-min"
+    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
+    monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", secret)
+    token = encode_hs256_jwt(
+        {"sub": "00000000-0000-0000-0000-0000000000f3", "exp": int(time.time()) - 60},
+        secret,
+    )
+    client = TestClient(make_app())
+
+    response = client.get("/v1/activities", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
+    assert response.json()["error_code"] == "auth_token_expired"
+
+
+def test_external_bearer_auth_rejects_invalid_signature_without_echoing_token(monkeypatch) -> None:
+    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
+    monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", "expected-secret-32-bytes-minimum")
+    token = encode_hs256_jwt(
+        {"sub": "00000000-0000-0000-0000-0000000000f4", "exp": int(time.time()) + 300},
+        "wrong-secret-32-bytes-minimum!!",
+    )
+    client = TestClient(make_app())
+
+    response = client.get("/v1/activities", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
+    body = response.json()
+    assert body["error_code"] == "invalid_auth_token"
+    assert token not in json.dumps(body)
+
+
+def test_external_bearer_auth_verifies_configured_issuer_and_audience(monkeypatch) -> None:
+    user_id = "00000000-0000-0000-0000-0000000000f5"
+    secret = "issuer-audience-test-secret-32-bytes"
+    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
+    monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", secret)
+    monkeypatch.setenv("PARALLAX_AUTH_JWT_ISSUER", "https://auth.parallax.test")
+    monkeypatch.setenv("PARALLAX_AUTH_JWT_AUDIENCE", "parallax-api")
+    token = encode_hs256_jwt(
+        {
+            "sub": user_id,
+            "exp": int(time.time()) + 300,
+            "iss": "https://auth.parallax.test",
+            "aud": "parallax-api",
+        },
+        secret,
+    )
+    client = TestClient(make_app())
+
+    response = client.get("/v1/activities", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 200
+
+
+def test_external_bearer_auth_rejects_wrong_audience(monkeypatch) -> None:
+    secret = "issuer-audience-test-secret-32-bytes"
+    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
+    monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", secret)
+    monkeypatch.setenv("PARALLAX_AUTH_JWT_AUDIENCE", "parallax-api")
+    token = encode_hs256_jwt(
+        {
+            "sub": "00000000-0000-0000-0000-0000000000f6",
+            "exp": int(time.time()) + 300,
+            "aud": "other-api",
+        },
+        secret,
+    )
+    client = TestClient(make_app())
+
+    response = client.get("/v1/activities", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
+    assert response.json()["error_code"] == "invalid_auth_token"
+
+
+def test_external_bearer_auth_requires_secret_configuration(monkeypatch) -> None:
+    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
+    monkeypatch.delenv("PARALLAX_AUTH_JWT_SECRET", raising=False)
+    client = TestClient(make_app())
+
+    response = client.get("/v1/activities", headers={"Authorization": "Bearer token"})
+
+    assert response.status_code == 503
+    assert response.json()["error_code"] == "auth_provider_not_configured"
+
+
+def test_external_bearer_auth_rejects_short_hs256_secret(monkeypatch) -> None:
+    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
+    monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", "too-short")
+    client = TestClient(make_app())
+
+    response = client.get("/v1/activities", headers={"Authorization": "Bearer token"})
 
     assert response.status_code == 503
     assert response.json()["error_code"] == "auth_provider_not_configured"

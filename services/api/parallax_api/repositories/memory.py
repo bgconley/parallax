@@ -10,9 +10,15 @@ from ..schemas.common import MutationEnvelope
 from ..schemas.context import (
     CaptureContextSnapshot,
     ContextCapturePolicy,
+    InferredPlaceObservation,
     TemporalContextAnnotation,
     TimingReviewFlag,
     UserPlace,
+)
+from ..schemas.extraction import (
+    ExtractedContextEvent,
+    ModelInvocationRecord,
+    TemporalCorrection,
 )
 from ..schemas.profile import ActivityProfileStats
 from ..schemas.timing import ModelUpdateDecision, TimingEvent, TimingEventSpan, TimingSession
@@ -43,7 +49,11 @@ class InMemoryStore:
     capture_snapshots: dict[UUID, CaptureContextSnapshot] = field(default_factory=dict)
     session_snapshots: dict[UUID, list[UUID]] = field(default_factory=dict)
     places: dict[UUID, UserPlace] = field(default_factory=dict)
+    inferred_place_observations: dict[UUID, InferredPlaceObservation] = field(default_factory=dict)
     review_flags: dict[UUID, TimingReviewFlag] = field(default_factory=dict)
+    model_invocations: dict[UUID, ModelInvocationRecord] = field(default_factory=dict)
+    extracted_events: dict[UUID, ExtractedContextEvent] = field(default_factory=dict)
+    temporal_corrections: dict[UUID, TemporalCorrection] = field(default_factory=dict)
     review_decisions: dict[UUID, list[ModelUpdateDecision]] = field(default_factory=dict)
     activity_stats: dict[UUID, ActivityProfileStats] = field(default_factory=dict)
     mutation_records: dict[DeviceMutationKey, MutationRecord] = field(default_factory=dict)

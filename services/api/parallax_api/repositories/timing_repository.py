@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from ..domain.review_decisions import run_quality_for_decision, status_for_decision
 from ..domain.timing_reconstruction import project_timing_session
 from ..domain.timing_spans import TimingEventSpanDraft, TimingSpanTotals
+from ..schemas.extraction import ExtractedContextEvent
 from ..schemas.timing import (
     AppendTimingEventRequest,
     CompleteTimingSessionRequest,
@@ -161,6 +162,47 @@ class TimingRepository:
         self._store.session_spans[session_id] = spans
         return spans
 
+    def upsert_extracted_event_span(
+        self,
+        user_id: UUID,
+        extracted_event: ExtractedContextEvent,
+        *,
+        user_corrected: bool,
+    ) -> TimingEventSpan:
+        annotation = self._store.annotations[extracted_event.annotation_id]
+        started_at = annotation.occurred_at
+        ended_at = (
+            started_at + timedelta(seconds=extracted_event.duration_seconds)
+            if extracted_event.duration_seconds is not None
+            else None
+        )
+        span = TimingEventSpan(
+            id=uuid4(),
+            user_id=user_id,
+            session_id=extracted_event.session_id,
+            checkpoint_run_id=extracted_event.checkpoint_run_id,
+            span_type=extracted_event.span_type,
+            friction_category=extracted_event.friction_category,
+            started_at=started_at,
+            ended_at=ended_at,
+            duration_seconds=extracted_event.duration_seconds,
+            count_policy=extracted_event.count_policy,
+            count_in_wall_time=extracted_event.count_in_wall_time,
+            count_in_active_time=extracted_event.count_in_active_time,
+            model_update_scopes=extracted_event.model_update_scopes,
+            linked_annotation_id=extracted_event.annotation_id,
+            linked_extracted_event_id=extracted_event.id,
+            user_corrected=user_corrected,
+        )
+        existing_spans = self._store.session_spans.get(extracted_event.session_id, [])
+        self._store.session_spans[extracted_event.session_id] = [
+            existing
+            for existing in existing_spans
+            if existing.linked_extracted_event_id != extracted_event.id
+        ] + [span]
+        _update_session_friction_totals(self._store, user_id, extracted_event.session_id)
+        return span
+
     def review_session(
         self,
         user_id: UUID,
@@ -214,3 +256,37 @@ class TimingRepository:
             }
         )
         return decision
+
+
+def _update_session_friction_totals(
+    store: InMemoryStore,
+    user_id: UUID,
+    session_id: UUID,
+) -> None:
+    session = store.sessions.get(session_id)
+    if session is None or session.user_id != user_id:
+        return
+    spans = store.session_spans.get(session_id, [])
+    totals = {
+        "setup_seconds": 0,
+        "detour_seconds": 0,
+        "interruption_seconds": 0,
+        "waiting_seconds": 0,
+        "side_quest_seconds": 0,
+        "start_latency_seconds": 0,
+        "transition_seconds": 0,
+    }
+    span_to_total = {
+        "setup": "setup_seconds",
+        "resource_detour": "detour_seconds",
+        "interruption": "interruption_seconds",
+        "waiting": "waiting_seconds",
+        "side_quest": "side_quest_seconds",
+        "start_latency": "start_latency_seconds",
+        "transition": "transition_seconds",
+    }
+    for span in spans:
+        total_name = span_to_total.get(span.span_type)
+        if total_name is not None:
+            totals[total_name] += span.duration_seconds or 0
+    store.sessions[session_id] = session.model_copy(update=totals)

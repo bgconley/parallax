@@ -33,8 +33,11 @@ def phase0_schema_smoke_checks() -> list[SchemaSmokeCheck]:
 def current_schema_smoke_checks() -> list[SchemaSmokeCheck]:
     return [
         *phase0_schema_smoke_checks(),
+        *(_table_check(name) for name in _PHASE2_TABLES),
         *(_table_check(name) for name in _PHASE3_TABLES),
+        *(_table_check(name) for name in _PHASE4_TABLES),
         *(_enum_check(name) for name in _PHASE3_ENUMS),
+        *(_enum_check(name) for name in _PHASE4_ENUMS),
     ]
 
 
@@ -162,6 +165,11 @@ _PHASE0_ENUMS = (
     "job_status",
 )
 
+_PHASE2_TABLES = (
+    "timing_event_span",
+    "activity_stats_snapshot",
+)
+
 _PHASE3_TABLES = (
     "context_capture_policy",
     "capture_context_snapshot",
@@ -185,4 +193,17 @@ _PHASE3_ENUMS = (
     "sensor_retention_policy",
     "timing_review_flag_type",
     "timing_review_flag_status",
+)
+
+_PHASE4_TABLES = (
+    "model_invocation",
+    "temporal_extracted_context_event",
+    "temporal_correction",
+    "resource_dependency",
+    "preflight_check",
+)
+
+_PHASE4_ENUMS = (
+    "confirmation_state",
+    "model_role",
 )

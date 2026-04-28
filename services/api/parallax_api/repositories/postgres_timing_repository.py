@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import timedelta
 from typing import Any
 from uuid import UUID
 
@@ -10,6 +11,7 @@ from psycopg.types.json import Jsonb
 from ..domain.review_decisions import run_quality_for_decision, status_for_decision
 from ..domain.timing_reconstruction import project_timing_session
 from ..domain.timing_spans import TimingEventSpanDraft, TimingSpanTotals
+from ..schemas.extraction import ExtractedContextEvent
 from ..schemas.timing import (
     AppendTimingEventRequest,
     CompleteTimingSessionRequest,
@@ -265,6 +267,66 @@ class PostgresTimingRepository:
                 spans.append(_span_from_row(row))
         return spans
 
+    def upsert_extracted_event_span(
+        self,
+        user_id: UUID,
+        extracted_event: ExtractedContextEvent,
+        *,
+        user_corrected: bool,
+    ) -> TimingEventSpan:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                select occurred_at
+                from temporal_context_annotation
+                where user_id = %s and id = %s
+                """,
+                (user_id, extracted_event.annotation_id),
+            )
+            annotation_row = cursor.fetchone()
+            if annotation_row is None:
+                raise KeyError(extracted_event.annotation_id)
+            started_at = annotation_row["occurred_at"]
+            ended_at = (
+                started_at + timedelta(seconds=extracted_event.duration_seconds)
+                if extracted_event.duration_seconds is not None
+                else None
+            )
+            cursor.execute(
+                """
+                delete from timing_event_span
+                where user_id = %s and linked_extracted_event_id = %s
+                """,
+                (user_id, extracted_event.id),
+            )
+            cursor.execute(
+                _INSERT_SPAN_SQL,
+                (
+                    user_id,
+                    extracted_event.session_id,
+                    extracted_event.checkpoint_run_id,
+                    None,
+                    None,
+                    extracted_event.span_type,
+                    extracted_event.friction_category,
+                    started_at,
+                    ended_at,
+                    extracted_event.duration_seconds,
+                    extracted_event.count_policy,
+                    extracted_event.count_in_wall_time,
+                    extracted_event.count_in_active_time,
+                    extracted_event.model_update_scopes,
+                    extracted_event.annotation_id,
+                    extracted_event.id,
+                    user_corrected,
+                ),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise RuntimeError("timing span insert returned no row")
+            self._update_session_friction_totals(cursor, user_id, extracted_event.session_id)
+        return _span_from_row(row)
+
     def review_session(
         self,
         user_id: UUID,
@@ -418,6 +480,48 @@ class PostgresTimingRepository:
                     session_id,
                 ),
             )
+
+    def _update_session_friction_totals(
+        self,
+        cursor: psycopg.Cursor[Mapping[str, Any]],
+        user_id: UUID,
+        session_id: UUID,
+    ) -> None:
+        cursor.execute(
+            """
+            select span_type, coalesce(sum(duration_seconds), 0)::integer as seconds
+            from timing_event_span
+            where user_id = %s and session_id = %s
+            group by span_type
+            """,
+            (user_id, session_id),
+        )
+        totals = {row["span_type"]: row["seconds"] for row in cursor.fetchall()}
+        cursor.execute(
+            """
+            update timing_session
+            set setup_seconds = %s,
+                detour_seconds = %s,
+                interruption_seconds = %s,
+                waiting_seconds = %s,
+                side_quest_seconds = %s,
+                start_latency_seconds = %s,
+                transition_seconds = %s,
+                updated_at = now()
+            where user_id = %s and id = %s
+            """,
+            (
+                totals.get("setup", 0),
+                totals.get("resource_detour", 0),
+                totals.get("interruption", 0),
+                totals.get("waiting", 0),
+                totals.get("side_quest", 0),
+                totals.get("start_latency", 0),
+                totals.get("transition", 0),
+                user_id,
+                session_id,
+            ),
+        )
 
 
 def _session_from_row(row: Mapping[str, Any]) -> TimingSession:

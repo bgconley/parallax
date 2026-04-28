@@ -53,8 +53,8 @@ def test_phase_docs_record_compose_derivation_and_phase_boundary() -> None:
     readme = (REPO_ROOT / "README.md").read_text()
 
     assert "implementation derivative of the canonical prototype Compose file" in phase0_doc
-    assert "Phase 3 is active only because the user explicitly started it" in agents_doc
-    assert "The active implementation scope is Phase 3" in readme
+    assert "Phase 4 is active only because the user explicitly started it" in agents_doc
+    assert "The active implementation scope is Phase 4" in readme
     assert "Out of scope: review decisions" in phase1_doc
 
 
@@ -114,6 +114,14 @@ def test_phase3_smoke_is_available_from_makefile() -> None:
     assert "scripts/phase3_smoke.py" in content
 
 
+def test_phase4_smoke_is_available_from_makefile() -> None:
+    makefile = REPO_ROOT / "Makefile"
+    content = makefile.read_text()
+
+    assert "phase4-smoke:" in content
+    assert "scripts/phase4_smoke.py" in content
+
+
 def test_phase0_schema_smoke_checks_cover_core_tables_and_enums() -> None:
     check_names = {check.name for check in phase0_schema_smoke_checks()}
 
@@ -126,14 +134,22 @@ def test_phase0_schema_smoke_checks_cover_core_tables_and_enums() -> None:
     assert "enum:timing_event_type" in check_names
 
 
-def test_current_schema_smoke_checks_cover_phase3_context_tables_and_enums() -> None:
+def test_current_schema_smoke_checks_cover_phase4_context_tables_and_enums() -> None:
     check_names = {check.name for check in current_schema_smoke_checks()}
 
+    assert "table:timing_event_span" in check_names
+    assert "table:activity_stats_snapshot" in check_names
     assert "table:capture_context_snapshot" in check_names
     assert "table:context_capture_policy" in check_names
     assert "table:timing_review_flag" in check_names
+    assert "table:model_invocation" in check_names
+    assert "table:temporal_extracted_context_event" in check_names
+    assert "table:temporal_correction" in check_names
+    assert "table:preflight_check" in check_names
+    assert "table:inferred_place_observation" in check_names
     assert "enum:capture_method" in check_names
     assert "enum:timing_review_flag_status" in check_names
+    assert "enum:confirmation_state" in check_names
 
 
 def test_migration_script_is_runnable_from_repo_root() -> None:
@@ -147,6 +163,7 @@ def test_migration_script_is_runnable_from_repo_root() -> None:
 
     assert result.returncode == 0, result.stderr
     assert "Apply Parallax baseline SQL migrations" in result.stdout
+    assert "Run current schema smoke checks" in result.stdout
 
 
 def test_resource_dependency_uses_valid_expression_unique_index() -> None:

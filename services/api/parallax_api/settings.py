@@ -16,6 +16,11 @@ class ApiSettings(BaseSettings):
     temporal_address: str = "localhost:7233"
     object_storage_endpoint: str = "http://localhost:9000"
     auth_mode: Literal["dev_header", "external_bearer"] = "dev_header"
+    auth_jwt_secret: str | None = None
+    auth_jwt_algorithm: Literal["HS256"] = "HS256"
+    auth_jwt_user_id_claim: str = "sub"
+    auth_jwt_issuer: str | None = None
+    auth_jwt_audience: str | None = None
 
 
 def get_settings() -> ApiSettings:

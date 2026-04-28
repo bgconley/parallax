@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This checkout contains the Parallax v1.3 artifact pack plus the Phase 0-3 implementation work. Do not advance Phase 4 or later unless the user explicitly starts that phase. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
+This checkout contains the Parallax v1.3 artifact pack plus the Phase 0-4 implementation work. Do not advance Phase 5 or later unless the user explicitly starts that phase. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
 
 Before making implementation or infrastructure decisions, read the relevant canonical artifact files first. Do not infer Parallax layout, storage, runtime, or service policy from existing GPU-node directories or other apps when a Parallax artifact covers the topic.
 
@@ -34,6 +34,9 @@ Run implementation commands from the repository root unless noted.
 - `make phase1-smoke`: runs the Phase 1 API/Postgres acceptance smoke against the configured API and host database URL.
 - `make phase2-smoke`: runs the Phase 2 review/profile API/Postgres acceptance smoke against the configured API and host database URL.
 - `make phase3-smoke`: runs the Phase 3 context capture API/Postgres acceptance smoke against the configured API and host database URL.
+- `make phase4-smoke`: runs the Phase 4 extraction/correction/place-inference API/Postgres acceptance smoke against the configured API and host database URL.
+- `make release-status`: prints the current full-release gate blockers without failing.
+- `make release-gate`: fails while full-release/private-alpha blockers in `docs/release/release_gate_status.md` remain open.
 
 ## Coding Style & Naming Conventions
 
@@ -61,7 +64,7 @@ GPU-node runtime storage is verified under `tank/parallax` mounted at `/srv/para
 
 Current permission policy: `/srv/parallax` is `root:root 0755`; Postgres and WAL are numeric `999:999 0700`; service-writable objects/exports/models/cache/logs are `10001:bgconley 0770`; config and observability are `bgconley:bgconley 0755`; backups are `root:bgconley 0750`. Host names for UID/GID `999` may display as unrelated local accounts; verify numeric IDs against the pinned container image when the DB image is finalized.
 
-Phase work must be explicit. Phase 0, Phase 1, and Phase 2 are complete, and Phase 3 is active only because the user explicitly started it. Do not start Phase 4 or any later phase unless the user directly instructs you to begin that phase.
+Phase work must be explicit. Phase 0, Phase 1, Phase 2, and Phase 3 are complete, and Phase 4 is active only because the user explicitly started it. Do not start Phase 5 or any later phase unless the user directly instructs you to begin that phase. The current runtime API is the documented Phase 0-4 subset in `docs/architecture/api_surface_phase_scope.md`; do not present it as the full v1.3 release contract.
 
 The Phase 0 runtime uses Parallax-specific localhost ports to coexist with other GPU-node stacks: API `18000`, Postgres `15432`, Redis `16379`, Temporal `17233`, Temporal UI `18088`, MinIO `19000/19001`, and Caddy `18080/18443`. Container-to-container URLs still use service names such as `postgres:5432` and `redis:6379`.
 
@@ -71,12 +74,16 @@ Phase 1 API auth requires `X-Parallax-User-Id`; missing or malformed values must
 
 Keep these items visible for later phases or release hardening, but do not pull them into the active phase unless the user explicitly starts that scope:
 
-- Replace the development-only `X-Parallax-User-Id` auth stub with a real production/private-alpha auth provider and JWT/session validation. Do not trust arbitrary user headers outside development/test mode.
+- Replace the private-alpha `external_bearer` HS256 JWT path with the selected production auth provider when that provider is chosen. Do not trust arbitrary user headers outside development/test mode.
 - Implement the remaining canonical v1.3 OpenAPI surface only when its owning phase is started.
 - Prove backup/restore, encryption, WAL/archive strategy, and rollback operations on the GPU node.
 - Add load/performance validation for documented SLOs and Phase-specific hot paths.
 - Implement and verify later-phase Temporal workflows when those phases begin.
 - Add production traffic/log privacy-scrub proof before release handoff.
+
+`docs/release/release_gate_status.md` is the machine-visible release status source
+until these blockers are closed. The repo can be phase-complete while
+`make release-gate` still correctly fails.
 
 ## Commit & Pull Request Guidelines
 

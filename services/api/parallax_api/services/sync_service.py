@@ -7,10 +7,16 @@ from uuid import UUID
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
 
+from ..adapters.context_extractor import DeterministicContextExtractor
 from ..repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from ..schemas.activity import CreateActivityRequest
 from ..schemas.common import MutationEnvelope
 from ..schemas.context import CreateAnnotationRequest, CreateCaptureContextSnapshotRequest
+from ..schemas.extraction import (
+    ConfirmExtractedEventRequest,
+    CorrectExtractedEventRequest,
+    ExtractAnnotationRequest,
+)
 from ..schemas.sync import SyncPushRequest, SyncPushResponse
 from ..schemas.timing import (
     AppendTimingEventRequest,
@@ -23,6 +29,11 @@ from .activity_service import create_activity_in_uow
 from .context_service import (
     create_annotation_in_uow,
     create_capture_context_snapshot_in_uow,
+)
+from .extraction_service import (
+    confirm_extracted_event_in_uow,
+    correct_extracted_event_in_uow,
+    extract_annotation_in_uow,
 )
 from .mutations import MutationReplayService
 from .timing_service import (
@@ -38,6 +49,7 @@ class OperationSpec:
     kind: str
     path_parts: tuple[str, ...]
     payload_type: type[BaseModel]
+    path_id_name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -45,6 +57,8 @@ class ParsedSyncOperation:
     kind: str
     payload: BaseModel
     session_id: UUID | None = None
+    annotation_id: UUID | None = None
+    event_id: UUID | None = None
 
 
 _SUPPORTED_MUTATING_OPERATIONS: dict[str, OperationSpec] = {
@@ -60,61 +74,109 @@ _SUPPORTED_MUTATING_OPERATIONS: dict[str, OperationSpec] = {
         "append_timing_event",
         ("/v1/timing/sessions/", "/events"),
         AppendTimingEventRequest,
+        "session_id",
     ),
     "appendTimingEvent": OperationSpec(
         "append_timing_event",
         ("/v1/timing/sessions/", "/events"),
         AppendTimingEventRequest,
+        "session_id",
     ),
     "complete_timing_session": OperationSpec(
         "complete_timing_session",
         ("/v1/timing/sessions/", "/complete"),
         CompleteTimingSessionRequest,
+        "session_id",
     ),
     "completeTimingSession": OperationSpec(
         "complete_timing_session",
         ("/v1/timing/sessions/", "/complete"),
         CompleteTimingSessionRequest,
+        "session_id",
     ),
     "review_timing_session": OperationSpec(
         "review_timing_session",
         ("/v1/timing/sessions/", "/review"),
         ReviewTimingSessionRequest,
+        "session_id",
     ),
     "reviewTimingSession": OperationSpec(
         "review_timing_session",
         ("/v1/timing/sessions/", "/review"),
         ReviewTimingSessionRequest,
+        "session_id",
     ),
     "discard_timing_session": OperationSpec(
         "discard_timing_session",
         ("/v1/timing/sessions/", "/discard"),
         ReviewTimingSessionRequest,
+        "session_id",
     ),
     "discardTimingSession": OperationSpec(
         "discard_timing_session",
         ("/v1/timing/sessions/", "/discard"),
         ReviewTimingSessionRequest,
+        "session_id",
     ),
     "create_context_annotation": OperationSpec(
         "create_context_annotation",
         ("/v1/timing/sessions/", "/annotations"),
         CreateAnnotationRequest,
+        "session_id",
     ),
     "createContextAnnotation": OperationSpec(
         "create_context_annotation",
         ("/v1/timing/sessions/", "/annotations"),
         CreateAnnotationRequest,
+        "session_id",
     ),
     "create_capture_context_snapshot": OperationSpec(
         "create_capture_context_snapshot",
         ("/v1/timing/sessions/", "/capture-context"),
         CreateCaptureContextSnapshotRequest,
+        "session_id",
     ),
     "createCaptureContextSnapshot": OperationSpec(
         "create_capture_context_snapshot",
         ("/v1/timing/sessions/", "/capture-context"),
         CreateCaptureContextSnapshotRequest,
+        "session_id",
+    ),
+    "extract_context_annotation": OperationSpec(
+        "extract_context_annotation",
+        ("/v1/timing/annotations/", "/extract"),
+        ExtractAnnotationRequest,
+        "annotation_id",
+    ),
+    "extractContextAnnotation": OperationSpec(
+        "extract_context_annotation",
+        ("/v1/timing/annotations/", "/extract"),
+        ExtractAnnotationRequest,
+        "annotation_id",
+    ),
+    "confirm_extracted_event": OperationSpec(
+        "confirm_extracted_event",
+        ("/v1/timing/extracted-events/", "/confirm"),
+        ConfirmExtractedEventRequest,
+        "event_id",
+    ),
+    "confirmExtractedEvent": OperationSpec(
+        "confirm_extracted_event",
+        ("/v1/timing/extracted-events/", "/confirm"),
+        ConfirmExtractedEventRequest,
+        "event_id",
+    ),
+    "correct_extracted_event": OperationSpec(
+        "correct_extracted_event",
+        ("/v1/timing/extracted-events/", "/correct"),
+        CorrectExtractedEventRequest,
+        "event_id",
+    ),
+    "correctExtractedEvent": OperationSpec(
+        "correct_extracted_event",
+        ("/v1/timing/extracted-events/", "/correct"),
+        CorrectExtractedEventRequest,
+        "event_id",
     ),
 }
 
@@ -214,6 +276,40 @@ class SyncService:
                     operation.session_id,
                     operation.payload,
                 )
+            elif operation.kind == "extract_context_annotation":
+                if operation.annotation_id is None or not isinstance(
+                    operation.payload, ExtractAnnotationRequest
+                ):
+                    raise TypeError("unexpected extract_context_annotation payload")
+                extract_annotation_in_uow(
+                    uow,
+                    user_id,
+                    operation.annotation_id,
+                    operation.payload,
+                    DeterministicContextExtractor(),
+                )
+            elif operation.kind == "confirm_extracted_event":
+                if operation.event_id is None or not isinstance(
+                    operation.payload, ConfirmExtractedEventRequest
+                ):
+                    raise TypeError("unexpected confirm_extracted_event payload")
+                confirm_extracted_event_in_uow(
+                    uow,
+                    user_id,
+                    operation.event_id,
+                    operation.payload,
+                )
+            elif operation.kind == "correct_extracted_event":
+                if operation.event_id is None or not isinstance(
+                    operation.payload, CorrectExtractedEventRequest
+                ):
+                    raise TypeError("unexpected correct_extracted_event payload")
+                correct_extracted_event_in_uow(
+                    uow,
+                    user_id,
+                    operation.event_id,
+                    operation.payload,
+                )
             else:
                 raise TypeError(f"unsupported parsed sync operation: {operation.kind}")
 
@@ -285,7 +381,7 @@ class SyncService:
                 ParsedSyncOperation(
                     kind=spec.kind,
                     payload=payload,
-                    session_id=_session_id_from_path(operation.path, spec.path_parts, index),
+                    **_ids_from_path(operation.path, spec, index),
                 )
             )
         return parsed
@@ -297,19 +393,20 @@ def _path_matches(path: str, expected_parts: tuple[str, ...]) -> bool:
     return path.startswith(expected_parts[0]) and path.endswith(expected_parts[1])
 
 
-def _session_id_from_path(path: str, expected_parts: tuple[str, ...], index: int) -> UUID | None:
-    if len(expected_parts) == 1:
-        return None
-    session_id_text = path.removeprefix(expected_parts[0]).removesuffix(expected_parts[1])
+def _ids_from_path(path: str, spec: OperationSpec, index: int) -> dict[str, UUID | None]:
+    if spec.path_id_name is None:
+        return {}
+    id_text = path.removeprefix(spec.path_parts[0]).removesuffix(spec.path_parts[1])
     try:
-        return UUID(session_id_text)
+        path_id = UUID(id_text)
     except ValueError as exc:
         raise HTTPException(
             status_code=400,
             detail={
                 "error_code": "invalid_sync_operation",
-                "message": "sync operation path contains an invalid session id",
+                "message": "sync operation path contains an invalid resource id",
                 "details": {"operation_index": index},
                 "retryable": False,
             },
         ) from exc
+    return {spec.path_id_name: path_id}

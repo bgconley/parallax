@@ -24,6 +24,12 @@ from ..schemas.context import (
     UpdatePlaceRequest,
     UserPlace,
 )
+from ..schemas.extraction import (
+    CorrectExtractedEventRequest,
+    ExtractedContextEvent,
+    ModelInvocationRecord,
+    TemporalCorrection,
+)
 from ..schemas.profile import ActivityProfile
 from ..schemas.timing import (
     AppendTimingEventRequest,
@@ -91,6 +97,14 @@ class TimingRepositoryProtocol(Protocol):
         session_id: UUID,
         span_drafts: list[TimingEventSpanDraft],
     ) -> list[TimingEventSpan]: ...
+
+    def upsert_extracted_event_span(
+        self,
+        user_id: UUID,
+        extracted_event: ExtractedContextEvent,
+        *,
+        user_corrected: bool,
+    ) -> TimingEventSpan: ...
 
 
 class ProfileRepositoryProtocol(Protocol):
@@ -179,6 +193,51 @@ class ContextRepositoryProtocol(Protocol):
         status: TimingReviewFlagStatus,
         resolution_note: str | None,
     ) -> TimingReviewFlag | None: ...
+
+    def update_annotation_status(
+        self,
+        user_id: UUID,
+        annotation_id: UUID,
+        status: str,
+        metadata_update: dict[str, object],
+    ) -> TemporalContextAnnotation | None: ...
+
+    def record_model_invocation(
+        self,
+        invocation: ModelInvocationRecord,
+    ) -> ModelInvocationRecord: ...
+
+    def create_extracted_event(
+        self,
+        event: ExtractedContextEvent,
+    ) -> ExtractedContextEvent: ...
+
+    def get_extracted_event(
+        self,
+        user_id: UUID,
+        event_id: UUID,
+    ) -> ExtractedContextEvent | None: ...
+
+    def update_extracted_event_confirmation(
+        self,
+        user_id: UUID,
+        event_id: UUID,
+        confirmation_state: str,
+    ) -> ExtractedContextEvent | None: ...
+
+    def correct_extracted_event(
+        self,
+        user_id: UUID,
+        event_id: UUID,
+        request: CorrectExtractedEventRequest,
+    ) -> tuple[ExtractedContextEvent, TemporalCorrection] | None: ...
+
+    def create_preflight_check(
+        self,
+        user_id: UUID,
+        activity_id: UUID,
+        source_event: ExtractedContextEvent,
+    ) -> None: ...
 
 
 class UnitOfWork(Protocol):

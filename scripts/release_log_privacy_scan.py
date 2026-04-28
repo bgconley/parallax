@@ -52,7 +52,7 @@ def _probe_validation_error(api_url: str, headers: dict[str, str], marker: str) 
                     "idempotency_key": f"privacy-scan:{uuid4()}",
                     "client_sequence": 1,
                 },
-                "display_name": "Privacy scan",
+                "display_name": f"Privacy scan {uuid4()}",
                 "raw_private_note": marker,
             },
         )

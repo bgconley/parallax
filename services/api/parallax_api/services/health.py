@@ -6,7 +6,7 @@ from http.client import HTTPConnection, HTTPSConnection
 from typing import Protocol
 from urllib.parse import urlparse
 
-from parallax_db.runner import phase0_schema_smoke_checks
+from parallax_db.runner import current_schema_smoke_checks
 
 from ..settings import ApiSettings, get_settings
 
@@ -23,7 +23,7 @@ class HealthChecker(Protocol):
 
 
 class RuntimeHealthChecker:
-    """Checks only Phase 0 runtime dependencies required by the canonical plan."""
+    """Checks runtime dependencies and current baseline schema readiness."""
 
     def __init__(self, settings: ApiSettings | None = None) -> None:
         self._settings = settings or get_settings()
@@ -64,7 +64,7 @@ class RuntimeHealthChecker:
         import psycopg
 
         try:
-            checks = phase0_schema_smoke_checks()
+            checks = current_schema_smoke_checks()
             with psycopg.connect(self._settings.database_url, connect_timeout=2) as connection:
                 for check in checks:
                     with connection.cursor() as cursor:

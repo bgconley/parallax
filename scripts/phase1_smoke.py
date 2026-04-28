@@ -213,6 +213,62 @@ def main() -> int:
             if synced_activity_name not in activity_names:
                 raise AssertionError("sync push accepted create activity without applying it")
 
+            failed_sync_activity_name = f"Phase 1 rollback probe {user_id.hex[:8]}"
+            missing_session_id = uuid4()
+            failed_sync = client.post(
+                "/v1/sync/push",
+                json={
+                    "mutation": _mutation(device_id, "sync-rollback", 14),
+                    "client_device_id": device_id,
+                    "mutations": [
+                        {
+                            "operation": "create_activity",
+                            "path": "/v1/activities",
+                            "body": {
+                                "mutation": _mutation(
+                                    device_id,
+                                    "sync-rollback-nested-activity",
+                                    15,
+                                ),
+                                "display_name": failed_sync_activity_name,
+                            },
+                        },
+                        {
+                            "operation": "append_timing_event",
+                            "path": f"/v1/timing/sessions/{missing_session_id}/events",
+                            "body": {
+                                "mutation": _mutation(
+                                    device_id,
+                                    "sync-rollback-missing-session-event",
+                                    16,
+                                ),
+                                "event_type": "session_started",
+                                "client_time": "2026-04-27T15:00:00Z",
+                            },
+                        },
+                    ],
+                },
+            )
+            if failed_sync.status_code != 404:
+                raise AssertionError(
+                    "sync push did not reject a batch with a missing nested session: "
+                    f"{failed_sync.status_code} {failed_sync.text}"
+                )
+            activities_after_failed_sync_response = client.get("/v1/activities")
+            if activities_after_failed_sync_response.status_code != 200:
+                raise AssertionError(
+                    "GET /v1/activities after failed sync returned "
+                    f"{activities_after_failed_sync_response.status_code}: "
+                    f"{activities_after_failed_sync_response.text}"
+                )
+            activities_after_failed_sync = activities_after_failed_sync_response.json()
+            if not isinstance(activities_after_failed_sync, list):
+                raise AssertionError("expected list response from GET /v1/activities")
+            if failed_sync_activity_name in {
+                str(item["display_name"]) for item in activities_after_failed_sync
+            }:
+                raise AssertionError("failed sync batch partially committed an activity")
+
         with psycopg.connect(args.database_url, autocommit=True) as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -239,10 +295,44 @@ def main() -> int:
                 if mutation_count_row is None:
                     raise AssertionError("mutation count query returned no row")
                 mutation_count = mutation_count_row[0]
+                cursor.execute(
+                    """
+                    select count(*)
+                    from activity
+                    where user_id = %s and display_name = %s
+                    """,
+                    (user_id, failed_sync_activity_name),
+                )
+                failed_activity_row = cursor.fetchone()
+                if failed_activity_row is None:
+                    raise AssertionError("failed sync activity count returned no row")
+                failed_activity_count = failed_activity_row[0]
+                cursor.execute(
+                    """
+                    select count(*)
+                    from client_mutation_log
+                    where user_id = %s and idempotency_key in (%s, %s, %s)
+                    """,
+                    (
+                        user_id,
+                        f"{device_id}:sync-rollback",
+                        f"{device_id}:sync-rollback-nested-activity",
+                        f"{device_id}:sync-rollback-missing-session-event",
+                    ),
+                )
+                failed_mutation_row = cursor.fetchone()
+                if failed_mutation_row is None:
+                    raise AssertionError("failed sync mutation count returned no row")
+                failed_mutation_count = failed_mutation_row[0]
 
         if event_count != 1 or mutation_count != 1:
             raise AssertionError(
                 f"expected one event and one mutation log row, got {event_count}/{mutation_count}"
+            )
+        if failed_activity_count != 0 or failed_mutation_count != 0:
+            raise AssertionError(
+                "failed sync batch left persisted rows: "
+                f"activities={failed_activity_count}, mutations={failed_mutation_count}"
             )
 
         summary.update(
@@ -256,6 +346,7 @@ def main() -> int:
                 "out_of_order_recompute_flagged": out_of_order["needs_timeline_recompute"],
                 "sync_push_accepted": sync_push["accepted"],
                 "sync_create_activity_applied": synced_activity_name,
+                "sync_failed_batch_rolled_back": True,
             }
         )
         print(json.dumps({"status": "passed", "phase": "phase1", "summary": summary}, indent=2))

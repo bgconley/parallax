@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+from dataclasses import fields
 from types import TracebackType
 from typing import Literal
 
@@ -25,6 +27,8 @@ class InMemoryUnitOfWork:
     mutations: MutationLogRepository
 
     def __init__(self, store: InMemoryStore) -> None:
+        self._store = store
+        self._rollback_snapshot: InMemoryStore | None = None
         self.activities = ActivityRepository(store)
         self.timing = TimingRepository(store)
         self.profiles = ProfileRepository(store)
@@ -32,6 +36,7 @@ class InMemoryUnitOfWork:
         self.mutations = InMemoryMutationLogRepository(store)
 
     def __enter__(self) -> InMemoryUnitOfWork:
+        self._rollback_snapshot = deepcopy(self._store)
         return self
 
     def __exit__(
@@ -40,6 +45,10 @@ class InMemoryUnitOfWork:
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> Literal[False]:
+        if exc_type is not None and self._rollback_snapshot is not None:
+            for field in fields(InMemoryStore):
+                setattr(self._store, field.name, getattr(self._rollback_snapshot, field.name))
+        self._rollback_snapshot = None
         return False
 
 

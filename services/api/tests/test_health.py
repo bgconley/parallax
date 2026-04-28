@@ -1,6 +1,12 @@
 from fastapi.testclient import TestClient
 from parallax_api.main import create_app
+from parallax_api.services import health
 from parallax_api.services.health import HealthReport
+from parallax_db.runner import phase0_schema_smoke_checks
+
+
+def test_runtime_readiness_uses_current_schema_smoke_checks() -> None:
+    assert health.current_schema_smoke_checks is not phase0_schema_smoke_checks
 
 
 class HealthyChecker:

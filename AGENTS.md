@@ -69,7 +69,7 @@ Phase 1 API auth requires `X-Parallax-User-Id`; missing or malformed values must
 
 ## Deferred Release Work
 
-Keep these items visible for later phases or release hardening, but do not pull them into Phase 2 unless the user explicitly starts that scope:
+Keep these items visible for later phases or release hardening, but do not pull them into the active phase unless the user explicitly starts that scope:
 
 - Replace the development-only `X-Parallax-User-Id` auth stub with a real production/private-alpha auth provider and JWT/session validation. Do not trust arbitrary user headers outside development/test mode.
 - Implement the remaining canonical v1.3 OpenAPI surface only when its owning phase is started.

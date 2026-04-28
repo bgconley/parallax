@@ -268,3 +268,40 @@ def test_sync_push_rejects_unknown_operation() -> None:
 
     assert response.status_code == 400
     assert response.json()["error_code"] == "unsupported_sync_operation"
+
+
+def test_sync_push_rolls_back_prior_operations_when_later_operation_fails() -> None:
+    client = TestClient(make_app())
+
+    response = client.post(
+        "/v1/sync/push",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={
+            "mutation": mutation("sync-push-partial-failure"),
+            "client_device_id": "ios-test",
+            "mutations": [
+                {
+                    "operation": "create_activity",
+                    "path": "/v1/activities",
+                    "body": {
+                        "mutation": mutation("nested-activity-before-failure"),
+                        "display_name": "Should not survive failed batch",
+                    },
+                },
+                {
+                    "operation": "append_timing_event",
+                    "path": "/v1/timing/sessions/00000000-0000-0000-0000-000000000501/events",
+                    "body": {
+                        "mutation": mutation("nested-event-missing-session"),
+                        "event_type": "session_started",
+                        "client_time": "2026-04-27T12:00:00Z",
+                    },
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 404
+    listed = client.get("/v1/activities", headers={"X-Parallax-User-Id": USER_ID})
+    assert listed.status_code == 200
+    assert [activity["display_name"] for activity in listed.json()] == []

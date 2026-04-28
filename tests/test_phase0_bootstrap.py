@@ -50,9 +50,11 @@ def test_phase_docs_record_compose_derivation_and_phase_boundary() -> None:
     phase0_doc = (REPO_ROOT / "docs/architecture/phase0_bootstrap.md").read_text()
     agents_doc = (REPO_ROOT / "AGENTS.md").read_text()
     phase1_doc = (REPO_ROOT / "docs/architecture/phase1_core_loop.md").read_text()
+    readme = (REPO_ROOT / "README.md").read_text()
 
     assert "implementation derivative of the canonical prototype Compose file" in phase0_doc
     assert "Phase 3 is active only because the user explicitly started it" in agents_doc
+    assert "The active implementation scope is Phase 3" in readme
     assert "Out of scope: review decisions" in phase1_doc
 
 

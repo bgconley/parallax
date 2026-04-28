@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
 
-from ..repositories.unit_of_work import UnitOfWorkFactory
+from ..repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from ..schemas.activity import CreateActivityRequest
 from ..schemas.common import MutationEnvelope
 from ..schemas.context import CreateAnnotationRequest, CreateCaptureContextSnapshotRequest
@@ -19,10 +19,18 @@ from ..schemas.timing import (
     ReviewTimingSessionRequest,
 )
 from ..validation_errors import safe_validation_errors
-from .activity_service import ActivityService
-from .context_service import ContextService
+from .activity_service import create_activity_in_uow
+from .context_service import (
+    create_annotation_in_uow,
+    create_capture_context_snapshot_in_uow,
+)
 from .mutations import MutationReplayService
-from .timing_service import TimingService
+from .timing_service import (
+    append_event_in_uow,
+    complete_session_in_uow,
+    create_session_in_uow,
+    save_review_decision_in_uow,
+)
 
 
 @dataclass(frozen=True)
@@ -122,7 +130,7 @@ class SyncService:
             mutations = MutationReplayService(uow.mutations)
 
             def apply() -> tuple[UUID | None, SyncPushResponse]:
-                self._apply_operations(user_id, operations)
+                self._apply_operations(uow, user_id, operations)
                 return None, SyncPushResponse(
                     accepted=True,
                     operation_count=len(operations),
@@ -138,57 +146,73 @@ class SyncService:
                 apply=apply,
             )
 
-    def _apply_operations(self, user_id: UUID, operations: list[ParsedSyncOperation]) -> None:
-        activity_service = ActivityService(self._uow_factory)
-        context_service = ContextService(self._uow_factory)
-        timing_service = TimingService(self._uow_factory)
-
+    @staticmethod
+    def _apply_operations(
+        uow: UnitOfWork,
+        user_id: UUID,
+        operations: list[ParsedSyncOperation],
+    ) -> None:
         for operation in operations:
             if operation.kind == "create_activity":
                 if not isinstance(operation.payload, CreateActivityRequest):
                     raise TypeError("unexpected create_activity payload")
-                activity_service.create_activity(user_id, operation.payload)
+                create_activity_in_uow(uow, user_id, operation.payload)
             elif operation.kind == "create_timing_session":
                 if not isinstance(operation.payload, CreateTimingSessionRequest):
                     raise TypeError("unexpected create_timing_session payload")
-                timing_service.create_session(user_id, operation.payload)
+                create_session_in_uow(uow, user_id, operation.payload)
             elif operation.kind == "append_timing_event":
                 if operation.session_id is None or not isinstance(
                     operation.payload, AppendTimingEventRequest
                 ):
                     raise TypeError("unexpected append_timing_event payload")
-                timing_service.append_event(user_id, operation.session_id, operation.payload)
+                append_event_in_uow(uow, user_id, operation.session_id, operation.payload)
             elif operation.kind == "complete_timing_session":
                 if operation.session_id is None or not isinstance(
                     operation.payload, CompleteTimingSessionRequest
                 ):
                     raise TypeError("unexpected complete_timing_session payload")
-                timing_service.complete_session(user_id, operation.session_id, operation.payload)
+                complete_session_in_uow(uow, user_id, operation.session_id, operation.payload)
             elif operation.kind == "review_timing_session":
                 if operation.session_id is None or not isinstance(
                     operation.payload, ReviewTimingSessionRequest
                 ):
                     raise TypeError("unexpected review_timing_session payload")
-                timing_service.review_session(user_id, operation.session_id, operation.payload)
+                save_review_decision_in_uow(
+                    uow,
+                    user_id,
+                    operation.session_id,
+                    operation.payload,
+                    discard_endpoint=False,
+                )
             elif operation.kind == "discard_timing_session":
                 if operation.session_id is None or not isinstance(
                     operation.payload, ReviewTimingSessionRequest
                 ):
                     raise TypeError("unexpected discard_timing_session payload")
-                timing_service.discard_session(user_id, operation.session_id, operation.payload)
+                save_review_decision_in_uow(
+                    uow,
+                    user_id,
+                    operation.session_id,
+                    operation.payload,
+                    discard_endpoint=True,
+                )
             elif operation.kind == "create_context_annotation":
                 if operation.session_id is None or not isinstance(
                     operation.payload, CreateAnnotationRequest
                 ):
                     raise TypeError("unexpected create_context_annotation payload")
-                context_service.create_annotation(user_id, operation.session_id, operation.payload)
+                create_annotation_in_uow(uow, user_id, operation.session_id, operation.payload)
             elif operation.kind == "create_capture_context_snapshot":
                 if operation.session_id is None or not isinstance(
                     operation.payload, CreateCaptureContextSnapshotRequest
                 ):
                     raise TypeError("unexpected create_capture_context_snapshot payload")
-                context_service.create_capture_context_snapshot(
-                    user_id, operation.session_id, operation.payload
+                create_capture_context_snapshot_in_uow(
+                    uow,
+                    user_id,
+                    operation.session_id,
+                    operation.payload,
                 )
             else:
                 raise TypeError(f"unsupported parsed sync operation: {operation.kind}")

@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from ..repositories.unit_of_work import UnitOfWorkFactory
+from ..repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from ..schemas.context import (
     CaptureContextSnapshot,
     ContextCapturePolicy,
@@ -40,22 +40,7 @@ class ContextService:
         request: CreateAnnotationRequest,
     ) -> TemporalContextAnnotation:
         with self._uow_factory() as uow:
-            if uow.timing.get_session(user_id, session_id) is None:
-                raise HTTPException(status_code=404, detail="timing session not found")
-            mutations = MutationReplayService(uow.mutations)
-
-            def apply() -> tuple[UUID, TemporalContextAnnotation]:
-                annotation = uow.contexts.create_annotation(user_id, session_id, request)
-                return annotation.id, annotation
-
-            return mutations.replay_or_apply(
-                user_id=user_id,
-                mutation=request.mutation,
-                mutation_type="create_context_annotation",
-                entity_type="temporal_context_annotation",
-                result_type=TemporalContextAnnotation,
-                apply=apply,
-            )
+            return create_annotation_in_uow(uow, user_id, session_id, request)
 
     def get_annotation(self, user_id: UUID, annotation_id: UUID) -> TemporalContextAnnotation:
         with self._uow_factory() as uow:
@@ -74,20 +59,7 @@ class ContextService:
         request: UpdateContextCapturePolicyRequest,
     ) -> ContextCapturePolicy:
         with self._uow_factory() as uow:
-            mutations = MutationReplayService(uow.mutations)
-
-            def apply() -> tuple[UUID, ContextCapturePolicy]:
-                policy = uow.contexts.update_context_capture_policy(user_id, request)
-                return policy.id, policy
-
-            return mutations.replay_or_apply(
-                user_id=user_id,
-                mutation=request.mutation,
-                mutation_type="update_context_capture_policy",
-                entity_type="context_capture_policy",
-                result_type=ContextCapturePolicy,
-                apply=apply,
-            )
+            return update_context_capture_policy_in_uow(uow, user_id, request)
 
     def create_capture_context_snapshot(
         self,
@@ -96,35 +68,7 @@ class ContextService:
         request: CreateCaptureContextSnapshotRequest,
     ) -> CaptureContextSnapshot:
         with self._uow_factory() as uow:
-            if uow.timing.get_session(user_id, session_id) is None:
-                raise HTTPException(status_code=404, detail="timing session not found")
-            if request.user_place_id is not None and uow.contexts.get_place(
-                user_id, request.user_place_id
-            ) is None:
-                raise HTTPException(status_code=404, detail="place not found")
-            policy = uow.contexts.get_context_capture_policy(user_id)
-            filtered_request, geospatial, radio, device = _apply_capture_policy(request, policy)
-            mutations = MutationReplayService(uow.mutations)
-
-            def apply() -> tuple[UUID, CaptureContextSnapshot]:
-                snapshot = uow.contexts.create_capture_context_snapshot(
-                    user_id,
-                    session_id,
-                    filtered_request,
-                    geospatial_observations=geospatial,
-                    radio_observations=radio,
-                    device_context_observations=device,
-                )
-                return snapshot.id, snapshot
-
-            return mutations.replay_or_apply(
-                user_id=user_id,
-                mutation=request.mutation,
-                mutation_type="create_capture_context_snapshot",
-                entity_type="capture_context_snapshot",
-                result_type=CaptureContextSnapshot,
-                apply=apply,
-            )
+            return create_capture_context_snapshot_in_uow(uow, user_id, session_id, request)
 
     def list_capture_context_snapshots(
         self,
@@ -137,22 +81,8 @@ class ContextService:
             return uow.contexts.list_capture_context_snapshots(user_id, session_id)
 
     def create_place(self, user_id: UUID, request: CreatePlaceRequest) -> UserPlace:
-        _validate_sensitive_place_confirmation(request.category, request.confirmed_by_user)
         with self._uow_factory() as uow:
-            mutations = MutationReplayService(uow.mutations)
-
-            def apply() -> tuple[UUID, UserPlace]:
-                place = uow.contexts.create_place(user_id, request)
-                return place.id, place
-
-            return mutations.replay_or_apply(
-                user_id=user_id,
-                mutation=request.mutation,
-                mutation_type="create_user_place",
-                entity_type="user_place",
-                result_type=UserPlace,
-                apply=apply,
-            )
+            return create_place_in_uow(uow, user_id, request)
 
     def list_places(self, user_id: UUID) -> list[UserPlace]:
         with self._uow_factory() as uow:
@@ -168,30 +98,8 @@ class ContextService:
         place_id: UUID,
         request: UpdatePlaceRequest,
     ) -> UserPlace:
-        if request.category is not None:
-            _validate_sensitive_place_confirmation(
-                request.category,
-                request.confirmed_by_user is True,
-            )
         with self._uow_factory() as uow:
-            if uow.contexts.get_place(user_id, place_id) is None:
-                raise HTTPException(status_code=404, detail="place not found")
-            mutations = MutationReplayService(uow.mutations)
-
-            def apply() -> tuple[UUID, UserPlace]:
-                place = uow.contexts.update_place(user_id, place_id, request)
-                if place is None:
-                    raise HTTPException(status_code=404, detail="place not found")
-                return place.id, place
-
-            return mutations.replay_or_apply(
-                user_id=user_id,
-                mutation=request.mutation,
-                mutation_type="update_user_place",
-                entity_type="user_place",
-                result_type=UserPlace,
-                apply=apply,
-            )
+            return update_place_in_uow(uow, user_id, place_id, request)
 
     def list_review_flags(
         self,
@@ -211,27 +119,172 @@ class ContextService:
         request: UpdateTimingReviewFlagRequest,
     ) -> TimingReviewFlag:
         with self._uow_factory() as uow:
-            mutations = MutationReplayService(uow.mutations)
+            return update_review_flag_in_uow(uow, user_id, flag_id, request)
 
-            def apply() -> tuple[UUID, TimingReviewFlag]:
-                flag = uow.contexts.update_review_flag(
-                    user_id,
-                    flag_id,
-                    request.status,
-                    request.resolution_note,
-                )
-                if flag is None:
-                    raise HTTPException(status_code=404, detail="timing review flag not found")
-                return flag.id, flag
 
-            return mutations.replay_or_apply(
-                user_id=user_id,
-                mutation=request.mutation,
-                mutation_type="update_timing_review_flag",
-                entity_type="timing_review_flag",
-                result_type=TimingReviewFlag,
-                apply=apply,
-            )
+def create_annotation_in_uow(
+    uow: UnitOfWork,
+    user_id: UUID,
+    session_id: UUID,
+    request: CreateAnnotationRequest,
+) -> TemporalContextAnnotation:
+    if uow.timing.get_session(user_id, session_id) is None:
+        raise HTTPException(status_code=404, detail="timing session not found")
+    mutations = MutationReplayService(uow.mutations)
+
+    def apply() -> tuple[UUID, TemporalContextAnnotation]:
+        annotation = uow.contexts.create_annotation(user_id, session_id, request)
+        return annotation.id, annotation
+
+    return mutations.replay_or_apply(
+        user_id=user_id,
+        mutation=request.mutation,
+        mutation_type="create_context_annotation",
+        entity_type="temporal_context_annotation",
+        result_type=TemporalContextAnnotation,
+        apply=apply,
+    )
+
+
+def update_context_capture_policy_in_uow(
+    uow: UnitOfWork,
+    user_id: UUID,
+    request: UpdateContextCapturePolicyRequest,
+) -> ContextCapturePolicy:
+    mutations = MutationReplayService(uow.mutations)
+
+    def apply() -> tuple[UUID, ContextCapturePolicy]:
+        policy = uow.contexts.update_context_capture_policy(user_id, request)
+        return policy.id, policy
+
+    return mutations.replay_or_apply(
+        user_id=user_id,
+        mutation=request.mutation,
+        mutation_type="update_context_capture_policy",
+        entity_type="context_capture_policy",
+        result_type=ContextCapturePolicy,
+        apply=apply,
+    )
+
+
+def create_capture_context_snapshot_in_uow(
+    uow: UnitOfWork,
+    user_id: UUID,
+    session_id: UUID,
+    request: CreateCaptureContextSnapshotRequest,
+) -> CaptureContextSnapshot:
+    if uow.timing.get_session(user_id, session_id) is None:
+        raise HTTPException(status_code=404, detail="timing session not found")
+    if (
+        request.user_place_id is not None
+        and uow.contexts.get_place(user_id, request.user_place_id) is None
+    ):
+        raise HTTPException(status_code=404, detail="place not found")
+    policy = uow.contexts.get_context_capture_policy(user_id)
+    filtered_request, geospatial, radio, device = _apply_capture_policy(request, policy)
+    mutations = MutationReplayService(uow.mutations)
+
+    def apply() -> tuple[UUID, CaptureContextSnapshot]:
+        snapshot = uow.contexts.create_capture_context_snapshot(
+            user_id,
+            session_id,
+            filtered_request,
+            geospatial_observations=geospatial,
+            radio_observations=radio,
+            device_context_observations=device,
+        )
+        return snapshot.id, snapshot
+
+    return mutations.replay_or_apply(
+        user_id=user_id,
+        mutation=request.mutation,
+        mutation_type="create_capture_context_snapshot",
+        entity_type="capture_context_snapshot",
+        result_type=CaptureContextSnapshot,
+        apply=apply,
+    )
+
+
+def create_place_in_uow(
+    uow: UnitOfWork,
+    user_id: UUID,
+    request: CreatePlaceRequest,
+) -> UserPlace:
+    _validate_sensitive_place_confirmation(request.category, request.confirmed_by_user)
+    mutations = MutationReplayService(uow.mutations)
+
+    def apply() -> tuple[UUID, UserPlace]:
+        place = uow.contexts.create_place(user_id, request)
+        return place.id, place
+
+    return mutations.replay_or_apply(
+        user_id=user_id,
+        mutation=request.mutation,
+        mutation_type="create_user_place",
+        entity_type="user_place",
+        result_type=UserPlace,
+        apply=apply,
+    )
+
+
+def update_place_in_uow(
+    uow: UnitOfWork,
+    user_id: UUID,
+    place_id: UUID,
+    request: UpdatePlaceRequest,
+) -> UserPlace:
+    if request.category is not None:
+        _validate_sensitive_place_confirmation(
+            request.category,
+            request.confirmed_by_user is True,
+        )
+    if uow.contexts.get_place(user_id, place_id) is None:
+        raise HTTPException(status_code=404, detail="place not found")
+    mutations = MutationReplayService(uow.mutations)
+
+    def apply() -> tuple[UUID, UserPlace]:
+        place = uow.contexts.update_place(user_id, place_id, request)
+        if place is None:
+            raise HTTPException(status_code=404, detail="place not found")
+        return place.id, place
+
+    return mutations.replay_or_apply(
+        user_id=user_id,
+        mutation=request.mutation,
+        mutation_type="update_user_place",
+        entity_type="user_place",
+        result_type=UserPlace,
+        apply=apply,
+    )
+
+
+def update_review_flag_in_uow(
+    uow: UnitOfWork,
+    user_id: UUID,
+    flag_id: UUID,
+    request: UpdateTimingReviewFlagRequest,
+) -> TimingReviewFlag:
+    mutations = MutationReplayService(uow.mutations)
+
+    def apply() -> tuple[UUID, TimingReviewFlag]:
+        flag = uow.contexts.update_review_flag(
+            user_id,
+            flag_id,
+            request.status,
+            request.resolution_note,
+        )
+        if flag is None:
+            raise HTTPException(status_code=404, detail="timing review flag not found")
+        return flag.id, flag
+
+    return mutations.replay_or_apply(
+        user_id=user_id,
+        mutation=request.mutation,
+        mutation_type="update_timing_review_flag",
+        entity_type="timing_review_flag",
+        result_type=TimingReviewFlag,
+        apply=apply,
+    )
 
 
 def _apply_capture_policy(

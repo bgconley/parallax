@@ -44,11 +44,11 @@ def _verify_database_state(database_url: str) -> int:
                 raise RuntimeError("migration count query returned a non-integer value")
             migration_count = raw_count
             cursor.execute(
-                "select to_jsonb(array_agg(name order by name)) from schema_migration"
+                "select string_agg(name, ',' order by name) from schema_migration"
             )
             backup_manifest = _fetch_one(cursor)[0]
             cursor.execute(
-                "create temporary table parallax_restore_drill(manifest jsonb) on commit drop"
+                "create temporary table parallax_restore_drill(manifest text) on commit drop"
             )
             cursor.execute(
                 "insert into parallax_restore_drill(manifest) values (%s)",

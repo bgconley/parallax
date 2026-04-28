@@ -9,13 +9,19 @@ from psycopg.rows import dict_row
 from .postgres_activity_repository import PostgresActivityRepository
 from .postgres_context_repository import PostgresContextRepository
 from .postgres_mutation_log import PostgresMutationLogRepository
+from .postgres_privacy_repository import PostgresPrivacyRepository
 from .postgres_profile_repository import PostgresProfileRepository
+from .postgres_temporal_repository import PostgresTemporalRepository
 from .postgres_timing_repository import PostgresTimingRepository
+from .postgres_workflow_repository import PostgresWorkflowRunRepository
 from .unit_of_work import (
     ActivityRepositoryProtocol,
     ContextRepositoryProtocol,
+    PrivacyRepositoryProtocol,
     ProfileRepositoryProtocol,
+    TemporalRepositoryProtocol,
     TimingRepositoryProtocol,
+    WorkflowRunRepositoryProtocol,
 )
 
 
@@ -27,6 +33,9 @@ class PostgresUnitOfWork:
         self.timing: TimingRepositoryProtocol
         self.profiles: ProfileRepositoryProtocol
         self.contexts: ContextRepositoryProtocol
+        self.privacy: PrivacyRepositoryProtocol
+        self.temporal: TemporalRepositoryProtocol
+        self.workflows: WorkflowRunRepositoryProtocol
         self.mutations: PostgresMutationLogRepository
 
     def __enter__(self) -> PostgresUnitOfWork:
@@ -35,6 +44,9 @@ class PostgresUnitOfWork:
         self.timing = PostgresTimingRepository(self._connection)
         self.profiles = PostgresProfileRepository(self._connection)
         self.contexts = PostgresContextRepository(self._connection)
+        self.privacy = PostgresPrivacyRepository(self._connection)
+        self.temporal = PostgresTemporalRepository(self._connection)
+        self.workflows = PostgresWorkflowRunRepository(self._connection)
         self.mutations = PostgresMutationLogRepository(self._connection)
         return self
 

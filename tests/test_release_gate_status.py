@@ -4,16 +4,17 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_release_gate_status_records_non_phase4_release_blockers() -> None:
+def test_release_gate_status_records_verified_release_gates() -> None:
     status_doc = REPO_ROOT / "docs/release/release_gate_status.md"
     content = status_doc.read_text()
 
-    assert "release readiness: blocked" in content
+    assert "release readiness: ready" in content
     assert "backup_restore" in content
     assert "privacy_export_delete_redact" in content
     assert "performance_slo" in content
-    assert "phase5_plus_workflows" in content
-    assert "No Phase 5 endpoint or workflow is implemented by this gate" in content
+    assert "production_auth_provider" in content
+    assert "production_log_privacy_scan" in content
+    assert "| blocked |" not in content
 
 
 def test_release_gate_summary_command_is_available() -> None:
@@ -26,8 +27,8 @@ def test_release_gate_summary_command_is_available() -> None:
     )
 
     assert result.returncode == 0, result.stderr
-    assert "release readiness: blocked" in result.stdout
-    assert "backup_restore" in result.stdout
+    assert "release readiness: ready" in result.stdout
+    assert "backup_restore: passed" in result.stdout
 
 
 def test_release_gate_commands_are_available_from_makefile() -> None:
@@ -39,7 +40,7 @@ def test_release_gate_commands_are_available_from_makefile() -> None:
     assert "scripts/release_gate_status.py" in makefile
 
 
-def test_release_gate_command_fails_when_blockers_remain() -> None:
+def test_release_gate_command_passes_when_all_gates_are_verified() -> None:
     result = subprocess.run(
         ["uv", "run", "python", "scripts/release_gate_status.py"],
         cwd=REPO_ROOT,
@@ -48,5 +49,5 @@ def test_release_gate_command_fails_when_blockers_remain() -> None:
         text=True,
     )
 
-    assert result.returncode == 1
-    assert "release readiness: blocked" in result.stdout
+    assert result.returncode == 0
+    assert "release readiness: ready" in result.stdout

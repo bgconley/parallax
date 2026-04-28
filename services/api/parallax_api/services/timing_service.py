@@ -11,10 +11,12 @@ from ..repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from ..schemas.timing import (
     AppendTimingEventRequest,
     CompleteTimingSessionRequest,
+    CreateTimingEventSpanRequest,
     CreateTimingSessionRequest,
     ModelUpdateDecision,
     ReviewTimingSessionRequest,
     TimingEvent,
+    TimingEventSpan,
     TimingSession,
 )
 from .mutations import MutationReplayService
@@ -43,6 +45,15 @@ class TimingService:
     ) -> TimingEvent:
         with self._uow_factory() as uow:
             return append_event_in_uow(uow, user_id, session_id, request)
+
+    def create_or_correct_span(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        request: CreateTimingEventSpanRequest,
+    ) -> TimingEventSpan:
+        with self._uow_factory() as uow:
+            return create_or_correct_span_in_uow(uow, user_id, session_id, request)
 
     def complete_session(
         self,
@@ -144,6 +155,32 @@ def append_event_in_uow(
         mutation_type="append_timing_event",
         entity_type="timing_event",
         result_type=TimingEvent,
+        apply=apply,
+    )
+
+
+def create_or_correct_span_in_uow(
+    uow: UnitOfWork,
+    user_id: UUID,
+    session_id: UUID,
+    request: CreateTimingEventSpanRequest,
+) -> TimingEventSpan:
+    if uow.timing.get_session(user_id, session_id) is None:
+        raise HTTPException(status_code=404, detail="timing session not found")
+    if request.span.user_id != user_id or request.span.session_id != session_id:
+        raise HTTPException(status_code=400, detail="span scope does not match request")
+    mutations = MutationReplayService(uow.mutations)
+
+    def apply() -> tuple[UUID, TimingEventSpan]:
+        span = uow.timing.create_or_correct_span(user_id, session_id, request.span)
+        return span.id, span
+
+    return mutations.replay_or_apply(
+        user_id=user_id,
+        mutation=request.mutation,
+        mutation_type="create_timing_event_span",
+        entity_type="timing_event_span",
+        result_type=TimingEventSpan,
         apply=apply,
     )
 

@@ -41,18 +41,13 @@ IMPLEMENTED_ENDPOINTS = {
 }
 
 
-def test_runtime_surface_matches_active_phase_canonical_subset() -> None:
+def test_runtime_surface_matches_canonical_openapi() -> None:
     runtime_endpoints = {
         (method, route.path)
         for route in create_app().routes
         for method in getattr(route, "methods", [])
         if route.path.startswith("/v1/")
     }
-
-    assert runtime_endpoints == IMPLEMENTED_ENDPOINTS
-
-
-def test_implemented_surface_is_declared_as_subset_of_full_canonical_openapi() -> None:
     canonical = yaml.safe_load(OPENAPI_PATH.read_text())
     canonical_endpoints = {
         (method.upper(), path)
@@ -60,21 +55,5 @@ def test_implemented_surface_is_declared_as_subset_of_full_canonical_openapi() -
         for method in item
         if method in {"get", "post", "put", "patch", "delete"}
     }
-    phase1_doc = (ROOT / "docs/architecture/phase1_core_loop.md").read_text()
-    phase2_doc = (ROOT / "docs/architecture/phase2_review_profile.md").read_text()
-    phase_scope_doc = (ROOT / "docs/architecture/api_surface_phase_scope.md").read_text()
 
-    assert IMPLEMENTED_ENDPOINTS <= canonical_endpoints
-    assert canonical_endpoints - IMPLEMENTED_ENDPOINTS
-    assert (
-        "Phase 1 implements a deliberate subset of the canonical v1.3 OpenAPI surface"
-        in phase1_doc
-    )
-    phase3_doc = (ROOT / "docs/architecture/phase3_context_capture.md").read_text()
-
-    assert "Phase 2 extends the implemented canonical subset" in phase2_doc
-    assert "Phase 3 extends the implemented canonical subset" in phase3_doc
-    assert "not the full v1.3 release contract" in phase_scope_doc
-    assert "Phase 5 and later endpoints remain unimplemented" in phase_scope_doc
-    for method, path in sorted(canonical_endpoints - IMPLEMENTED_ENDPOINTS):
-        assert f"- `{method} {path}`" in phase_scope_doc
+    assert runtime_endpoints == canonical_endpoints

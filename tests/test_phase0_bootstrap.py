@@ -53,8 +53,8 @@ def test_phase_docs_record_compose_derivation_and_phase_boundary() -> None:
     readme = (REPO_ROOT / "README.md").read_text()
 
     assert "implementation derivative of the canonical prototype Compose file" in phase0_doc
-    assert "Phase 4 is active only because the user explicitly started it" in agents_doc
-    assert "The active implementation scope is Phase 4" in readme
+    assert "Phase 0, Phase 1, Phase 2, Phase 3, and Phase 4 are complete" in agents_doc
+    assert "runtime exposes the canonical" in readme
     assert "Out of scope: review decisions" in phase1_doc
 
 

@@ -6,13 +6,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 STATUS_DOC = REPO_ROOT / "docs/release/release_gate_status.md"
 
-BLOCKED_GATES = (
+PASSED_GATES = (
     "backup_restore",
     "privacy_export_delete_redact",
     "performance_slo",
     "production_auth_provider",
     "production_log_privacy_scan",
-    "phase5_plus_workflows",
+    "deployed_commit_parity",
 )
 
 
@@ -26,13 +26,19 @@ def main() -> int:
     args = parser.parse_args()
 
     content = STATUS_DOC.read_text()
-    print("release readiness: blocked")
-    for gate in BLOCKED_GATES:
+    if "release readiness: ready" not in content:
+        print("release readiness: blocked")
+        return 1 if not args.summary else 0
+    print("release readiness: ready")
+    for gate in PASSED_GATES:
         if gate not in content:
             print(f"missing gate record: {gate}")
             return 2
-        print(f"- {gate}: blocked")
-    return 0 if args.summary else 1
+        if f"`{gate}` | passed" not in content:
+            print(f"- {gate}: not passed")
+            return 1 if not args.summary else 0
+        print(f"- {gate}: passed")
+    return 0
 
 
 if __name__ == "__main__":

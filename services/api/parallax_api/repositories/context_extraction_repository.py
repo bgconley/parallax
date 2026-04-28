@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from ..schemas.activity_metadata import PreflightCheck
 from ..schemas.extraction import (
     CorrectExtractedEventRequest,
     ExtractedContextEvent,
@@ -116,4 +117,17 @@ class ContextExtractionRepository:
         activity_id: UUID,
         source_event: ExtractedContextEvent,
     ) -> None:
-        return None
+        if not source_event.suggested_preflight_text:
+            return
+        check = PreflightCheck(
+            id=uuid4(),
+            user_id=user_id,
+            activity_id=activity_id,
+            check_text=source_event.suggested_preflight_text,
+            state="active",
+            source="model_suggested",
+            confidence=source_event.confidence,
+            failure_count=0,
+            source_event_id=source_event.id,
+        )
+        self._store.preflight_checks[check.id] = check

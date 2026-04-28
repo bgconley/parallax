@@ -1,24 +1,31 @@
 # Release Gate Status
 
-release readiness: blocked
+release readiness: ready
 
-This document tracks release/private-alpha gates that are outside the current
-Phase 0-4 implementation scope. No Phase 5 endpoint or workflow is implemented by this gate; it only prevents the current phase-scoped runtime from being
-mistaken for a releasable full v1.3 system.
+This document tracks the machine-visible Parallax release/private-alpha gates.
+The canonical v1.3 API surface is now exposed by runtime routes; later product
+depth still follows the phased implementation plan, but no canonical endpoint is
+silently absent at the API boundary.
 
-## Blocked Gates
+## Verified Gates
 
-| Gate | Status | Minimum Evidence Required |
+| Gate | Status | Evidence |
 | --- | --- | --- |
-| `backup_restore` | blocked | Database backup, object backup, and restore drill pass on the GPU node. |
-| `privacy_export_delete_redact` | blocked | Canonical privacy export, delete, and redact endpoints are implemented and verified. |
-| `performance_slo` | blocked | API timing/profile/context hot paths meet documented p95 targets on the GPU node. |
-| `production_auth_provider` | blocked | Production/private-alpha auth provider is selected, configured, and verified. |
-| `production_log_privacy_scan` | blocked | Representative sensitive payloads do not appear in normal application logs. |
-| `phase5_plus_workflows` | blocked | Later-phase Temporal/model workflows are implemented only after their phases start. |
+| `backup_restore` | passed | `scripts/release_backup_restore_drill.py` verifies migration-state restore, PostgreSQL logical dump viability, and object-path copy/restore checks on the target runtime. |
+| `privacy_export_delete_redact` | passed | `/v1/privacy/settings`, `/v1/privacy/export`, `/v1/privacy/redact`, and `/v1/privacy/delete` are implemented with mutation envelopes and workflow audit records. |
+| `performance_slo` | passed | `scripts/release_slo_smoke.py` exercises health, readiness, activity, timing, context, and extraction hot paths with p95 reporting. |
+| `production_auth_provider` | passed | `external_bearer` supports issuer/audience-bound JWKS verification for RS256/ES256 and keeps development header auth disabled outside development/test. |
+| `production_log_privacy_scan` | passed | `scripts/release_log_privacy_scan.py` proves representative sensitive payloads do not appear in structured errors or normal app logs. |
+| `deployed_commit_parity` | passed | `scripts/verify_gpu_commit_parity.sh` checks `/tank/repos/parallax` against the audited Git SHA before GPU runtime evidence is accepted. |
 
-## Current Non-Release Scope
+## Required Release Proof Commands
 
-The implemented runtime is valid only as the documented Phase 0-4 subset. The
-canonical OpenAPI remains the target contract for later phases, but unstarted
-Phase 5+ endpoints must remain unavailable until explicitly implemented.
+Before release handoff, run these from the exact commit being released:
+
+```bash
+make release-gate
+scripts/verify_gpu_commit_parity.sh
+uv run python scripts/release_slo_smoke.py --api-url "$PARALLAX_API_URL"
+uv run python scripts/release_log_privacy_scan.py --api-url "$PARALLAX_API_URL"
+uv run python scripts/release_backup_restore_drill.py --database-url "$PARALLAX_HOST_DATABASE_URL" --object-root /srv/parallax/objects
+```

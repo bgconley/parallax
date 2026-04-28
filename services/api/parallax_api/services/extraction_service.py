@@ -17,6 +17,7 @@ from ..adapters.context_extractor import (
 )
 from ..domain.extraction_registry import CONTEXT_EXTRACTOR_V1
 from ..repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
+from ..schemas.common import MutationEnvelope
 from ..schemas.context import TemporalContextAnnotation
 from ..schemas.extraction import (
     ConfirmExtractedEventRequest,
@@ -46,13 +47,16 @@ class ExtractionService:
         request: ExtractAnnotationRequest,
     ) -> ExtractAnnotationResponse:
         with self._uow_factory() as uow:
-            return extract_annotation_in_uow(
-                uow,
+            workflow = uow.workflows.enqueue(
                 user_id,
-                annotation_id,
-                request,
-                self._extractor,
+                "ProcessContextAnnotationWorkflow",
+                {
+                    "annotation_id": str(annotation_id),
+                    "mutation": request.mutation.model_dump(mode="json"),
+                    "force": request.force,
+                },
             )
+            return process_context_annotation_workflow_in_uow(uow, workflow.id, self._extractor)
 
     def confirm_extracted_event(
         self,
@@ -182,6 +186,45 @@ def extract_annotation_in_uow(
         result_type=ExtractAnnotationResponse,
         apply=apply,
     )
+
+
+def process_context_annotation_workflow_in_uow(
+    uow: UnitOfWork,
+    workflow_id: UUID,
+    extractor: ContextExtractor,
+) -> ExtractAnnotationResponse:
+    workflow = uow.workflows.mark_running(workflow_id)
+    try:
+        annotation_id = UUID(str(workflow.input_ref["annotation_id"]))
+        mutation = MutationEnvelope.model_validate(workflow.input_ref["mutation"])
+        request = ExtractAnnotationRequest(
+            mutation=mutation,
+            force=bool(workflow.input_ref.get("force", False)),
+        )
+        if workflow.user_id is None:
+            raise HTTPException(status_code=400, detail="workflow missing user scope")
+        response = extract_annotation_in_uow(
+            uow,
+            workflow.user_id,
+            annotation_id,
+            request,
+            extractor,
+        )
+    except Exception as exc:
+        uow.workflows.mark_failed(workflow_id, exc.__class__.__name__, str(exc))
+        raise
+    uow.workflows.mark_succeeded(
+        workflow_id,
+        {
+            "annotation_id": str(response.annotation_id),
+            "status": response.status,
+            "model_invocation_id": str(response.model_invocation_id)
+            if response.model_invocation_id
+            else None,
+            "extracted_event_ids": [str(event.id) for event in response.extracted_events],
+        },
+    )
+    return response
 
 
 def confirm_extracted_event_in_uow(

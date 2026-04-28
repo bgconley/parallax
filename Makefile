@@ -1,4 +1,4 @@
-.PHONY: validate test lint typecheck security release-status release-gate migrate schema-smoke phase1-smoke phase2-smoke phase3-smoke phase4-smoke dev-up dev-down dev-logs
+.PHONY: validate test lint typecheck security release-status release-gate release-slo privacy-log-scan backup-restore-drill migrate schema-smoke phase1-smoke phase2-smoke phase3-smoke phase4-smoke dev-up dev-down dev-logs
 
 PARALLAX_HOST_DATABASE_URL ?= postgresql://parallax:parallax_dev_password@127.0.0.1:15432/parallax
 PARALLAX_API_URL ?= http://127.0.0.1:18000
@@ -25,6 +25,15 @@ release-status:
 
 release-gate:
 	uv run python scripts/release_gate_status.py
+
+release-slo:
+	uv run python scripts/release_slo_smoke.py --api-url "$(PARALLAX_API_URL)"
+
+privacy-log-scan:
+	uv run python scripts/release_log_privacy_scan.py --api-url "$(PARALLAX_API_URL)"
+
+backup-restore-drill:
+	uv run python scripts/release_backup_restore_drill.py --database-url "$(PARALLAX_HOST_DATABASE_URL)"
 
 migrate:
 	uv run python scripts/apply_migrations.py --database-url "$(PARALLAX_HOST_DATABASE_URL)" --migrations-dir migrations

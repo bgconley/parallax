@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_PROJECT_ENVIRONMENT=/opt/parallax/.venv \
     PATH="/opt/parallax/.venv/bin:${PATH}" \
-    PYTHONPATH="/app/services/worker:/app/packages/contracts:/app/packages/db"
+    PYTHONPATH="/app/services/worker:/app/services/api:/app/packages/contracts:/app/packages/db"
 
 WORKDIR /app
 
@@ -17,6 +17,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 COPY packages/contracts packages/contracts
 COPY packages/db packages/db
+COPY services/api services/api
 COPY services/worker services/worker
 
 USER 10001:1000

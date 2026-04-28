@@ -327,6 +327,48 @@ class PostgresTimingRepository:
             self._update_session_friction_totals(cursor, user_id, extracted_event.session_id)
         return _span_from_row(row)
 
+    def create_or_correct_span(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        span: TimingEventSpan,
+    ) -> TimingEventSpan:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                delete from timing_event_span
+                where user_id = %s and session_id = %s and id = %s
+                """,
+                (user_id, session_id, span.id),
+            )
+            cursor.execute(
+                _INSERT_SPAN_SQL,
+                (
+                    user_id,
+                    session_id,
+                    span.checkpoint_run_id,
+                    None,
+                    None,
+                    span.span_type,
+                    span.friction_category,
+                    span.started_at,
+                    span.ended_at,
+                    span.duration_seconds,
+                    span.count_policy,
+                    span.count_in_wall_time,
+                    span.count_in_active_time,
+                    span.model_update_scopes,
+                    span.linked_annotation_id,
+                    span.linked_extracted_event_id,
+                    True,
+                ),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise RuntimeError("timing span insert returned no row")
+            self._update_session_friction_totals(cursor, user_id, session_id)
+        return _span_from_row(row)
+
     def review_session(
         self,
         user_id: UUID,

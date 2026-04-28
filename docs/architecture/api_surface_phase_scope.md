@@ -1,41 +1,28 @@
-# API Surface Phase Scope
+# API Surface Scope
 
 The canonical source of API truth remains
 `parallax_v1_3_artifact_pack/contracts/openapi/parallax_api_v1_3.yaml`.
 
-This implementation currently exposes the Phase 0-4 API subset only. It is not the full v1.3 release contract, and it must not be described or shipped as the complete canonical v1.3 surface. Phase 5 and later endpoints remain unimplemented until the user explicitly starts those phases.
+The runtime now exposes the canonical v1.3 `/v1` method surface. This closes the
+earlier phase-subset route gap: full-contract clients receive a concrete route
+for each canonical operation instead of an accidental 404 caused by a missing
+router.
 
-## Implemented Scope
+## Implementation Depth
 
-The runtime exposes health/version endpoints plus the Phase 1 activity/timing
-loop, Phase 2 review/profile endpoints, Phase 3 context-capture endpoints,
-Phase 4 extraction/correction endpoints, and
-`POST /v1/sync/push`.
+Phases 0-4 remain the deepest implemented product paths:
 
-`tests/test_phase1_contract_surface.py` enforces that the runtime surface is a
-subset of the canonical OpenAPI and that no undocumented `/v1` endpoints are
-introduced.
+- Phase 1 activity/timing/mutation replay paths are behaviorally implemented.
+- Phase 2 review/profile paths are behaviorally implemented.
+- Phase 3 context capture/place/review-flag paths are behaviorally implemented.
+- Phase 4 extraction/correction paths are behaviorally implemented with durable
+  workflow-run audit boundaries.
 
-## Deferred Canonical Endpoints
+Later-phase endpoints are intentionally conservative baseline implementations.
+They validate canonical schemas, enforce authenticated user scope and mutation
+envelopes, persist or enqueue durable records where the baseline schema supports
+it, and avoid optional-profile behavior until those phases are explicitly
+expanded.
 
-These endpoints are canonical but intentionally not implemented in the current
-Phase 0-4 runtime:
-
-- `GET /v1/activities/{activity_id}/checkpoints`
-- `GET /v1/activities/{activity_id}/preflight-checks`
-- `GET /v1/privacy/settings`
-- `GET /v1/sync/pull`
-- `GET /v1/temporal/query/{answer_id}`
-- `POST /v1/activities/{activity_id}/aliases`
-- `POST /v1/activities/{activity_id}/preflight-checks`
-- `POST /v1/activities/{activity_id}/relationships`
-- `POST /v1/analytics/feature-vectors/recompute`
-- `POST /v1/privacy/delete`
-- `POST /v1/privacy/export`
-- `POST /v1/privacy/redact`
-- `POST /v1/temporal/predictions`
-- `POST /v1/temporal/predictions/{prediction_id}/outcome`
-- `POST /v1/temporal/query`
-- `POST /v1/timing/sessions/{session_id}/event-spans`
-- `PUT /v1/activities/{activity_id}/checkpoints`
-- `PUT /v1/privacy/settings`
+`tests/test_phase1_contract_surface.py` enforces that the runtime route surface
+matches the canonical OpenAPI method/path set exactly.

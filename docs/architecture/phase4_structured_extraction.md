@@ -1,16 +1,15 @@
 # Phase 4 Structured Extraction
 
-Phase 4 extends the implemented canonical subset with validated context
-extraction and correction endpoints:
+Phase 4 provides validated context extraction and correction behavior:
 
 - `POST /v1/timing/annotations/{annotation_id}/extract`
 - `POST /v1/timing/extracted-events/{event_id}/confirm`
 - `POST /v1/timing/extracted-events/{event_id}/correct`
 
-The scope is limited to `docs/03_phased_implementation_plan.md` Phase 4. Ask
-About Time, prediction APIs, privacy export/delete/redact, production auth,
-optional geospatial profiles, and later Temporal workflows remain out of scope
-until their owning phases are explicitly started.
+The scope is grounded in `docs/03_phased_implementation_plan.md` Phase 4.
+Later-phase endpoints now exist at the route boundary, but their deeper
+product/model behavior remains intentionally baseline until their owning phases
+are expanded.
 
 ## Architecture
 
@@ -18,8 +17,10 @@ Routes stay thin and delegate to `ExtractionService`. API DTOs live in
 `schemas/extraction.py`. The local model boundary lives in
 `adapters/context_extractor.py` behind a `ContextExtractor` protocol, with prompt
 and schema version metadata centralized in `domain/extraction_registry.py`.
-Context persistence remains behind the `contexts` unit-of-work repository, with
-Postgres extraction and place-inference SQL split into dedicated modules.
+Extraction and place inference create durable `workflow_run` records using the
+canonical `ProcessContextAnnotationWorkflow` and `InferPlaceFromContextWorkflow`
+names. The lightweight worker drains the same workflow records, so request-path
+processing and background recovery share one execution boundary.
 
 ## Semantics
 

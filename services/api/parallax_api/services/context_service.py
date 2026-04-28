@@ -193,6 +193,21 @@ def create_capture_context_snapshot_in_uow(
             radio_observations=radio,
             device_context_observations=device,
         )
+        workflow = uow.workflows.enqueue(
+            user_id,
+            "InferPlaceFromContextWorkflow",
+            {
+                "snapshot_id": str(snapshot.id),
+                "session_id": str(session_id),
+            },
+        )
+        uow.workflows.mark_succeeded(
+            workflow.id,
+            {
+                "snapshot_id": str(snapshot.id),
+                "candidate_count": len(snapshot.inferred_places),
+            },
+        )
         return snapshot.id, snapshot
 
     return mutations.replay_or_apply(

@@ -5,8 +5,18 @@ from typing import Any
 from uuid import UUID
 
 import psycopg
+from psycopg.types.json import Jsonb
 
 from ..schemas.activity import Activity, CreateActivityRequest, ResolveActivityCandidate
+from ..schemas.activity_metadata import (
+    ActivityAlias,
+    ActivityRelationship,
+    CheckpointTemplate,
+    CreateActivityRelationshipRequest,
+    CreatePreflightCheckRequest,
+    PreflightCheck,
+    PutCheckpointsRequest,
+)
 from .activity_repository import DuplicateActivityError, normalize_activity_key
 from .postgres_identity import ensure_app_user
 
@@ -170,6 +180,165 @@ class PostgresActivityRepository:
                 evidence={"reason": "no matching activity"},
             )
         ]
+
+    def add_alias(
+        self,
+        user_id: UUID,
+        activity_id: UUID,
+        alias_text: str,
+        *,
+        user_confirmed: bool,
+    ) -> ActivityAlias:
+        normalized_alias = normalize_activity_key(alias_text)
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                insert into activity_alias (
+                  user_id, activity_id, alias_text, normalized_alias,
+                  source, confidence, user_confirmed
+                )
+                values (%s, %s, %s, %s, 'user', %s, %s)
+                returning *
+                """,
+                (
+                    user_id,
+                    activity_id,
+                    alias_text,
+                    normalized_alias,
+                    1.0 if user_confirmed else 0.75,
+                    user_confirmed,
+                ),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            raise RuntimeError("activity alias insert returned no row")
+        return ActivityAlias.model_validate(dict(row))
+
+    def create_relationship(
+        self,
+        user_id: UUID,
+        activity_id: UUID,
+        request: CreateActivityRelationshipRequest,
+    ) -> ActivityRelationship:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                insert into activity_relationship (
+                  user_id, from_activity_id, to_activity_id, kind, metadata, user_confirmed
+                )
+                values (%s, %s, %s, %s, %s, true)
+                returning *
+                """,
+                (
+                    user_id,
+                    activity_id,
+                    request.to_activity_id,
+                    request.kind,
+                    Jsonb(request.metadata),
+                ),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            raise RuntimeError("activity relationship insert returned no row")
+        return ActivityRelationship.model_validate(dict(row))
+
+    def list_checkpoints(self, user_id: UUID, activity_id: UUID) -> list[CheckpointTemplate]:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                select *
+                from checkpoint_template
+                where user_id = %s and activity_id = %s
+                order by sequence_order
+                """,
+                (user_id, activity_id),
+            )
+            rows = cursor.fetchall()
+        return [CheckpointTemplate.model_validate(dict(row)) for row in rows]
+
+    def replace_checkpoints(
+        self,
+        user_id: UUID,
+        activity_id: UUID,
+        request: PutCheckpointsRequest,
+    ) -> list[CheckpointTemplate]:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                "delete from checkpoint_template where user_id = %s and activity_id = %s",
+                (user_id, activity_id),
+            )
+            checkpoints: list[CheckpointTemplate] = []
+            sorted_checkpoints = sorted(
+                request.checkpoints,
+                key=lambda checkpoint: checkpoint.sequence_order,
+            )
+            for item in sorted_checkpoints:
+                cursor.execute(
+                    """
+                    insert into checkpoint_template (
+                      user_id, activity_id, sequence_order, label, phase_type, optional
+                    )
+                    values (%s, %s, %s, %s, %s, %s)
+                    returning *
+                    """,
+                    (
+                        user_id,
+                        activity_id,
+                        item.sequence_order,
+                        item.label,
+                        item.phase_type,
+                        item.optional,
+                    ),
+                )
+                row = cursor.fetchone()
+                if row is None:
+                    raise RuntimeError("checkpoint template insert returned no row")
+                checkpoints.append(CheckpointTemplate.model_validate(dict(row)))
+        return checkpoints
+
+    def list_preflight_checks(self, user_id: UUID, activity_id: UUID) -> list[PreflightCheck]:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                select id, user_id, activity_id, check_text, state, source, confidence,
+                  failure_count, last_triggered_at, source_event_id
+                from preflight_check
+                where user_id = %s and activity_id = %s
+                order by check_text
+                """,
+                (user_id, activity_id),
+            )
+            rows = cursor.fetchall()
+        return [PreflightCheck.model_validate(dict(row)) for row in rows]
+
+    def create_preflight_check(
+        self,
+        user_id: UUID,
+        activity_id: UUID,
+        request: CreatePreflightCheckRequest,
+    ) -> PreflightCheck:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                insert into preflight_check (
+                  user_id, activity_id, check_text, source, confidence
+                )
+                values (%s, %s, %s, %s, %s)
+                returning id, user_id, activity_id, check_text, state, source, confidence,
+                  failure_count, last_triggered_at, source_event_id
+                """,
+                (
+                    user_id,
+                    activity_id,
+                    request.check_text,
+                    request.source,
+                    1.0 if request.source == "user_created" else None,
+                ),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            raise RuntimeError("preflight check insert returned no row")
+        return PreflightCheck.model_validate(dict(row))
 
 
 def _activity_from_row(row: Mapping[str, Any]) -> Activity:

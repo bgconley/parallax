@@ -6,7 +6,7 @@ from uuid import UUID
 
 import jwt
 from fastapi import Depends, Header, HTTPException
-from jwt import ExpiredSignatureError, InvalidTokenError
+from jwt import ExpiredSignatureError, InvalidTokenError, PyJWKClient, PyJWKClientError
 
 from .settings import ApiSettings, get_settings
 
@@ -64,17 +64,14 @@ def _auth_from_bearer_token(
     settings: ApiSettings,
     authorization: str | None,
 ) -> AuthContext:
-    if not settings.auth_jwt_secret or len(settings.auth_jwt_secret.encode("utf-8")) < (
-        _MIN_HS256_SECRET_BYTES
-    ):
-        raise _auth_provider_unavailable(settings)
     token = _extract_bearer_token(authorization)
     issuer = settings.auth_jwt_issuer or None
     audience = settings.auth_jwt_audience or None
+    key = _verification_key(settings, token)
     try:
         claims = jwt.decode(
             token,
-            settings.auth_jwt_secret,
+            key,
             algorithms=[settings.auth_jwt_algorithm],
             issuer=issuer,
             audience=audience,
@@ -97,6 +94,21 @@ def _auth_from_bearer_token(
         raise _invalid_auth_token() from exc
 
     return AuthContext(user_id=_user_id_from_claims(claims, settings.auth_jwt_user_id_claim))
+
+
+def _verification_key(settings: ApiSettings, token: str) -> Any:
+    if settings.auth_jwt_algorithm == "HS256":
+        if not settings.auth_jwt_secret or len(settings.auth_jwt_secret.encode("utf-8")) < (
+            _MIN_HS256_SECRET_BYTES
+        ):
+            raise _auth_provider_unavailable(settings)
+        return settings.auth_jwt_secret
+    if not settings.auth_jwks_url:
+        raise _auth_provider_unavailable(settings)
+    try:
+        return PyJWKClient(settings.auth_jwks_url).get_signing_key_from_jwt(token).key
+    except PyJWKClientError as exc:
+        raise _invalid_auth_token() from exc
 
 
 def _extract_bearer_token(authorization: str | None) -> str:

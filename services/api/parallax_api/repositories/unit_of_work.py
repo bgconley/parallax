@@ -6,6 +6,15 @@ from uuid import UUID
 
 from ..domain.timing_spans import TimingEventSpanDraft, TimingSpanTotals
 from ..schemas.activity import Activity, CreateActivityRequest, ResolveActivityCandidate
+from ..schemas.activity_metadata import (
+    ActivityAlias,
+    ActivityRelationship,
+    CheckpointTemplate,
+    CreateActivityRelationshipRequest,
+    CreatePreflightCheckRequest,
+    PreflightCheck,
+    PutCheckpointsRequest,
+)
 from ..schemas.context import (
     CaptureContextSnapshot,
     ContextCapturePolicy,
@@ -30,7 +39,21 @@ from ..schemas.extraction import (
     ModelInvocationRecord,
     TemporalCorrection,
 )
+from ..schemas.privacy import (
+    PrivacyDeleteRequest,
+    PrivacyExportRequest,
+    PrivacyRedactRequest,
+    PrivacySettings,
+)
 from ..schemas.profile import ActivityProfile
+from ..schemas.temporal import (
+    CreatePredictionRequest,
+    PredictionOutcome,
+    RecordPredictionOutcomeRequest,
+    TemporalPrediction,
+    TemporalQueryAnswer,
+    TemporalQueryRequest,
+)
 from ..schemas.timing import (
     AppendTimingEventRequest,
     CompleteTimingSessionRequest,
@@ -41,6 +64,7 @@ from ..schemas.timing import (
     TimingEventSpan,
     TimingSession,
 )
+from ..schemas.workflows import WorkflowRun
 from .mutation_log import MutationLogRepository
 
 
@@ -57,6 +81,40 @@ class ActivityRepositoryProtocol(Protocol):
     def get(self, user_id: UUID, activity_id: UUID) -> Activity | None: ...
 
     def resolve(self, user_id: UUID, query: str, limit: int) -> list[ResolveActivityCandidate]: ...
+
+    def add_alias(
+        self,
+        user_id: UUID,
+        activity_id: UUID,
+        alias_text: str,
+        *,
+        user_confirmed: bool,
+    ) -> ActivityAlias: ...
+
+    def create_relationship(
+        self,
+        user_id: UUID,
+        activity_id: UUID,
+        request: CreateActivityRelationshipRequest,
+    ) -> ActivityRelationship: ...
+
+    def list_checkpoints(self, user_id: UUID, activity_id: UUID) -> list[CheckpointTemplate]: ...
+
+    def replace_checkpoints(
+        self,
+        user_id: UUID,
+        activity_id: UUID,
+        request: PutCheckpointsRequest,
+    ) -> list[CheckpointTemplate]: ...
+
+    def list_preflight_checks(self, user_id: UUID, activity_id: UUID) -> list[PreflightCheck]: ...
+
+    def create_preflight_check(
+        self,
+        user_id: UUID,
+        activity_id: UUID,
+        request: CreatePreflightCheckRequest,
+    ) -> PreflightCheck: ...
 
 
 class TimingRepositoryProtocol(Protocol):
@@ -104,6 +162,13 @@ class TimingRepositoryProtocol(Protocol):
         extracted_event: ExtractedContextEvent,
         *,
         user_corrected: bool,
+    ) -> TimingEventSpan: ...
+
+    def create_or_correct_span(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        span: TimingEventSpan,
     ) -> TimingEventSpan: ...
 
 
@@ -240,11 +305,71 @@ class ContextRepositoryProtocol(Protocol):
     ) -> None: ...
 
 
+class PrivacyRepositoryProtocol(Protocol):
+    def get_settings(self, user_id: UUID) -> PrivacySettings: ...
+
+    def update_settings(self, user_id: UUID, settings: PrivacySettings) -> PrivacySettings: ...
+
+    def request_export(self, user_id: UUID, request: PrivacyExportRequest) -> UUID: ...
+
+    def request_redact(self, user_id: UUID, request: PrivacyRedactRequest) -> UUID: ...
+
+    def request_delete(self, user_id: UUID, request: PrivacyDeleteRequest) -> UUID: ...
+
+
+class TemporalRepositoryProtocol(Protocol):
+    def create_prediction(
+        self,
+        user_id: UUID,
+        request: CreatePredictionRequest,
+    ) -> TemporalPrediction: ...
+
+    def record_prediction_outcome(
+        self,
+        user_id: UUID,
+        prediction_id: UUID,
+        request: RecordPredictionOutcomeRequest,
+    ) -> PredictionOutcome: ...
+
+    def create_query_answer(
+        self,
+        user_id: UUID,
+        request: TemporalQueryRequest,
+    ) -> TemporalQueryAnswer: ...
+
+    def get_query_answer(self, user_id: UUID, answer_id: UUID) -> TemporalQueryAnswer | None: ...
+
+
+class WorkflowRunRepositoryProtocol(Protocol):
+    def enqueue(
+        self,
+        user_id: UUID | None,
+        workflow_type: str,
+        input_ref: dict[str, object],
+    ) -> WorkflowRun: ...
+
+    def get_next_queued(self) -> WorkflowRun | None: ...
+
+    def mark_running(self, workflow_id: UUID) -> WorkflowRun: ...
+
+    def mark_succeeded(self, workflow_id: UUID, result_ref: dict[str, object]) -> WorkflowRun: ...
+
+    def mark_failed(
+        self,
+        workflow_id: UUID,
+        error_code: str,
+        error_message: str,
+    ) -> WorkflowRun: ...
+
+
 class UnitOfWork(Protocol):
     activities: ActivityRepositoryProtocol
     timing: TimingRepositoryProtocol
     profiles: ProfileRepositoryProtocol
     contexts: ContextRepositoryProtocol
+    privacy: PrivacyRepositoryProtocol
+    temporal: TemporalRepositoryProtocol
+    workflows: WorkflowRunRepositoryProtocol
     mutations: MutationLogRepository
 
     def __enter__(self) -> UnitOfWork: ...

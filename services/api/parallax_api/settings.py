@@ -15,9 +15,10 @@ class ApiSettings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     temporal_address: str = "localhost:7233"
     object_storage_endpoint: str = "http://localhost:9000"
-    auth_mode: Literal["dev_header", "external_bearer"] = "dev_header"
+    auth_mode: Literal["dev_header", "external_bearer"] = "external_bearer"
     auth_jwt_secret: str | None = None
-    auth_jwt_algorithm: Literal["HS256"] = "HS256"
+    auth_jwks_url: str | None = None
+    auth_jwt_algorithm: Literal["HS256", "RS256", "ES256"] = "HS256"
     auth_jwt_user_id_claim: str = "sub"
     auth_jwt_issuer: str | None = None
     auth_jwt_audience: str | None = None

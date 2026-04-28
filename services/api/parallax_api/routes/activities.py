@@ -12,7 +12,18 @@ from ..schemas.activity import (
     ResolveActivityRequest,
     ResolveActivityResponse,
 )
+from ..schemas.activity_metadata import (
+    ActivityAlias,
+    ActivityRelationship,
+    AddActivityAliasRequest,
+    CheckpointTemplate,
+    CreateActivityRelationshipRequest,
+    CreatePreflightCheckRequest,
+    PreflightCheck,
+    PutCheckpointsRequest,
+)
 from ..schemas.profile import ActivityProfile
+from ..services.activity_metadata_service import ActivityMetadataService
 from ..services.activity_service import ActivityService
 from ..services.profile_service import ProfileService
 
@@ -71,3 +82,85 @@ def get_activity_profile(
     uow_factory: UnitOfWorkFactory = UOW_FACTORY,
 ) -> ActivityProfile:
     return ProfileService(uow_factory).get_activity_profile(auth.user_id, activity_id)
+
+
+@router.post(
+    "/{activity_id}/aliases",
+    response_model=ActivityAlias,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_activity_alias(
+    activity_id: UUID,
+    payload: AddActivityAliasRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> ActivityAlias:
+    return ActivityMetadataService(uow_factory).add_alias(auth.user_id, activity_id, payload)
+
+
+@router.post(
+    "/{activity_id}/relationships",
+    response_model=ActivityRelationship,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_activity_relationship(
+    activity_id: UUID,
+    payload: CreateActivityRelationshipRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> ActivityRelationship:
+    return ActivityMetadataService(uow_factory).create_relationship(
+        auth.user_id,
+        activity_id,
+        payload,
+    )
+
+
+@router.get("/{activity_id}/checkpoints", response_model=list[CheckpointTemplate])
+def list_activity_checkpoints(
+    activity_id: UUID,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> list[CheckpointTemplate]:
+    return ActivityMetadataService(uow_factory).list_checkpoints(auth.user_id, activity_id)
+
+
+@router.put("/{activity_id}/checkpoints", response_model=list[CheckpointTemplate])
+def replace_activity_checkpoints(
+    activity_id: UUID,
+    payload: PutCheckpointsRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> list[CheckpointTemplate]:
+    return ActivityMetadataService(uow_factory).replace_checkpoints(
+        auth.user_id,
+        activity_id,
+        payload,
+    )
+
+
+@router.get("/{activity_id}/preflight-checks", response_model=list[PreflightCheck])
+def list_activity_preflight_checks(
+    activity_id: UUID,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> list[PreflightCheck]:
+    return ActivityMetadataService(uow_factory).list_preflight_checks(auth.user_id, activity_id)
+
+
+@router.post(
+    "/{activity_id}/preflight-checks",
+    response_model=PreflightCheck,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_activity_preflight_check(
+    activity_id: UUID,
+    payload: CreatePreflightCheckRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> PreflightCheck:
+    return ActivityMetadataService(uow_factory).create_preflight_check(
+        auth.user_id,
+        activity_id,
+        payload,
+    )

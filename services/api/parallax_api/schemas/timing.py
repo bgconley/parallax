@@ -243,3 +243,8 @@ class ModelUpdateDecision(ApiModel):
     reviewed_at: datetime
     user_note: str | None = None
     payload: dict[str, object]
+
+
+class CreateTimingEventSpanRequest(ApiModel):
+    mutation: MutationEnvelope
+    span: TimingEventSpan

@@ -203,6 +203,26 @@ class TimingRepository:
         _update_session_friction_totals(self._store, user_id, extracted_event.session_id)
         return span
 
+    def create_or_correct_span(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        span: TimingEventSpan,
+    ) -> TimingEventSpan:
+        stored = span.model_copy(
+            update={
+                "user_id": user_id,
+                "session_id": session_id,
+                "user_corrected": True,
+            }
+        )
+        existing_spans = self._store.session_spans.get(session_id, [])
+        self._store.session_spans[session_id] = [
+            existing for existing in existing_spans if existing.id != stored.id
+        ] + [stored]
+        _update_session_friction_totals(self._store, user_id, session_id)
+        return stored
+
     def review_session(
         self,
         user_id: UUID,

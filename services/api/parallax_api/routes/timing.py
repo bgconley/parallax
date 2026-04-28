@@ -9,10 +9,12 @@ from ..repositories.unit_of_work import UnitOfWorkFactory
 from ..schemas.timing import (
     AppendTimingEventRequest,
     CompleteTimingSessionRequest,
+    CreateTimingEventSpanRequest,
     CreateTimingSessionRequest,
     ModelUpdateDecision,
     ReviewTimingSessionRequest,
     TimingEvent,
+    TimingEventSpan,
     TimingSession,
 )
 from ..services.timing_service import TimingService
@@ -58,6 +60,20 @@ def append_timing_event(
     uow_factory: UnitOfWorkFactory = UOW_FACTORY,
 ) -> TimingEvent:
     return TimingService(uow_factory).append_event(auth.user_id, session_id, payload)
+
+
+@router.post(
+    "/{session_id}/event-spans",
+    response_model=TimingEventSpan,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_timing_event_span(
+    session_id: UUID,
+    payload: CreateTimingEventSpanRequest,
+    auth: AuthContext = AUTH_CONTEXT,
+    uow_factory: UnitOfWorkFactory = UOW_FACTORY,
+) -> TimingEventSpan:
+    return TimingService(uow_factory).create_or_correct_span(auth.user_id, session_id, payload)
 
 
 @router.post("/{session_id}/complete", response_model=TimingSession)

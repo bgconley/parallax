@@ -81,7 +81,7 @@ def _create_timed_annotation(
         headers=headers,
         json={
             "mutation": _mutation(user_id, "annotation", 3),
-            "input_mode": "typed_note",
+            "input_mode": "text",
             "raw_text": "Started setup, then paused to clear the counter.",
             "occurred_at": "2026-04-28T12:02:00Z",
         },

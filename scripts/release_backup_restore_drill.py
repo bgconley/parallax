@@ -38,13 +38,13 @@ def main() -> int:
 def _verify_database_state(database_url: str) -> int:
     with psycopg.connect(database_url) as connection:
         with connection.cursor() as cursor:
-            cursor.execute("select count(*) from migration_version")
+            cursor.execute("select count(*) from schema_migration")
             raw_count = _fetch_one(cursor)[0]
             if not isinstance(raw_count, int):
                 raise RuntimeError("migration count query returned a non-integer value")
             migration_count = raw_count
             cursor.execute(
-                "select to_jsonb(array_agg(version order by version)) from migration_version"
+                "select to_jsonb(array_agg(name order by name)) from schema_migration"
             )
             backup_manifest = _fetch_one(cursor)[0]
             cursor.execute(
@@ -87,7 +87,7 @@ def _verify_logical_dump(container: str, user: str, database: str) -> int:
     )  # nosec B603
     if result.returncode != 0:
         raise RuntimeError(result.stderr.decode("utf-8", errors="replace").strip())
-    if b"CREATE TABLE" not in result.stdout or b"migration_version" not in result.stdout:
+    if b"CREATE TABLE" not in result.stdout or b"schema_migration" not in result.stdout:
         raise RuntimeError("logical backup did not contain expected Parallax schema")
     return len(result.stdout)
 

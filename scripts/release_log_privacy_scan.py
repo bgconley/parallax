@@ -56,8 +56,10 @@ def _probe_validation_error(api_url: str, headers: dict[str, str], marker: str) 
                 "raw_private_note": marker,
             },
         )
-    if response.status_code != 422:
+    if response.status_code != 400:
         raise RuntimeError(f"expected validation failure, got {response.status_code}")
+    if response.json().get("error_code") != "validation_error":
+        raise RuntimeError("expected structured validation_error response")
     return response.text
 
 

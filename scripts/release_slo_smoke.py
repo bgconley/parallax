@@ -70,8 +70,7 @@ def _create_timed_annotation(
         json={
             "mutation": _mutation(user_id, "session", 2),
             "activity_id": activity_id,
-            "started_at": "2026-04-28T12:00:00Z",
-            "start_source": "manual",
+            "client_session_id": f"release-slo-session-{uuid4()}",
         },
     )
     session.raise_for_status()
@@ -82,9 +81,9 @@ def _create_timed_annotation(
         headers=headers,
         json={
             "mutation": _mutation(user_id, "annotation", 3),
+            "input_mode": "typed_note",
             "raw_text": "Started setup, then paused to clear the counter.",
-            "source": "manual_note",
-            "client_recorded_at": "2026-04-28T12:02:00Z",
+            "occurred_at": "2026-04-28T12:02:00Z",
         },
     )
     annotation.raise_for_status()

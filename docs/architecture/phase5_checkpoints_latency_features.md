@@ -23,7 +23,7 @@ Feature-vector payload construction is pure domain logic in
 `domain/feature_vectors.py`; repositories only load eligible source data,
 apply privacy policy, delete stale vectors for the recompute scope, and persist
 new `temporal_feature_vector` rows. The worker drains the canonical
-`FeatureVectorRecomputeWorkflow` and marks success only after vectors are
+`GenerateTemporalFeatureVectorWorkflow` and marks success only after vectors are
 generated.
 
 ## Semantics

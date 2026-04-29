@@ -45,7 +45,7 @@ from ..schemas.timing import (
     TransitionObservation,
 )
 from ..schemas.workflows import WorkflowRun
-from .mutation_log import StoredMutation
+from .mutation_log import StoredMutation, StoredSyncChange
 
 DeviceMutationKey = tuple[UUID, str, str]
 IdempotencyMutationKey = tuple[UUID, str]
@@ -53,10 +53,12 @@ IdempotencyMutationKey = tuple[UUID, str]
 
 @dataclass
 class MutationRecord:
+    id: UUID
     mutation_type: str
     entity_type: str
     entity_id: UUID | None
     result: object
+    received_at: datetime
 
 
 class WorkflowRunStore(dict[UUID, WorkflowRun]):
@@ -159,6 +161,27 @@ class InMemoryMutationLogRepository:
             result=record.result,
         )
 
+    def list_changes(
+        self,
+        user_id: UUID,
+        *,
+        cursor: str | None,
+        limit: int,
+    ) -> list[StoredSyncChange]:
+        after = _parse_sync_cursor(cursor)
+        records = [
+            record
+            for key, record in self._store.mutation_records.items()
+            if key[0] == user_id and record.mutation_type != "sync_push"
+        ]
+        records.sort(key=lambda record: (record.received_at, str(record.id)))
+        changes = [
+            _stored_sync_change(record)
+            for record in records
+            if after is None or (record.received_at, str(record.id)) > after
+        ]
+        return changes[:limit]
+
     def save(
         self,
         *,
@@ -170,10 +193,12 @@ class InMemoryMutationLogRepository:
         result: BaseModel,
     ) -> None:
         record = MutationRecord(
+            id=uuid4(),
             mutation_type=mutation_type,
             entity_type=entity_type,
             entity_id=entity_id,
             result=result,
+            received_at=datetime.now(UTC),
         )
         self._store.mutation_records[_device_key(user_id, mutation)] = record
         self._store.idempotency_records[_idempotency_key(user_id, mutation)] = record
@@ -191,3 +216,27 @@ def _mutation_json(mutation: MutationEnvelope | dict[str, object]) -> dict[str, 
     if isinstance(mutation, MutationEnvelope):
         return mutation.model_dump(mode="json")
     return dict(mutation)
+
+
+def _stored_sync_change(record: MutationRecord) -> StoredSyncChange:
+    return StoredSyncChange(
+        cursor=_sync_cursor(record.received_at, record.id),
+        mutation_type=record.mutation_type,
+        entity_type=record.entity_type,
+        entity_id=record.entity_id,
+        result=record.result,
+        received_at=record.received_at,
+    )
+
+
+def _sync_cursor(received_at: datetime, record_id: UUID) -> str:
+    return f"{received_at.isoformat()}|{record_id}"
+
+
+def _parse_sync_cursor(cursor: str | None) -> tuple[datetime, str] | None:
+    if not cursor:
+        return None
+    timestamp, separator, record_id = cursor.partition("|")
+    if separator != "|":
+        raise ValueError("invalid sync cursor")
+    return (datetime.fromisoformat(timestamp), record_id)

@@ -77,6 +77,7 @@ def test_place_context_delete_is_durable_and_redacts_place_after_worker_runs() -
     assert redacted["longitude"] is None
     assert redacted["aliases"] == []
     workflow = next(iter(store.workflow_runs.values()))
+    assert workflow.workflow_type == "DataExportDeletionWorkflow"
     assert workflow.status == "succeeded"
     deleted = cast(dict[str, Any], workflow.result_ref["deleted"])
     assert deleted["places"] == 1
@@ -158,6 +159,7 @@ def test_privacy_export_worker_records_export_manifest() -> None:
 
     assert processed == 1
     workflow = next(iter(store.workflow_runs.values()))
+    assert workflow.workflow_type == "DataExportDeletionWorkflow"
     assert workflow.status == "succeeded"
     export_manifest = cast(dict[str, Any], workflow.result_ref["export_manifest"])
     assert export_manifest["activities"] == 1

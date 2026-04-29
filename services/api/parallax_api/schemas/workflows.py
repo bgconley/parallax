@@ -16,11 +16,16 @@ WorkflowStatus = Literal[
 ]
 WorkflowType = Literal[
     "ProcessContextAnnotationWorkflow",
+    "FinalizeTimingRunWorkflow",
+    "RecomputeActivityProfileWorkflow",
+    "AnswerTemporalQueryWorkflow",
+    "DataExportDeletionWorkflow",
+    "RefreshRetrievalDocumentWorkflow",
+    "RunEvaluationBatchWorkflow",
+    "NormalizeCaptureContextWorkflow",
     "InferPlaceFromContextWorkflow",
-    "PrivacyExportWorkflow",
-    "PrivacyRedactWorkflow",
-    "PrivacyDeleteWorkflow",
-    "FeatureVectorRecomputeWorkflow",
+    "GenerateTemporalFeatureVectorWorkflow",
+    "DetectForgottenTimerWorkflow",
 ]
 
 

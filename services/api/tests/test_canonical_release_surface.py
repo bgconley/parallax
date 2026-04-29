@@ -112,4 +112,8 @@ def test_release_surface_endpoints_perform_minimal_canonical_behaviors() -> None
 
     sync_pull = client.get("/v1/sync/pull", headers=headers)
     assert sync_pull.status_code == 200
-    assert sync_pull.json()["changes"] == []
+    assert any(
+        change["mutation_type"] == "create_activity"
+        and change["entity_id"] == activity_id
+        for change in sync_pull.json()["changes"]
+    )

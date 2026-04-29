@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import yaml
+from parallax_api.schemas.workflows import WorkflowType
 from parallax_contracts.validation import validate_artifact_contracts
 from parallax_db.migrations import discover_baseline_migrations
 
@@ -29,3 +31,27 @@ def test_baseline_migration_discovery_excludes_optional_profiles() -> None:
         "0014",
     ]
     assert all("optional_profiles" not in path.as_posix() for path in migrations)
+
+
+def test_runtime_workflow_types_are_canonical_contract_names() -> None:
+    jobs = yaml.safe_load(
+        (ARTIFACT_ROOT / "contracts/jobs/parallax_workflows_v1_3.yaml").read_text()
+    )
+    runtime_names = set(WorkflowType.__args__)
+    canonical_names = {workflow["name"] for workflow in jobs["workflows"]}
+
+    assert runtime_names == canonical_names
+
+
+def test_workflow_payload_schema_uses_canonical_workflow_names() -> None:
+    jobs = yaml.safe_load(
+        (ARTIFACT_ROOT / "contracts/jobs/parallax_workflows_v1_3.yaml").read_text()
+    )
+    schema = yaml.safe_load(
+        (ARTIFACT_ROOT / "contracts/json_schema/workflow_payloads.schema.json").read_text()
+    )
+
+    canonical_names = {workflow["name"] for workflow in jobs["workflows"]}
+    schema_names = set(schema["properties"]["workflow_type"]["enum"])
+
+    assert schema_names == canonical_names

@@ -281,7 +281,11 @@
         "AnswerTemporalQueryWorkflow",
         "DataExportDeletionWorkflow",
         "RefreshRetrievalDocumentWorkflow",
-        "RunEvaluationBatchWorkflow"
+        "RunEvaluationBatchWorkflow",
+        "NormalizeCaptureContextWorkflow",
+        "InferPlaceFromContextWorkflow",
+        "GenerateTemporalFeatureVectorWorkflow",
+        "DetectForgottenTimerWorkflow"
       ]
     },
     "user_id": {

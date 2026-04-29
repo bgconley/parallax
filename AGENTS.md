@@ -80,7 +80,8 @@ Keep these distinctions visible during later work:
 - Release readiness is proof-based, not status-text based. `make release-gate` must run the commit-parity, bearer-auth provider, SLO, privacy-log, and real backup/restore proof commands; without live provider evidence the release status remains blocked.
 - Context, extraction, place-inference, privacy, and feature-vector workflows now have durable `workflow_run` records; replacing the lightweight worker with a Temporal SDK implementation must preserve the same workflow names and idempotency behavior.
 
-`docs/release/release_gate_status.md` is the machine-visible release status source.
+`docs/release/release_gate_evidence.json` is the machine-readable release status
+source. `docs/release/release_gate_status.md` explains the gates for humans.
 
 ## Commit & Pull Request Guidelines
 

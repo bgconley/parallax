@@ -93,7 +93,7 @@ def request_privacy_export_in_uow(
         user_id,
         request,
         request_type="export",
-        workflow_type="PrivacyExportWorkflow",
+        workflow_type="DataExportDeletionWorkflow",
         apply=lambda: uow.privacy.request_export(user_id, request),
     )
 
@@ -108,7 +108,7 @@ def request_privacy_redact_in_uow(
         user_id,
         request,
         request_type="redact",
-        workflow_type="PrivacyRedactWorkflow",
+        workflow_type="DataExportDeletionWorkflow",
         apply=lambda: uow.privacy.request_redact(user_id, request),
     )
 
@@ -125,7 +125,7 @@ def request_privacy_delete_in_uow(
         user_id,
         request,
         request_type="delete",
-        workflow_type="PrivacyDeleteWorkflow",
+        workflow_type="DataExportDeletionWorkflow",
         apply=lambda: uow.privacy.request_delete(user_id, request),
     )
 

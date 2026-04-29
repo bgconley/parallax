@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "release_readiness": "blocked",
+  "commit_sha": null,
+  "generated_at": null,
+  "gates": {
+    "backup_restore": {
+      "status": "proof-required",
+      "evidence": []
+    },
+    "privacy_export_delete_redact": {
+      "status": "proof-required",
+      "evidence": []
+    },
+    "performance_slo": {
+      "status": "proof-required",
+      "evidence": []
+    },
+    "production_auth_provider": {
+      "status": "proof-required",
+      "evidence": []
+    },
+    "production_log_privacy_scan": {
+      "status": "proof-required",
+      "evidence": []
+    },
+    "deployed_commit_parity": {
+      "status": "proof-required",
+      "evidence": []
+    }
+  }
+}

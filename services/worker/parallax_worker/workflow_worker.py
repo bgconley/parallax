@@ -30,13 +30,9 @@ class WorkflowWorker:
                     process_context_annotation_workflow_in_uow(uow, workflow.id, self._extractor)
                 elif workflow.workflow_type == "InferPlaceFromContextWorkflow":
                     _process_place_inference_workflow(uow, workflow.id)
-                elif workflow.workflow_type in {
-                    "PrivacyExportWorkflow",
-                    "PrivacyRedactWorkflow",
-                    "PrivacyDeleteWorkflow",
-                }:
+                elif workflow.workflow_type == "DataExportDeletionWorkflow":
                     process_privacy_workflow_in_uow(uow, workflow.id)
-                elif workflow.workflow_type == "FeatureVectorRecomputeWorkflow":
+                elif workflow.workflow_type == "GenerateTemporalFeatureVectorWorkflow":
                     _process_feature_vector_workflow(uow, workflow.id)
                 else:
                     uow.workflows.mark_failed(

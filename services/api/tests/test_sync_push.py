@@ -129,6 +129,69 @@ def test_sync_push_applies_supported_create_activity_operation() -> None:
     assert [activity["display_name"] for activity in listed.json()] == ["Synced activity"]
 
 
+def test_sync_pull_returns_persisted_mutation_changes_and_advances_cursor() -> None:
+    client = TestClient(make_app())
+
+    created = client.post(
+        "/v1/activities",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={"mutation": mutation("sync-pull-activity"), "display_name": "Pullable activity"},
+    )
+    assert created.status_code == 201
+
+    pulled = client.get("/v1/sync/pull", headers={"X-Parallax-User-Id": USER_ID})
+
+    assert pulled.status_code == 200
+    body = pulled.json()
+    assert body["changes"]
+    assert any(
+        change["mutation_type"] == "create_activity"
+        and change["entity_type"] == "activity"
+        and change["entity_id"] == created.json()["id"]
+        and change["result"]["display_name"] == "Pullable activity"
+        for change in body["changes"]
+    )
+
+    next_pull = client.get(
+        "/v1/sync/pull",
+        headers={"X-Parallax-User-Id": USER_ID},
+        params={"cursor": body["cursor"]},
+    )
+
+    assert next_pull.status_code == 200
+    assert next_pull.json()["changes"] == []
+
+
+def test_sync_pull_empty_cursor_can_be_reused() -> None:
+    client = TestClient(make_app())
+
+    first_pull = client.get("/v1/sync/pull", headers={"X-Parallax-User-Id": USER_ID})
+    assert first_pull.status_code == 200
+    assert first_pull.json()["changes"] == []
+
+    second_pull = client.get(
+        "/v1/sync/pull",
+        headers={"X-Parallax-User-Id": USER_ID},
+        params={"cursor": first_pull.json()["cursor"]},
+    )
+
+    assert second_pull.status_code == 200
+    assert second_pull.json()["changes"] == []
+
+
+def test_sync_pull_rejects_invalid_cursor() -> None:
+    client = TestClient(make_app())
+
+    response = client.get(
+        "/v1/sync/pull",
+        headers={"X-Parallax-User-Id": USER_ID},
+        params={"cursor": "not-a-cursor"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error_code"] == "invalid_sync_cursor"
+
+
 def test_sync_push_applies_supported_review_operation() -> None:
     client = TestClient(make_app())
     activity_id, session_id = create_completed_session(client)

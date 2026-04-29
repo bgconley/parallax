@@ -2,7 +2,10 @@
 
 release readiness: blocked
 
-This document tracks the machine-visible Parallax release/private-alpha gates.
+This document describes the Parallax release/private-alpha gates. The
+machine-readable gate state lives in `docs/release/release_gate_evidence.json`;
+`make release-status` reads that evidence file and treats missing, stale, or
+evidence-free passed gates as blocked.
 The canonical v1.3 API surface is now exposed by runtime routes; later product
 depth still follows the phased implementation plan, but no canonical endpoint is
 silently absent at the API boundary.
@@ -30,4 +33,5 @@ uv run python scripts/release_gate_status.py --summary
 `make release-gate` is intentionally proof-based. It fails if GPU commit parity,
 the live bearer-auth provider probe, privacy lifecycle smoke, SLO smoke, privacy
 log scan, or real backup/restore drill cannot be executed successfully for the
-current release candidate.
+current release candidate. A ready release must also publish a commit-matched
+evidence JSON artifact with non-empty evidence for every gate.

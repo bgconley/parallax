@@ -236,6 +236,7 @@ def test_feature_vector_recompute_generates_reviewed_and_privacy_filtered_vector
 
     assert processed == 1
     workflow = store.workflow_runs[UUID(queued.json()["workflow_run_id"])]
+    assert workflow.workflow_type == "GenerateTemporalFeatureVectorWorkflow"
     assert workflow.status == "succeeded"
     assert workflow.result_ref["generated_vectors"] == 3
     vectors_by_family = {

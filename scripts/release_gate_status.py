@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import json
+import shutil
+import subprocess  # nosec B404
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-STATUS_DOC = REPO_ROOT / "docs/release/release_gate_status.md"
+EVIDENCE_DOC = REPO_ROOT / "docs/release/release_gate_evidence.json"
 
 RELEASE_GATES = (
     "backup_restore",
@@ -25,29 +28,64 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    content = STATUS_DOC.read_text()
-    if "release readiness: ready" not in content:
+    evidence = _load_evidence()
+    current_sha = _current_git_sha()
+    statuses = {gate: _gate_status(evidence, gate, current_sha) for gate in RELEASE_GATES}
+    ready = (
+        evidence.get("release_readiness") == "ready"
+        and evidence.get("commit_sha") == current_sha
+        and all(status == "passed" for status in statuses.values())
+    )
+
+    if not ready:
         print("release readiness: blocked")
-        for gate in RELEASE_GATES:
-            if gate not in content:
-                print(f"- {gate}: missing")
-            elif f"`{gate}` | proof-required" in content:
-                print(f"- {gate}: proof-required")
-            elif f"`{gate}` | passed" in content:
-                print(f"- {gate}: passed")
-            else:
-                print(f"- {gate}: not passed")
+        for gate, status in statuses.items():
+            print(f"- {gate}: {status}")
         return 1 if not args.summary else 0
+
     print("release readiness: ready")
     for gate in RELEASE_GATES:
-        if gate not in content:
-            print(f"missing gate record: {gate}")
-            return 2
-        if f"`{gate}` | passed" not in content:
-            print(f"- {gate}: not passed")
-            return 1 if not args.summary else 0
         print(f"- {gate}: passed")
     return 0
+
+
+def _load_evidence() -> dict[str, object]:
+    if not EVIDENCE_DOC.exists():
+        return {}
+    loaded = json.loads(EVIDENCE_DOC.read_text())
+    return loaded if isinstance(loaded, dict) else {}
+
+
+def _gate_status(evidence: dict[str, object], gate: str, current_sha: str) -> str:
+    raw_gates = evidence.get("gates", {})
+    if not isinstance(raw_gates, dict) or gate not in raw_gates:
+        return "missing"
+    raw_gate = raw_gates[gate]
+    if not isinstance(raw_gate, dict):
+        return "invalid"
+    status = raw_gate.get("status")
+    if status != "passed":
+        return str(status or "not passed")
+    if evidence.get("commit_sha") != current_sha:
+        return "stale"
+    evidence_items = raw_gate.get("evidence")
+    if not isinstance(evidence_items, list) or not evidence_items:
+        return "missing-evidence"
+    return "passed"
+
+
+def _current_git_sha() -> str:
+    git = shutil.which("git")
+    if git is None:
+        raise RuntimeError("git executable is required to report release status")
+    result = subprocess.run(
+        [git, "rev-parse", "HEAD"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )  # nosec B603
+    return result.stdout.strip()
 
 
 if __name__ == "__main__":

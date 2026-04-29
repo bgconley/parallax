@@ -30,6 +30,7 @@ release-gate:
 	uv run python scripts/release_slo_smoke.py --api-url "$(PARALLAX_API_URL)" --bearer-token "$$PARALLAX_RELEASE_BEARER_TOKEN"
 	uv run python scripts/release_log_privacy_scan.py --api-url "$(PARALLAX_API_URL)" --bearer-token "$$PARALLAX_RELEASE_BEARER_TOKEN"
 	uv run python scripts/release_backup_restore_drill.py --database-url "$(PARALLAX_HOST_DATABASE_URL)" --object-root "$${PARALLAX_OBJECTS_DIR:-/srv/parallax/objects}" --restore-root "$${PARALLAX_RESTORE_DRILL_ROOT:-/srv/parallax/backups/release-restore-drill}"
+	uv run python scripts/write_release_gate_evidence.py
 
 release-slo:
 	uv run python scripts/release_slo_smoke.py --api-url "$(PARALLAX_API_URL)"

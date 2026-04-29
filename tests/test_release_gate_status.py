@@ -1,3 +1,4 @@
+import json
 import subprocess
 from pathlib import Path
 
@@ -5,16 +6,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_release_gate_status_records_verified_release_gates() -> None:
-    status_doc = REPO_ROOT / "docs/release/release_gate_status.md"
-    content = status_doc.read_text()
+    evidence_doc = REPO_ROOT / "docs/release/release_gate_evidence.json"
+    content = json.loads(evidence_doc.read_text())
 
-    assert "release readiness: blocked" in content
-    assert "backup_restore" in content
-    assert "privacy_export_delete_redact" in content
-    assert "performance_slo" in content
-    assert "production_auth_provider" in content
-    assert "production_log_privacy_scan" in content
-    assert "| proof-required |" in content
+    assert content["release_readiness"] == "blocked"
+    assert content["gates"]["backup_restore"]["status"] == "proof-required"
+    assert content["gates"]["privacy_export_delete_redact"]["status"] == "proof-required"
+    assert content["gates"]["performance_slo"]["status"] == "proof-required"
+    assert content["gates"]["production_auth_provider"]["status"] == "proof-required"
+    assert content["gates"]["production_log_privacy_scan"]["status"] == "proof-required"
 
 
 def test_release_gate_summary_command_is_available() -> None:
@@ -44,6 +44,7 @@ def test_release_gate_commands_are_available_from_makefile() -> None:
     assert "scripts/release_slo_smoke.py" in release_gate_section
     assert "scripts/release_log_privacy_scan.py" in release_gate_section
     assert "scripts/release_backup_restore_drill.py" in release_gate_section
+    assert "scripts/write_release_gate_evidence.py" in release_gate_section
 
 
 def test_release_status_summary_command_reads_machine_status() -> None:
@@ -57,3 +58,20 @@ def test_release_status_summary_command_reads_machine_status() -> None:
 
     assert result.returncode == 0
     assert "release readiness: blocked" in result.stdout
+
+
+def test_release_status_uses_evidence_file_not_markdown_status_text() -> None:
+    script = (REPO_ROOT / "scripts/release_gate_status.py").read_text()
+
+    assert "release_gate_evidence.json" in script
+    assert "release_gate_status.md" not in script
+    assert "_current_git_sha" in script
+
+
+def test_release_gate_writes_evidence_only_after_proof_commands() -> None:
+    makefile = (REPO_ROOT / "Makefile").read_text()
+    release_gate_section = makefile.split("release-gate:", 1)[1].split("\n\n", 1)[0]
+
+    assert release_gate_section.rfind("scripts/write_release_gate_evidence.py") > (
+        release_gate_section.rfind("scripts/release_backup_restore_drill.py")
+    )

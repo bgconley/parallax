@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from parallax_api.repositories.mutation_log import StoredMutation
+from parallax_api.repositories.mutation_log import StoredMutation, StoredSyncChange
 from parallax_api.schemas.common import MutationEnvelope
 from parallax_api.services.mutations import MutationReplayService
 from pydantic import BaseModel
@@ -21,6 +21,15 @@ class RecordingMutationLog:
     def get(self, user_id: UUID, mutation: MutationEnvelope) -> StoredMutation | None:
         self.calls.append("get")
         return None
+
+    def list_changes(
+        self,
+        user_id: UUID,
+        *,
+        cursor: str | None,
+        limit: int,
+    ) -> list[StoredSyncChange]:
+        return []
 
     def save(
         self,

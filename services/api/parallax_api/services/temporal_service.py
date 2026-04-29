@@ -144,7 +144,7 @@ def request_feature_vector_recompute_in_uow(
     def apply() -> tuple[UUID, JobAcceptedResponse]:
         workflow = uow.workflows.enqueue(
             request.user_id or user_id,
-            "FeatureVectorRecomputeWorkflow",
+            "GenerateTemporalFeatureVectorWorkflow",
             {
                 "activity_id": str(request.activity_id) if request.activity_id else None,
                 "session_id": str(request.session_id) if request.session_id else None,

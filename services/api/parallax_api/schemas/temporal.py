@@ -114,6 +114,25 @@ class TemporalQueryAnswer(ApiModel):
     status: TemporalQueryStatus
 
 
+PrivacyClass = Literal["normal", "sensitive", "private"]
+
+
+class TemporalFeatureVector(ApiModel):
+    id: UUID
+    user_id: UUID
+    activity_id: UUID | None = None
+    session_id: UUID | None = None
+    snapshot_id: UUID | None = None
+    feature_schema_version: str
+    feature_family: FeatureFamily
+    features: dict[str, object]
+    source_entity_refs: list[dict[str, object]]
+    privacy_class: PrivacyClass
+    model_eligible: bool
+    exclusion_reason: str | None = None
+    generated_at: datetime
+
+
 class RecomputeFeatureVectorsRequest(ApiModel):
     mutation: MutationEnvelope
     user_id: UUID | None = None

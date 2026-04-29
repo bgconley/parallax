@@ -204,6 +204,18 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-28T03:39:57Z"
+    },
+    {
+      "id": "bug-018",
+      "timestamp": "2026-04-29T04:52:18Z",
+      "error_message": "Phase 5 static gates initially failed with Ruff line-length/import issues and mypy object-typing errors after adding feature-vector and smoke-test code.",
+      "file": "services/api/parallax_api/domain/feature_vectors.py, services/api/parallax_api/repositories/*, services/worker/parallax_worker/workflow_worker.py, scripts/phase5_smoke.py",
+      "root_cause": "The first Phase 5 implementation pass used long inline comprehensions and untyped object values from JSON/workflow inputs before narrowing them for static analysis.",
+      "fix": "Split long expressions, let Ruff sort imports, narrowed workflow and response values before iterating/indexing, and added typed helper functions for smoke-test responses.",
+      "tags": ["phase5", "ruff", "mypy", "feature-vectors", "smoke"],
+      "related_bugs": ["bug-013"],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T04:52:18Z"
     }
   ]
 }

@@ -125,9 +125,7 @@ def main() -> int:
                 ),
                 201,
             )
-            inferred_places = _list_value(snapshot, "inferred_places")
-            if len(inferred_places) != 1:
-                raise AssertionError(f"place inference did not persist a candidate: {snapshot}")
+            _wait_for_phase4_count(args.database_url, user_id, "inferred_places", 1)
             resolve = _expect(
                 client.post(
                     "/v1/places/resolve",
@@ -168,9 +166,13 @@ def main() -> int:
                 ),
                 202,
             )
-            if extraction["status"] != "needs_confirmation":
+            if extraction["status"] != "queued":
                 raise AssertionError(f"unexpected extraction status: {extraction}")
-            event = _list_value(extraction, "extracted_events")[0]
+            event = _wait_for_extracted_event(
+                args.database_url,
+                user_id,
+                UUID(str(annotation["id"])),
+            )
             if event["count_policy"] != "wall_only" or not event["suggested_preflight_text"]:
                 raise AssertionError(f"golden extraction candidate is wrong: {event}")
             confirmed = _expect(
@@ -325,6 +327,74 @@ def _phase4_counts(database_url: str, user_id: UUID) -> dict[str, int]:
                 row = cursor.fetchone()
                 counts[key] = int(row[0]) if row is not None else 0
     return counts
+
+
+def _wait_for_phase4_count(
+    database_url: str,
+    user_id: UUID,
+    count_name: str,
+    expected: int,
+) -> None:
+    deadline = time.monotonic() + 30
+    latest: dict[str, int] = {}
+    while time.monotonic() < deadline:
+        latest = _phase4_counts(database_url, user_id)
+        if latest.get(count_name, 0) >= expected:
+            return
+        time.sleep(1)
+    raise AssertionError(f"timed out waiting for {count_name}={expected}: {latest}")
+
+
+def _wait_for_extracted_event(
+    database_url: str,
+    user_id: UUID,
+    annotation_id: UUID,
+) -> dict[str, object]:
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        event = _fetch_extracted_event(database_url, user_id, annotation_id)
+        if event is not None:
+            return event
+        time.sleep(1)
+    raise AssertionError(f"timed out waiting for extracted event for annotation {annotation_id}")
+
+
+def _fetch_extracted_event(
+    database_url: str,
+    user_id: UUID,
+    annotation_id: UUID,
+) -> dict[str, object] | None:
+    with psycopg.connect(database_url, autocommit=True) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                select id, annotation_id, session_id, span_type::text, friction_category::text,
+                  resource_name, duration_seconds, count_policy::text, count_in_wall_time,
+                  count_in_active_time, suggested_preflight_text, confirmation_state::text
+                from temporal_extracted_context_event
+                where user_id = %s and annotation_id = %s
+                order by created_at desc
+                limit 1
+                """,
+                (user_id, annotation_id),
+            )
+            row = cursor.fetchone()
+    if row is None:
+        return None
+    return {
+        "id": str(row[0]),
+        "annotation_id": str(row[1]),
+        "session_id": str(row[2]),
+        "span_type": row[3],
+        "friction_category": row[4],
+        "resource_name": row[5],
+        "duration_seconds": row[6],
+        "count_policy": row[7],
+        "count_in_wall_time": row[8],
+        "count_in_active_time": row[9],
+        "suggested_preflight_text": row[10],
+        "confirmation_state": row[11],
+    }
 
 
 def _cleanup(database_url: str, user_id: UUID) -> None:

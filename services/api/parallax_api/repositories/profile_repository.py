@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID
 
-from ..domain.activity_stats import compute_activity_stats
+from ..domain.activity_stats import compute_activity_stats, percentile_nearest_rank
 from ..schemas.profile import ActivityProfile
 from ..schemas.timing import TimingSession
 from .memory import InMemoryStore
@@ -21,6 +21,44 @@ class ProfileRepository:
             self._store.activity_stats.pop(activity_id, None)
         else:
             self._store.activity_stats[activity_id] = computation.stats
+
+    def recompute_checkpoint_stats(self, user_id: UUID, activity_id: UUID) -> None:
+        sessions = {
+            session.id: session
+            for session in self._reviewed_sessions(user_id, activity_id)
+        }
+        grouped: dict[UUID, dict[str, list[int]]] = {}
+        for run in self._store.checkpoint_runs.values():
+            if run.user_id != user_id or run.session_id not in sessions:
+                continue
+            if run.status != "completed" or run.checkpoint_template_id is None:
+                continue
+            values = grouped.setdefault(
+                run.checkpoint_template_id,
+                {"active": [], "wall": []},
+            )
+            if run.active_seconds is not None:
+                values["active"].append(run.active_seconds)
+            if run.wall_seconds is not None:
+                values["wall"].append(run.wall_seconds)
+        for checkpoint_id, checkpoint in list(self._store.checkpoint_templates.items()):
+            if checkpoint.user_id != user_id or checkpoint.activity_id != activity_id:
+                continue
+            values = grouped.get(checkpoint_id, {"active": [], "wall": []})
+            self._store.checkpoint_templates[checkpoint_id] = checkpoint.model_copy(
+                update={
+                    "usual_active_p50_seconds": percentile_nearest_rank(
+                        values["active"],
+                        0.50,
+                    ),
+                    "usual_active_p80_seconds": percentile_nearest_rank(
+                        values["active"],
+                        0.80,
+                    ),
+                    "usual_wall_p50_seconds": percentile_nearest_rank(values["wall"], 0.50),
+                    "usual_wall_p80_seconds": percentile_nearest_rank(values["wall"], 0.80),
+                }
+            )
 
     def get_activity_profile(self, user_id: UUID, activity_id: UUID) -> ActivityProfile | None:
         activity = self._store.activities.get(activity_id)

@@ -53,6 +53,7 @@ _SPAN_PAIRS: dict[str, tuple[TemporalSpanType, FrictionCategory, CountPolicy, bo
     "side_quest": ("side_quest", "side_quest", "wall_only", True, False),
     "transition": ("transition", "transition", "separate_transition", False, False),
     "active_work": ("active_work", "none", "wall_and_active", True, True),
+    "checkpoint": ("active_work", "none", "wall_and_active", True, True),
 }
 
 
@@ -74,6 +75,27 @@ def derive_timing_spans(
     paused_intervals: list[tuple[datetime, datetime]] = []
     explicit_active_spans = False
     bad_timer_started_at: datetime | None = None
+
+    if (
+        session.intended_start_at is not None
+        and session_started > session.intended_start_at
+    ):
+        spans.append(
+            TimingEventSpanDraft(
+                span_type="start_latency",
+                friction_category="unknown",
+                started_at=session.intended_start_at,
+                ended_at=session_started,
+                duration_seconds=_non_negative_seconds(
+                    session.intended_start_at,
+                    session_started,
+                ),
+                count_policy="separate_start_latency",
+                count_in_wall_time=False,
+                count_in_active_time=False,
+                model_update_scopes=["start_latency"],
+            )
+        )
 
     for event in ordered_events:
         event_type = event.event_type
@@ -173,7 +195,7 @@ def summarize_timing_spans(
         interruption_seconds=_sum_seconds(spans, span_type="interruption"),
         waiting_seconds=_sum_seconds(spans, span_type="waiting"),
         side_quest_seconds=_sum_seconds(spans, span_type="side_quest"),
-        start_latency_seconds=session.start_latency_seconds,
+        start_latency_seconds=_sum_seconds(spans, span_type="start_latency"),
         transition_seconds=_sum_seconds(spans, span_type="transition"),
     )
 
@@ -186,7 +208,12 @@ def _span_from_pair(
     if end_event.client_time < start_event.client_time:
         return None
     span_type, friction_category, count_policy, count_wall, count_active = _SPAN_PAIRS[stem]
-    scopes = ["active_duration", "wall_duration"] if count_active else ["friction_patterns"]
+    if stem == "checkpoint":
+        scopes = ["active_duration", "wall_duration", "checkpoint_phase"]
+    elif stem == "transition":
+        scopes = ["transition_latency"]
+    else:
+        scopes = ["active_duration", "wall_duration"] if count_active else ["friction_patterns"]
     return TimingEventSpanDraft(
         span_type=span_type,
         friction_category=friction_category,
@@ -199,6 +226,9 @@ def _span_from_pair(
         model_update_scopes=scopes,
         start_event_id=start_event.id,
         end_event_id=end_event.id,
+        checkpoint_run_id=_checkpoint_run_id(start_event, end_event)
+        if stem == "checkpoint"
+        else None,
     )
 
 
@@ -217,6 +247,23 @@ def _first_event_time(events: list[TimingEvent], event_type: str) -> datetime | 
         if event.event_type == event_type:
             return event.client_time
     return None
+
+
+def _checkpoint_run_id(start_event: TimingEvent, end_event: TimingEvent) -> UUID | None:
+    return _payload_uuid(start_event.payload, "checkpoint_run_id") or _payload_uuid(
+        end_event.payload,
+        "checkpoint_run_id",
+    )
+
+
+def _payload_uuid(payload: dict[str, object], key: str) -> UUID | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    try:
+        return UUID(str(value))
+    except ValueError:
+        return None
 
 
 def _subtract_intervals(

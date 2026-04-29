@@ -152,7 +152,6 @@ def request_feature_vector_recompute_in_uow(
                 "reason": request.reason,
             },
         )
-        uow.workflows.mark_succeeded(workflow.id, {"status": "accepted"})
         response = JobAcceptedResponse(workflow_run_id=workflow.id, status="accepted")
         return workflow.id, response
 

@@ -7,7 +7,7 @@ from uuid import UUID
 import psycopg
 from psycopg.types.json import Jsonb
 
-from ..domain.activity_stats import compute_activity_stats
+from ..domain.activity_stats import compute_activity_stats, percentile_nearest_rank
 from ..schemas.activity import Activity
 from ..schemas.profile import ActivityProfile, ActivityProfileStats
 from ..schemas.timing import TimingSession
@@ -65,6 +65,63 @@ class PostgresProfileRepository:
                     stats.confidence,
                 ),
             )
+
+    def recompute_checkpoint_stats(self, user_id: UUID, activity_id: UUID) -> None:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                update checkpoint_template
+                set usual_active_p50_seconds = null,
+                    usual_active_p80_seconds = null,
+                    usual_wall_p50_seconds = null,
+                    usual_wall_p80_seconds = null,
+                    updated_at = now()
+                where user_id = %s and activity_id = %s
+                """,
+                (user_id, activity_id),
+            )
+            cursor.execute(
+                """
+                select cr.checkpoint_template_id,
+                  array_agg(cr.active_seconds)
+                    filter (where cr.active_seconds is not null) as active_values,
+                  array_agg(cr.wall_seconds)
+                    filter (where cr.wall_seconds is not null) as wall_values
+                from checkpoint_run cr
+                join timing_session ts on ts.id = cr.session_id
+                where cr.user_id = %s
+                  and ts.user_id = %s
+                  and ts.activity_id = %s
+                  and ts.status = 'reviewed'
+                  and cr.status = 'completed'
+                  and cr.checkpoint_template_id is not null
+                group by cr.checkpoint_template_id
+                """,
+                (user_id, user_id, activity_id),
+            )
+            rows = cursor.fetchall()
+            for row in rows:
+                active_values = _int_values(row["active_values"])
+                wall_values = _int_values(row["wall_values"])
+                cursor.execute(
+                    """
+                    update checkpoint_template
+                    set usual_active_p50_seconds = %s,
+                        usual_active_p80_seconds = %s,
+                        usual_wall_p50_seconds = %s,
+                        usual_wall_p80_seconds = %s,
+                        updated_at = now()
+                    where user_id = %s and id = %s
+                    """,
+                    (
+                        percentile_nearest_rank(active_values, 0.50),
+                        percentile_nearest_rank(active_values, 0.80),
+                        percentile_nearest_rank(wall_values, 0.50),
+                        percentile_nearest_rank(wall_values, 0.80),
+                        user_id,
+                        row["checkpoint_template_id"],
+                    ),
+                )
 
     def get_activity_profile(self, user_id: UUID, activity_id: UUID) -> ActivityProfile | None:
         activity = self._load_activity(user_id, activity_id)
@@ -133,3 +190,9 @@ class PostgresProfileRepository:
 
 def _stats_from_row(row: Mapping[str, Any]) -> ActivityProfileStats:
     return ActivityProfileStats.model_validate(dict(row))
+
+
+def _int_values(values: object) -> list[int]:
+    if not isinstance(values, list | tuple):
+        return []
+    return [int(value) for value in values if value is not None]

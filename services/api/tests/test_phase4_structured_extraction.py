@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from parallax_api.main import create_app
 from parallax_api.repositories.in_memory_unit_of_work import InMemoryUnitOfWorkFactory
 from parallax_api.repositories.memory import InMemoryStore
+from parallax_worker.workflow_worker import WorkflowWorker
 
 USER_ID = "00000000-0000-0000-0000-0000000004d1"
 
@@ -89,6 +90,29 @@ def create_annotation(
     return response.json()
 
 
+def drain_one_workflow(store: InMemoryStore) -> None:
+    processed = WorkflowWorker(InMemoryUnitOfWorkFactory(store)).drain_once()
+    assert processed == 1
+
+
+def extract_annotation_candidate(
+    client: TestClient,
+    store: InMemoryStore,
+    annotation_id: str,
+    *,
+    mutation_id: str,
+) -> dict[str, object]:
+    response = client.post(
+        f"/v1/timing/annotations/{annotation_id}/extract",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={"mutation": mutation(mutation_id, 5), "force": False},
+    )
+    assert response.status_code == 202
+    assert response.json()["status"] == "queued"
+    drain_one_workflow(store)
+    return next(iter(store.extracted_events.values())).model_dump(mode="json")
+
+
 def test_sponge_detour_extraction_creates_candidate_without_mutating_source_timing() -> None:
     app, store = make_app_and_store()
     client = TestClient(app)
@@ -112,10 +136,15 @@ def test_sponge_detour_extraction_creates_candidate_without_mutating_source_timi
 
     assert response.status_code == 202
     body = response.json()
-    assert body["status"] == "needs_confirmation"
-    assert body["model_invocation_id"]
-    assert len(body["extracted_events"]) == 1
-    event = body["extracted_events"][0]
+    assert body["status"] == "queued"
+    assert body["model_invocation_id"] is None
+    assert body["extracted_events"] == []
+    drain_one_workflow(store)
+    workflow = next(iter(store.workflow_runs.values()))
+    assert workflow.status == "succeeded"
+    assert workflow.result_ref["status"] == "needs_confirmation"
+    assert len(store.extracted_events) == 1
+    event = next(iter(store.extracted_events.values())).model_dump(mode="json")
     assert event["annotation_id"] == annotation["id"]
     assert event["session_id"] == session_id
     assert event["span_type"] == "resource_detour"
@@ -163,8 +192,14 @@ def test_private_annotation_extraction_is_blocked_before_model_invocation(caplog
     )
 
     assert response.status_code == 202
-    assert response.json()["status"] == "blocked_by_privacy"
+    assert response.json()["status"] == "queued"
     assert response.json()["extracted_events"] == []
+    assert store.model_invocations == {}
+    assert store.extracted_events == {}
+    assert sensitive_note not in caplog.text
+    drain_one_workflow(store)
+    workflow = next(iter(store.workflow_runs.values()))
+    assert workflow.result_ref["status"] == "blocked_by_privacy"
     assert store.model_invocations == {}
     assert store.extracted_events == {}
     assert sensitive_note not in caplog.text
@@ -189,9 +224,12 @@ def test_invalid_extractor_output_is_rejected_without_durable_truth() -> None:
     )
 
     assert response.status_code == 202
-    assert response.json()["status"] == "model_output_invalid"
+    assert response.json()["status"] == "queued"
     assert response.json()["extracted_events"] == []
     assert store.extracted_events == {}
+    drain_one_workflow(store)
+    workflow = next(iter(store.workflow_runs.values()))
+    assert workflow.result_ref["status"] == "model_output_invalid"
     invocation = next(iter(store.model_invocations.values()))
     assert invocation.schema_valid is False
 
@@ -207,11 +245,12 @@ def test_confirm_and_correct_extracted_event_update_derived_span_and_audit() -> 
         "I had to stop and find the sponge, which took about 10 minutes.",
         mutation_id="annotation-correct",
     )
-    extracted = client.post(
-        f"/v1/timing/annotations/{annotation['id']}/extract",
-        headers={"X-Parallax-User-Id": USER_ID},
-        json={"mutation": mutation("extract-correct", 5), "force": False},
-    ).json()["extracted_events"][0]
+    extracted = extract_annotation_candidate(
+        client,
+        store,
+        str(annotation["id"]),
+        mutation_id="extract-correct",
+    )
 
     confirmed = client.post(
         f"/v1/timing/extracted-events/{extracted['id']}/confirm",
@@ -345,6 +384,8 @@ def test_place_resolver_persists_inferred_candidate_without_silent_timer_change(
         },
     )
     assert snapshot.status_code == 201
+    assert len(store.inferred_place_observations) == 0
+    drain_one_workflow(store)
     assert len(store.inferred_place_observations) == 1
     inferred_count = len(store.inferred_place_observations)
 
@@ -406,6 +447,8 @@ def test_sync_push_applies_phase4_extraction_operation() -> None:
 
     assert response.status_code == 202
     assert response.json()["operation_count"] == 1
+    assert len(store.extracted_events) == 0
+    drain_one_workflow(store)
     assert len(store.extracted_events) == 1
     event = next(iter(store.extracted_events.values()))
     assert event.annotation_id == UUID(str(annotation["id"]))

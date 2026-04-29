@@ -1,21 +1,27 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 import psycopg
 from psycopg.types.json import Jsonb
 
+from ..domain.feature_vectors import build_temporal_feature_vectors
 from ..schemas.temporal import (
     CreatePredictionRequest,
+    FeatureFamily,
     PredictionOutcome,
     RecordPredictionOutcomeRequest,
+    TemporalFeatureVector,
     TemporalPrediction,
     TemporalQueryAnswer,
     TemporalQueryEvidenceItem,
     TemporalQueryRequest,
 )
+from ..schemas.timing import TimingSession
+from .postgres_context_policies import PostgresContextPolicyRepository
+from .postgres_timing_repository import PostgresTimingRepository
 
 
 class PostgresTemporalRepository:
@@ -148,6 +154,67 @@ class PostgresTemporalRepository:
             row = cursor.fetchone()
         return _query_answer_from_row(row, []) if row is not None else None
 
+    def generate_feature_vectors(
+        self,
+        user_id: UUID,
+        *,
+        activity_id: UUID | None,
+        session_id: UUID | None,
+        feature_families: list[str],
+    ) -> list[TemporalFeatureVector]:
+        families = [cast(FeatureFamily, family) for family in feature_families]
+        reviewed_sessions = self._reviewed_sessions(user_id, activity_id, session_id)
+        if activity_id is None and reviewed_sessions:
+            activity_id = reviewed_sessions[0].activity_id
+        policy = PostgresContextPolicyRepository(
+            self._connection
+        ).get_context_capture_policy(user_id)
+        snapshot_count = self._eligible_snapshot_count(user_id, reviewed_sessions)
+        drafts = build_temporal_feature_vectors(
+            activity_id=activity_id,
+            session_id=session_id,
+            feature_families=families,
+            reviewed_sessions=reviewed_sessions,
+            context_policy=policy,
+            eligible_snapshot_count=snapshot_count,
+        )
+        with self._connection.cursor() as cursor:
+            self._delete_existing_vectors(cursor, user_id, activity_id, session_id, families)
+            vectors: list[TemporalFeatureVector] = []
+            for draft in drafts:
+                cursor.execute(
+                    """
+                    insert into temporal_feature_vector (
+                      user_id, activity_id, session_id, snapshot_id,
+                      feature_schema_version, feature_family, features, source_entity_refs,
+                      privacy_class, model_eligible, exclusion_reason, generated_at
+                    )
+                    values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    returning id, user_id, activity_id, session_id, snapshot_id,
+                      feature_schema_version, feature_family, features, source_entity_refs,
+                      privacy_class, model_eligible, exclusion_reason, generated_at
+                    """,
+                    (
+                        user_id,
+                        draft.activity_id,
+                        draft.session_id,
+                        draft.snapshot_id,
+                        draft.feature_schema_version,
+                        draft.feature_family,
+                        Jsonb(draft.features),
+                        Jsonb(draft.source_entity_refs),
+                        draft.privacy_class,
+                        draft.model_eligible,
+                        draft.exclusion_reason,
+                        draft.generated_at,
+                    ),
+                )
+                row = cursor.fetchone()
+                if row is None:
+                    raise RuntimeError("temporal feature vector insert returned no row")
+                vectors.append(TemporalFeatureVector.model_validate(dict(row)))
+        return vectors
+
     def _latest_stats(self, user_id: UUID, activity_id: UUID) -> dict[str, object]:
         with self._connection.cursor() as cursor:
             cursor.execute(
@@ -204,6 +271,72 @@ class PostgresTemporalRepository:
             )
             for row in rows
         ]
+
+    def _reviewed_sessions(
+        self,
+        user_id: UUID,
+        activity_id: UUID | None,
+        session_id: UUID | None,
+    ) -> list[TimingSession]:
+        query = """
+            select id
+            from timing_session
+            where user_id = %s
+              and status = 'reviewed'
+              and model_inclusion <> 'exclude'
+        """
+        params: list[object] = [user_id]
+        if activity_id is not None:
+            query += "\n              and activity_id = %s"
+            params.append(activity_id)
+        if session_id is not None:
+            query += "\n              and id = %s"
+            params.append(session_id)
+        query += "\n            order by completed_at desc nulls last, updated_at desc, id"
+        with self._connection.cursor() as cursor:
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+        timing = PostgresTimingRepository(self._connection)
+        return [
+            session
+            for row in rows
+            if (session := timing.get_session(user_id, row["id"])) is not None
+        ]
+
+    def _eligible_snapshot_count(self, user_id: UUID, sessions: list[TimingSession]) -> int:
+        session_ids = [session.id for session in sessions]
+        if not session_ids:
+            return 0
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                select count(*)::integer as count
+                from capture_context_snapshot
+                where user_id = %s and session_id = any(%s)
+                """,
+                (user_id, session_ids),
+            )
+            row = cursor.fetchone()
+        return int(row["count"]) if row is not None else 0
+
+    def _delete_existing_vectors(
+        self,
+        cursor: psycopg.Cursor[Mapping[str, Any]],
+        user_id: UUID,
+        activity_id: UUID | None,
+        session_id: UUID | None,
+        families: list[FeatureFamily],
+    ) -> None:
+        cursor.execute(
+            """
+            delete from temporal_feature_vector
+            where user_id = %s
+              and (%s::uuid is null or activity_id = %s)
+              and (%s::uuid is null or session_id = %s)
+              and feature_family = any(%s)
+            """,
+            (user_id, activity_id, activity_id, session_id, session_id, families),
+        )
 
 
 def _query_answer_from_row(

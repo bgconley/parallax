@@ -36,6 +36,7 @@ def current_schema_smoke_checks() -> list[SchemaSmokeCheck]:
         *(_table_check(name) for name in _PHASE2_TABLES),
         *(_table_check(name) for name in _PHASE3_TABLES),
         *(_table_check(name) for name in _PHASE4_TABLES),
+        *(_table_check(name) for name in _PHASE5_TABLES),
         *(_enum_check(name) for name in _PHASE3_ENUMS),
         *(_enum_check(name) for name in _PHASE4_ENUMS),
     ]
@@ -206,4 +207,12 @@ _PHASE4_TABLES = (
 _PHASE4_ENUMS = (
     "confirmation_state",
     "model_role",
+)
+
+_PHASE5_TABLES = (
+    "checkpoint_template",
+    "checkpoint_run",
+    "start_latency_observation",
+    "transition_observation",
+    "temporal_feature_vector",
 )

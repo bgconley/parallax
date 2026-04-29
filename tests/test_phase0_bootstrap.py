@@ -53,7 +53,10 @@ def test_phase_docs_record_compose_derivation_and_phase_boundary() -> None:
     readme = (REPO_ROOT / "README.md").read_text()
 
     assert "implementation derivative of the canonical prototype Compose file" in phase0_doc
-    assert "Phase 0, Phase 1, Phase 2, Phase 3, and Phase 4 are complete" in agents_doc
+    assert (
+        "Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 are complete"
+        in agents_doc
+    )
     assert "runtime exposes the canonical" in readme
     assert "Out of scope: review decisions" in phase1_doc
 
@@ -122,6 +125,14 @@ def test_phase4_smoke_is_available_from_makefile() -> None:
     assert "scripts/phase4_smoke.py" in content
 
 
+def test_phase5_smoke_is_available_from_makefile() -> None:
+    makefile = REPO_ROOT / "Makefile"
+    content = makefile.read_text()
+
+    assert "phase5-smoke:" in content
+    assert "scripts/phase5_smoke.py" in content
+
+
 def test_phase0_schema_smoke_checks_cover_core_tables_and_enums() -> None:
     check_names = {check.name for check in phase0_schema_smoke_checks()}
 
@@ -132,6 +143,16 @@ def test_phase0_schema_smoke_checks_cover_core_tables_and_enums() -> None:
     assert "table:timing_event" in check_names
     assert "enum:timing_session_status" in check_names
     assert "enum:timing_event_type" in check_names
+
+
+def test_current_schema_smoke_checks_cover_phase5_tables() -> None:
+    check_names = {check.name for check in current_schema_smoke_checks()}
+
+    assert "table:checkpoint_template" in check_names
+    assert "table:checkpoint_run" in check_names
+    assert "table:start_latency_observation" in check_names
+    assert "table:transition_observation" in check_names
+    assert "table:temporal_feature_vector" in check_names
 
 
 def test_current_schema_smoke_checks_cover_phase4_context_tables_and_enums() -> None:

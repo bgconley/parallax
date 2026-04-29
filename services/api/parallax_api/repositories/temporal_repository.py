@@ -1,18 +1,25 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import cast
 from uuid import UUID, uuid4
 
+from ..domain.feature_vectors import build_temporal_feature_vectors
 from ..schemas.temporal import (
     CreatePredictionRequest,
+    FeatureFamily,
     PredictionOutcome,
     RecordPredictionOutcomeRequest,
+    TemporalFeatureVector,
     TemporalPrediction,
     TemporalQueryAnswer,
     TemporalQueryEvidenceItem,
     TemporalQueryRequest,
 )
+from ..schemas.timing import TimingSession
+from .context_policy_defaults import default_context_capture_policy
 from .memory import InMemoryStore
+from .timing_repository import TimingRepository
 
 
 class TemporalRepository:
@@ -107,3 +114,97 @@ class TemporalRepository:
         if answer is None or answer.user_id != user_id:
             return None
         return answer
+
+    def generate_feature_vectors(
+        self,
+        user_id: UUID,
+        *,
+        activity_id: UUID | None,
+        session_id: UUID | None,
+        feature_families: list[str],
+    ) -> list[TemporalFeatureVector]:
+        families = [cast(FeatureFamily, family) for family in feature_families]
+        reviewed_sessions = self._reviewed_sessions(user_id, activity_id, session_id)
+        if activity_id is None and reviewed_sessions:
+            activity_id = reviewed_sessions[0].activity_id
+        policy = self._store.context_policies.get(user_id) or default_context_capture_policy(
+            user_id
+        )
+        snapshot_count = self._eligible_snapshot_count(user_id, reviewed_sessions)
+        drafts = build_temporal_feature_vectors(
+            activity_id=activity_id,
+            session_id=session_id,
+            feature_families=families,
+            reviewed_sessions=reviewed_sessions,
+            context_policy=policy,
+            eligible_snapshot_count=snapshot_count,
+        )
+        self._delete_existing_vectors(user_id, activity_id, session_id, families)
+        vectors = [
+            TemporalFeatureVector(
+                id=uuid4(),
+                user_id=user_id,
+                activity_id=draft.activity_id,
+                session_id=draft.session_id,
+                snapshot_id=draft.snapshot_id,
+                feature_schema_version=draft.feature_schema_version,
+                feature_family=draft.feature_family,
+                features=draft.features,
+                source_entity_refs=draft.source_entity_refs,
+                privacy_class=draft.privacy_class,
+                model_eligible=draft.model_eligible,
+                exclusion_reason=draft.exclusion_reason,
+                generated_at=draft.generated_at,
+            )
+            for draft in drafts
+        ]
+        for vector in vectors:
+            self._store.temporal_feature_vectors[vector.id] = vector
+        return vectors
+
+    def _reviewed_sessions(
+        self,
+        user_id: UUID,
+        activity_id: UUID | None,
+        session_id: UUID | None,
+    ) -> list[TimingSession]:
+        timing = TimingRepository(self._store)
+        sessions = [
+            timing.get_session(user_id, session.id)
+            for session in self._store.sessions.values()
+            if session.user_id == user_id
+            and (activity_id is None or session.activity_id == activity_id)
+            and (session_id is None or session.id == session_id)
+            and session.status == "reviewed"
+        ]
+        return [
+            session
+            for session in sessions
+            if session is not None and session.model_inclusion != "exclude"
+        ]
+
+    def _eligible_snapshot_count(self, user_id: UUID, sessions: list[TimingSession]) -> int:
+        session_ids = {session.id for session in sessions}
+        return sum(
+            1
+            for snapshot in self._store.capture_snapshots.values()
+            if snapshot.user_id == user_id and snapshot.session_id in session_ids
+        )
+
+    def _delete_existing_vectors(
+        self,
+        user_id: UUID,
+        activity_id: UUID | None,
+        session_id: UUID | None,
+        families: list[FeatureFamily],
+    ) -> None:
+        self._store.temporal_feature_vectors = {
+            vector_id: vector
+            for vector_id, vector in self._store.temporal_feature_vectors.items()
+            if not (
+                vector.user_id == user_id
+                and (activity_id is None or vector.activity_id == activity_id)
+                and (session_id is None or vector.session_id == session_id)
+                and vector.feature_family in families
+            )
+        }

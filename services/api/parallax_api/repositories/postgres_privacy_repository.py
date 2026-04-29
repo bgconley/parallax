@@ -13,11 +13,13 @@ from ..schemas.privacy import (
     PrivacySettings,
 )
 from .postgres_identity import ensure_app_user
+from .postgres_privacy_lifecycle import PostgresPrivacyLifecycleRepository
 
 
 class PostgresPrivacyRepository:
     def __init__(self, connection: psycopg.Connection[Any]) -> None:
         self._connection = connection
+        self._lifecycle = PostgresPrivacyLifecycleRepository(connection)
 
     def get_settings(self, user_id: UUID) -> PrivacySettings:
         with self._connection.cursor() as cursor:
@@ -82,16 +84,6 @@ class PostgresPrivacyRepository:
         return self._record_audit(user_id, "privacy_export_requested", None, None, request)
 
     def request_redact(self, user_id: UUID, request: PrivacyRedactRequest) -> UUID:
-        with self._connection.cursor() as cursor:
-            if request.entity_type == "temporal_context_annotation":
-                cursor.execute(
-                    """
-                    update temporal_context_annotation
-                    set raw_text = null, redacted_text = null, status = 'redacted'
-                    where user_id = %s and id = %s
-                    """,
-                    (user_id, request.entity_id),
-                )
         return self._record_audit(
             user_id,
             "privacy_redact_requested",
@@ -101,16 +93,6 @@ class PostgresPrivacyRepository:
         )
 
     def request_delete(self, user_id: UUID, request: PrivacyDeleteRequest) -> UUID:
-        if request.delete_scope in {"raw_context", "account"}:
-            with self._connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    update temporal_context_annotation
-                    set raw_text = null, redacted_text = null, status = 'deleted'
-                    where user_id = %s
-                    """,
-                    (user_id,),
-                )
         return self._record_audit(
             user_id,
             "privacy_delete_requested",
@@ -118,6 +100,15 @@ class PostgresPrivacyRepository:
             request.entity_id,
             request,
         )
+
+    def complete_export(self, user_id: UUID, request: PrivacyExportRequest) -> dict[str, object]:
+        return self._lifecycle.complete_export(user_id, request)
+
+    def complete_redact(self, user_id: UUID, request: PrivacyRedactRequest) -> dict[str, object]:
+        return self._lifecycle.complete_redact(user_id, request)
+
+    def complete_delete(self, user_id: UUID, request: PrivacyDeleteRequest) -> dict[str, object]:
+        return self._lifecycle.complete_delete(user_id, request)
 
     def _record_audit(
         self,

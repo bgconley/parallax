@@ -13,6 +13,7 @@ from ..schemas.context import (
     CreatePlaceRequest,
     DeviceContextObservationInput,
     GeospatialObservationInput,
+    InferredPlaceObservation,
     RadioObservationInput,
     ResolvePlaceRequest,
     ResolvePlaceResponse,
@@ -98,11 +99,17 @@ class PostgresContextRepository:
             radio_observations=radio_observations,
             device_context_observations=device_context_observations,
         )
-        return snapshot.model_copy(
-            update={
-                "inferred_places": self._place_inference.infer_for_snapshot(user_id, snapshot)
-            }
-        )
+        return snapshot
+
+    def infer_places_for_snapshot(
+        self,
+        user_id: UUID,
+        snapshot_id: UUID,
+    ) -> list[InferredPlaceObservation]:
+        snapshot = self._snapshots.load_capture_context_snapshot(user_id, snapshot_id)
+        if snapshot is None:
+            return []
+        return self._place_inference.infer_for_snapshot(user_id, snapshot)
 
     def list_capture_context_snapshots(
         self,

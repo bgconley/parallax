@@ -13,6 +13,7 @@ from ..schemas.context import (
     DeviceContextObservationInput,
     GeospatialObservation,
     GeospatialObservationInput,
+    InferredPlaceObservation,
     RadioObservation,
     RadioObservationInput,
     ResolvePlaceCandidate,
@@ -202,11 +203,21 @@ class ContextRepository:
         self._store.capture_snapshots[snapshot.id] = snapshot
         self._store.session_snapshots.setdefault(session_id, []).append(snapshot.id)
         self.resolve_pending_snapshot_references(user_id, snapshot)
+        return snapshot
+
+    def infer_places_for_snapshot(
+        self,
+        user_id: UUID,
+        snapshot_id: UUID,
+    ) -> list[InferredPlaceObservation]:
+        snapshot = self._store.capture_snapshots.get(snapshot_id)
+        if snapshot is None or snapshot.user_id != user_id:
+            return []
         inferred_places = infer_places_for_snapshot(self._store, snapshot)
         if inferred_places:
             snapshot = snapshot.model_copy(update={"inferred_places": inferred_places})
             self._store.capture_snapshots[snapshot.id] = snapshot
-        return snapshot
+        return inferred_places
 
     def list_capture_context_snapshots(
         self,

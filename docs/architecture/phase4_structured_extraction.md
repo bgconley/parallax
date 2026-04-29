@@ -19,8 +19,9 @@ Routes stay thin and delegate to `ExtractionService`. API DTOs live in
 and schema version metadata centralized in `domain/extraction_registry.py`.
 Extraction and place inference create durable `workflow_run` records using the
 canonical `ProcessContextAnnotationWorkflow` and `InferPlaceFromContextWorkflow`
-names. The lightweight worker drains the same workflow records, so request-path
-processing and background recovery share one execution boundary.
+names. API requests enqueue work and return a queued response; the lightweight
+worker drains the same workflow records and owns extraction/place-inference
+completion, retry, success, and failure state transitions.
 
 ## Semantics
 
@@ -35,8 +36,8 @@ The Phase 4 golden path recognizes a sponge resource detour as a candidate with
 `confirmation_state=needs_confirmation`. Confirmation or correction applies a
 derived `timing_event_span`, persists correction audit state when applicable,
 and triggers activity-profile recomputation. Resolver POST endpoints remain
-read-only; inferred place observations are created during capture-context
-processing and only read by `POST /v1/places/resolve`.
+read-only; inferred place observations are created by the place-inference worker
+after capture-context enqueueing and only read by `POST /v1/places/resolve`.
 
 ## Verification
 

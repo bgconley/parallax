@@ -29,8 +29,21 @@ from ..schemas.extraction import (
 )
 from ..schemas.privacy import PrivacySettings
 from ..schemas.profile import ActivityProfileStats
-from ..schemas.temporal import PredictionOutcome, TemporalPrediction, TemporalQueryAnswer
-from ..schemas.timing import ModelUpdateDecision, TimingEvent, TimingEventSpan, TimingSession
+from ..schemas.temporal import (
+    PredictionOutcome,
+    TemporalFeatureVector,
+    TemporalPrediction,
+    TemporalQueryAnswer,
+)
+from ..schemas.timing import (
+    CheckpointRun,
+    ModelUpdateDecision,
+    StartLatencyObservation,
+    TimingEvent,
+    TimingEventSpan,
+    TimingSession,
+    TransitionObservation,
+)
 from ..schemas.workflows import WorkflowRun
 from .mutation_log import StoredMutation
 
@@ -94,10 +107,15 @@ class InMemoryStore:
     activity_aliases: dict[UUID, ActivityAlias] = field(default_factory=dict)
     activity_relationships: dict[UUID, ActivityRelationship] = field(default_factory=dict)
     checkpoint_templates: dict[UUID, CheckpointTemplate] = field(default_factory=dict)
+    checkpoint_runs: dict[UUID, CheckpointRun] = field(default_factory=dict)
     preflight_checks: dict[UUID, PreflightCheck] = field(default_factory=dict)
     sessions: dict[UUID, TimingSession] = field(default_factory=dict)
     session_events: dict[UUID, list[TimingEvent]] = field(default_factory=dict)
     session_spans: dict[UUID, list[TimingEventSpan]] = field(default_factory=dict)
+    start_latency_observations: dict[UUID, StartLatencyObservation] = field(
+        default_factory=dict
+    )
+    transition_observations: dict[UUID, TransitionObservation] = field(default_factory=dict)
     annotations: dict[UUID, TemporalContextAnnotation] = field(default_factory=dict)
     session_annotations: dict[UUID, list[UUID]] = field(default_factory=dict)
     context_policies: dict[UUID, ContextCapturePolicy] = field(default_factory=dict)
@@ -115,6 +133,7 @@ class InMemoryStore:
     temporal_predictions: dict[UUID, TemporalPrediction] = field(default_factory=dict)
     prediction_outcomes: dict[UUID, PredictionOutcome] = field(default_factory=dict)
     temporal_query_answers: dict[UUID, TemporalQueryAnswer] = field(default_factory=dict)
+    temporal_feature_vectors: dict[UUID, TemporalFeatureVector] = field(default_factory=dict)
     workflow_runs: WorkflowRunStore = field(default_factory=WorkflowRunStore)
     mutation_records: dict[DeviceMutationKey, MutationRecord] = field(default_factory=dict)
     idempotency_records: dict[IdempotencyMutationKey, MutationRecord] = field(default_factory=dict)

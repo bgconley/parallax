@@ -37,11 +37,11 @@ def compute_activity_stats(sessions: list[TimingSession]) -> ActivityStatsComput
     stats = ActivityProfileStats(
         sample_size=sample_size,
         confidence=_confidence(sample_size, active_values + wall_values),
-        active_p50_seconds=_percentile_nearest_rank(active_values, 0.50),
-        active_p80_seconds=_percentile_nearest_rank(active_values, 0.80),
-        wall_p50_seconds=_percentile_nearest_rank(wall_values, 0.50),
-        wall_p80_seconds=_percentile_nearest_rank(wall_values, 0.80),
-        start_latency_p80_seconds=_percentile_nearest_rank(
+        active_p50_seconds=percentile_nearest_rank(active_values, 0.50),
+        active_p80_seconds=percentile_nearest_rank(active_values, 0.80),
+        wall_p50_seconds=percentile_nearest_rank(wall_values, 0.50),
+        wall_p80_seconds=percentile_nearest_rank(wall_values, 0.80),
+        start_latency_p80_seconds=percentile_nearest_rank(
             [
                 session.start_latency_seconds
                 for session in sessions
@@ -54,7 +54,7 @@ def compute_activity_stats(sessions: list[TimingSession]) -> ActivityStatsComput
     return ActivityStatsComputation(stats=stats, limitations=limitations)
 
 
-def _percentile_nearest_rank(values: list[int], percentile: float) -> int | None:
+def percentile_nearest_rank(values: list[int], percentile: float) -> int | None:
     if not values:
         return None
     ordered = sorted(values)

@@ -19,6 +19,7 @@ ConfirmationState = Literal[
     "deferred_to_review",
 ]
 ExtractionStatus = Literal[
+    "queued",
     "needs_confirmation",
     "extracted",
     "blocked_by_privacy",

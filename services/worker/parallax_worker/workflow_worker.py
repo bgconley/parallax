@@ -4,8 +4,9 @@ import logging
 from uuid import UUID
 
 from parallax_api.adapters.context_extractor import ContextExtractor, DeterministicContextExtractor
-from parallax_api.repositories.unit_of_work import UnitOfWorkFactory
+from parallax_api.repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from parallax_api.services.extraction_service import process_context_annotation_workflow_in_uow
+from parallax_api.services.privacy_service import process_privacy_workflow_in_uow
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,39 +25,104 @@ class WorkflowWorker:
             workflow = uow.workflows.get_next_queued()
             if workflow is None:
                 return 0
-            if workflow.workflow_type == "ProcessContextAnnotationWorkflow":
-                process_context_annotation_workflow_in_uow(uow, workflow.id, self._extractor)
-            elif workflow.workflow_type == "InferPlaceFromContextWorkflow":
-                uow.workflows.mark_succeeded(
-                    workflow.id,
-                    {
-                        "status": "already_materialized",
-                        "snapshot_id": _input_id(workflow, "snapshot_id"),
+            try:
+                if workflow.workflow_type == "ProcessContextAnnotationWorkflow":
+                    process_context_annotation_workflow_in_uow(uow, workflow.id, self._extractor)
+                elif workflow.workflow_type == "InferPlaceFromContextWorkflow":
+                    _process_place_inference_workflow(uow, workflow.id)
+                elif workflow.workflow_type in {
+                    "PrivacyExportWorkflow",
+                    "PrivacyRedactWorkflow",
+                    "PrivacyDeleteWorkflow",
+                }:
+                    process_privacy_workflow_in_uow(uow, workflow.id)
+                elif workflow.workflow_type == "FeatureVectorRecomputeWorkflow":
+                    _process_feature_vector_workflow(uow, workflow.id)
+                else:
+                    uow.workflows.mark_failed(
+                        workflow.id,
+                        "unsupported_workflow_type",
+                        str(workflow.workflow_type),
+                    )
+            except Exception as exc:
+                LOGGER.exception(
+                    "workflow failed",
+                    extra={
+                        "workflow_id": str(workflow.id),
+                        "workflow_type": workflow.workflow_type,
                     },
                 )
-            elif workflow.workflow_type in {
-                "PrivacyExportWorkflow",
-                "PrivacyRedactWorkflow",
-                "PrivacyDeleteWorkflow",
-                "FeatureVectorRecomputeWorkflow",
-            }:
-                uow.workflows.mark_succeeded(workflow.id, {"status": "accepted"})
-            else:
                 uow.workflows.mark_failed(
                     workflow.id,
-                    "unsupported_workflow_type",
-                    str(workflow.workflow_type),
+                    exc.__class__.__name__,
+                    str(exc),
                 )
         return 1
 
 
-def _input_id(workflow: object, key: str) -> str | None:
+def _process_place_inference_workflow(uow: UnitOfWork, workflow_id: UUID) -> None:
+    workflow = uow.workflows.mark_running(workflow_id)
+    try:
+        if workflow.user_id is None:
+            raise ValueError("place inference workflow missing user scope")
+        snapshot_id = _input_uuid(workflow, "snapshot_id")
+        if snapshot_id is None:
+            raise ValueError("place inference workflow missing snapshot_id")
+        inferred = uow.contexts.infer_places_for_snapshot(workflow.user_id, snapshot_id)
+    except Exception as exc:
+        uow.workflows.mark_failed(workflow_id, exc.__class__.__name__, str(exc))
+        raise
+    uow.workflows.mark_succeeded(
+        workflow_id,
+        {
+            "status": "completed",
+            "snapshot_id": str(snapshot_id),
+            "candidate_count": len(inferred),
+            "inferred_place_ids": [str(item.id) for item in inferred],
+        },
+    )
+
+
+def _process_feature_vector_workflow(uow: UnitOfWork, workflow_id: UUID) -> None:
+    workflow = uow.workflows.mark_running(workflow_id)
+    if workflow.user_id is None:
+        uow.workflows.mark_failed(workflow_id, "missing_user_scope", "workflow missing user scope")
+        return
+    input_ref = workflow.input_ref
+    if not isinstance(input_ref, dict):
+        uow.workflows.mark_failed(workflow_id, "invalid_input_ref", "workflow input_ref is invalid")
+        return
+    activity_id = _input_uuid(workflow, "activity_id")
+    session_id = _input_uuid(workflow, "session_id")
+    raw_feature_families = input_ref.get("feature_families", [])
+    feature_families = (
+        [family for family in raw_feature_families if isinstance(family, str)]
+        if isinstance(raw_feature_families, list)
+        else []
+    )
+    vectors = uow.temporal.generate_feature_vectors(
+        workflow.user_id,
+        activity_id=activity_id,
+        session_id=session_id,
+        feature_families=feature_families,
+    )
+    uow.workflows.mark_succeeded(
+        workflow.id,
+        {
+            "status": "completed",
+            "generated_vectors": len(vectors),
+            "generated_vector_ids": [str(vector.id) for vector in vectors],
+        },
+    )
+
+
+def _input_uuid(workflow: object, key: str) -> UUID | None:
     input_ref = getattr(workflow, "input_ref", {})
     value = input_ref.get(key) if isinstance(input_ref, dict) else None
     if value is None:
         return None
     try:
-        return str(UUID(str(value)))
+        return UUID(str(value))
     except ValueError:
         LOGGER.warning("invalid workflow input id", extra={"key": key})
         return None

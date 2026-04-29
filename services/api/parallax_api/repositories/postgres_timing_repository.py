@@ -8,6 +8,10 @@ from uuid import UUID
 import psycopg
 from psycopg.types.json import Jsonb
 
+from ..domain.latency_observations import (
+    StartLatencyObservationDraft,
+    TransitionObservationDraft,
+)
 from ..domain.review_decisions import run_quality_for_decision, status_for_decision
 from ..domain.timing_reconstruction import project_timing_session
 from ..domain.timing_spans import TimingEventSpanDraft, TimingSpanTotals
@@ -22,86 +26,27 @@ from ..schemas.timing import (
     TimingEventSpan,
     TimingSession,
 )
+from .postgres_checkpoint_runs import (
+    checkpoint_event_payload,
+    create_checkpoint_runs_for_session,
+)
 from .postgres_identity import ensure_app_user
-
-_INSERT_SESSION_SQL = """
-insert into timing_session (
-  user_id, activity_id, client_session_id, source_device_id, mode,
-  status, work_mode, actor_mode, intended_start_at,
-  user_pre_estimate_seconds, offline_created
+from .postgres_latency_observations import (
+    replace_latency_observations as replace_postgres_latency_observations,
 )
-values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true)
-returning id, user_id, activity_id, client_session_id, source_device_id, mode, status, work_mode,
-  actor_mode, intended_start_at, started_at, completed_at, active_seconds, wall_seconds,
-  setup_seconds, detour_seconds, interruption_seconds, waiting_seconds, side_quest_seconds,
-  start_latency_seconds, transition_seconds, run_quality, model_inclusion,
-  needs_timeline_recompute
-"""
-
-_INSERT_EVENT_SQL = """
-insert into timing_event (
-  user_id, session_id, event_type, client_time, timer_elapsed_seconds,
-  timer_active_seconds, client_sequence, client_mutation_id,
-  client_device_id, idempotency_key, capture_context_snapshot_id,
-  capture_context_snapshot_ref, payload
+from .postgres_timing_sql import (
+    INSERT_EVENT_SQL,
+    INSERT_REVIEW_SQL,
+    INSERT_SESSION_SQL,
+    INSERT_SPAN_SQL,
+    LOAD_EVENTS_SQL,
+    LOAD_SESSION_SQL,
+    LOAD_SPANS_SQL,
 )
-values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-returning id, user_id, session_id, event_type, client_time, server_time, timer_elapsed_seconds,
-  timer_active_seconds, client_sequence, client_mutation_id, client_device_id,
-  idempotency_key, capture_context_snapshot_id, capture_context_snapshot_ref, payload
-"""
-
-_LOAD_SESSION_SQL = """
-select id, user_id, activity_id, client_session_id, source_device_id, mode, status, work_mode,
-  actor_mode, intended_start_at, started_at, completed_at, active_seconds, wall_seconds,
-  setup_seconds, detour_seconds, interruption_seconds, waiting_seconds, side_quest_seconds,
-  start_latency_seconds, transition_seconds, run_quality, model_inclusion,
-  needs_timeline_recompute
-from timing_session
-where user_id = %s and id = %s
-"""
-
-_LOAD_EVENTS_SQL = """
-select id, user_id, session_id, event_type, client_time, server_time, timer_elapsed_seconds,
-  timer_active_seconds, client_sequence, client_mutation_id, client_device_id,
-  idempotency_key, capture_context_snapshot_id, capture_context_snapshot_ref, payload
-from timing_event
-where user_id = %s and session_id = %s
-order by server_time, id
-"""
-
-_LOAD_SPANS_SQL = """
-select id, user_id, session_id, checkpoint_run_id, span_type, friction_category,
-  started_at, ended_at, duration_seconds, count_policy, count_in_wall_time,
-  count_in_active_time, model_update_scopes, linked_annotation_id,
-  linked_extracted_event_id, user_corrected
-from timing_event_span
-where user_id = %s and session_id = %s
-order by started_at, id
-"""
-
-_INSERT_SPAN_SQL = """
-insert into timing_event_span (
-  user_id, session_id, checkpoint_run_id, start_event_id, end_event_id, span_type,
-  friction_category, started_at, ended_at, duration_seconds, count_policy,
-  count_in_wall_time, count_in_active_time, model_update_scopes,
-  linked_annotation_id, linked_extracted_event_id, user_corrected
+from .postgres_timing_updates import (
+    update_session_friction_totals,
+    update_session_projection,
 )
-values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-returning id, user_id, session_id, checkpoint_run_id, span_type, friction_category,
-  started_at, ended_at, duration_seconds, count_policy, count_in_wall_time,
-  count_in_active_time, model_update_scopes, linked_annotation_id,
-  linked_extracted_event_id, user_corrected
-"""
-
-_INSERT_REVIEW_SQL = """
-insert into model_update_decision (
-  user_id, session_id, decision, model_inclusion, scopes, user_note, payload
-)
-values (%s, %s, %s, %s, %s, %s, %s)
-returning id, user_id, session_id, decision, model_inclusion, scopes, reviewed_at,
-  user_note, payload
-"""
 
 
 class PostgresTimingRepository:
@@ -112,7 +57,7 @@ class PostgresTimingRepository:
         with self._connection.cursor() as cursor:
             ensure_app_user(cursor, user_id)
             cursor.execute(
-                _INSERT_SESSION_SQL,
+                INSERT_SESSION_SQL,
                 (
                     user_id,
                     request.activity_id,
@@ -127,6 +72,13 @@ class PostgresTimingRepository:
                 ),
             )
             row = cursor.fetchone()
+            if row is not None and request.mode == "checkpointed":
+                create_checkpoint_runs_for_session(
+                    cursor,
+                    user_id=user_id,
+                    session_id=row["id"],
+                    activity_id=request.activity_id,
+                )
         if row is None:
             raise RuntimeError("timing session insert returned no row")
         return _session_from_row(row)
@@ -174,8 +126,16 @@ class PostgresTimingRepository:
             raise KeyError(session_id)
 
         with self._connection.cursor() as cursor:
+            payload = checkpoint_event_payload(
+                cursor,
+                user_id=user_id,
+                session_id=session_id,
+                event_type=request.event_type,
+                client_time=request.client_time,
+                payload=request.payload,
+            )
             cursor.execute(
-                _INSERT_EVENT_SQL,
+                INSERT_EVENT_SQL,
                 (
                     user_id,
                     session_id,
@@ -189,7 +149,7 @@ class PostgresTimingRepository:
                     request.mutation.idempotency_key,
                     request.capture_context_snapshot_id,
                     request.capture_context_snapshot_ref,
-                    Jsonb(request.payload),
+                    Jsonb(payload),
                 ),
             )
             row = cursor.fetchone()
@@ -198,7 +158,12 @@ class PostgresTimingRepository:
         event = _event_from_row(row)
         events = self._load_events(user_id, session_id)
         projection = project_timing_session(session, events)
-        self._update_session_projection(user_id, session_id, projection.session_updates)
+        update_session_projection(
+            self._connection,
+            user_id,
+            session_id,
+            projection.session_updates,
+        )
         return event
 
     def complete_session(
@@ -240,7 +205,7 @@ class PostgresTimingRepository:
             )
             for draft in span_drafts:
                 cursor.execute(
-                    _INSERT_SPAN_SQL,
+                    INSERT_SPAN_SQL,
                     (
                         user_id,
                         session_id,
@@ -300,7 +265,7 @@ class PostgresTimingRepository:
                 (user_id, extracted_event.id),
             )
             cursor.execute(
-                _INSERT_SPAN_SQL,
+                INSERT_SPAN_SQL,
                 (
                     user_id,
                     extracted_event.session_id,
@@ -324,7 +289,7 @@ class PostgresTimingRepository:
             row = cursor.fetchone()
             if row is None:
                 raise RuntimeError("timing span insert returned no row")
-            self._update_session_friction_totals(cursor, user_id, extracted_event.session_id)
+            update_session_friction_totals(cursor, user_id, extracted_event.session_id)
         return _span_from_row(row)
 
     def create_or_correct_span(
@@ -342,7 +307,7 @@ class PostgresTimingRepository:
                 (user_id, session_id, span.id),
             )
             cursor.execute(
-                _INSERT_SPAN_SQL,
+                INSERT_SPAN_SQL,
                 (
                     user_id,
                     session_id,
@@ -366,7 +331,7 @@ class PostgresTimingRepository:
             row = cursor.fetchone()
             if row is None:
                 raise RuntimeError("timing span insert returned no row")
-            self._update_session_friction_totals(cursor, user_id, session_id)
+            update_session_friction_totals(cursor, user_id, session_id)
         return _span_from_row(row)
 
     def review_session(
@@ -391,7 +356,7 @@ class PostgresTimingRepository:
         }
         with self._connection.cursor() as cursor:
             cursor.execute(
-                _INSERT_REVIEW_SQL,
+                INSERT_REVIEW_SQL,
                 (
                     user_id,
                     session_id,
@@ -465,10 +430,26 @@ class PostgresTimingRepository:
             )
         return decision
 
+    def replace_latency_observations(
+        self,
+        user_id: UUID,
+        session: TimingSession,
+        start_latency: StartLatencyObservationDraft | None,
+        transitions: list[TransitionObservationDraft],
+    ) -> None:
+        with self._connection.cursor() as cursor:
+            replace_postgres_latency_observations(
+                cursor,
+                user_id=user_id,
+                session=session,
+                start_latency=start_latency,
+                transitions=transitions,
+            )
+
     def _load_session(self, user_id: UUID, session_id: UUID) -> TimingSession | None:
         with self._connection.cursor() as cursor:
             cursor.execute(
-                _LOAD_SESSION_SQL,
+                LOAD_SESSION_SQL,
                 (user_id, session_id),
             )
             row = cursor.fetchone()
@@ -477,7 +458,7 @@ class PostgresTimingRepository:
     def _load_events(self, user_id: UUID, session_id: UUID) -> list[TimingEvent]:
         with self._connection.cursor() as cursor:
             cursor.execute(
-                _LOAD_EVENTS_SQL,
+                LOAD_EVENTS_SQL,
                 (user_id, session_id),
             )
             rows = cursor.fetchall()
@@ -486,85 +467,11 @@ class PostgresTimingRepository:
     def _load_spans(self, user_id: UUID, session_id: UUID) -> list[TimingEventSpan]:
         with self._connection.cursor() as cursor:
             cursor.execute(
-                _LOAD_SPANS_SQL,
+                LOAD_SPANS_SQL,
                 (user_id, session_id),
             )
             rows = cursor.fetchall()
         return [_span_from_row(row) for row in rows]
-
-    def _update_session_projection(
-        self,
-        user_id: UUID,
-        session_id: UUID,
-        updates: dict[str, object],
-    ) -> None:
-        with self._connection.cursor() as cursor:
-            cursor.execute(
-                """
-                update timing_session
-                set status = %s,
-                    started_at = %s,
-                    completed_at = %s,
-                    wall_seconds = %s,
-                    active_seconds = %s,
-                    needs_timeline_recompute = %s,
-                    updated_at = now()
-                where user_id = %s and id = %s
-                """,
-                (
-                    updates["status"],
-                    updates["started_at"],
-                    updates["completed_at"],
-                    updates["wall_seconds"],
-                    updates["active_seconds"],
-                    updates["needs_timeline_recompute"],
-                    user_id,
-                    session_id,
-                ),
-            )
-
-    def _update_session_friction_totals(
-        self,
-        cursor: psycopg.Cursor[Mapping[str, Any]],
-        user_id: UUID,
-        session_id: UUID,
-    ) -> None:
-        cursor.execute(
-            """
-            select span_type, coalesce(sum(duration_seconds), 0)::integer as seconds
-            from timing_event_span
-            where user_id = %s and session_id = %s
-            group by span_type
-            """,
-            (user_id, session_id),
-        )
-        totals = {row["span_type"]: row["seconds"] for row in cursor.fetchall()}
-        cursor.execute(
-            """
-            update timing_session
-            set setup_seconds = %s,
-                detour_seconds = %s,
-                interruption_seconds = %s,
-                waiting_seconds = %s,
-                side_quest_seconds = %s,
-                start_latency_seconds = %s,
-                transition_seconds = %s,
-                updated_at = now()
-            where user_id = %s and id = %s
-            """,
-            (
-                totals.get("setup", 0),
-                totals.get("resource_detour", 0),
-                totals.get("interruption", 0),
-                totals.get("waiting", 0),
-                totals.get("side_quest", 0),
-                totals.get("start_latency", 0),
-                totals.get("transition", 0),
-                user_id,
-                session_id,
-            ),
-        )
-
 
 def _session_from_row(row: Mapping[str, Any]) -> TimingSession:
     data = dict(row)

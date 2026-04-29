@@ -163,6 +163,64 @@ class TimingEventSpan(ApiModel):
     user_corrected: bool
 
 
+CheckpointRunStatus = Literal[
+    "planned",
+    "running",
+    "completed",
+    "skipped",
+    "moved",
+    "merged",
+    "deleted",
+]
+
+
+class CheckpointRun(ApiModel):
+    id: UUID
+    user_id: UUID
+    session_id: UUID
+    checkpoint_template_id: UUID | None = None
+    sequence_order: int = Field(ge=1)
+    label: str = Field(min_length=1)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    active_seconds: int | None = Field(default=None, ge=0)
+    wall_seconds: int | None = Field(default=None, ge=0)
+    friction_seconds: int | None = Field(default=None, ge=0)
+    status: CheckpointRunStatus
+    user_corrected: bool
+    metadata: dict[str, object] = Field(default_factory=dict)
+    created_at: datetime
+
+
+class StartLatencyObservation(ApiModel):
+    id: UUID
+    user_id: UUID
+    activity_id: UUID
+    session_id: UUID | None = None
+    intended_start_at: datetime | None = None
+    nudge_shown_at: datetime | None = None
+    actual_start_at: datetime
+    latency_seconds: int = Field(ge=0)
+    reason_category: FrictionCategory
+    evidence_annotation_id: UUID | None = None
+    created_at: datetime
+
+
+class TransitionObservation(ApiModel):
+    id: UUID
+    user_id: UUID
+    from_session_id: UUID | None = None
+    to_session_id: UUID | None = None
+    from_checkpoint_run_id: UUID | None = None
+    to_checkpoint_run_id: UUID | None = None
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    transition_seconds: int | None = Field(default=None, ge=0)
+    reason_category: FrictionCategory
+    metadata: dict[str, object] = Field(default_factory=dict)
+    created_at: datetime
+
+
 class TimingSession(ApiModel):
     id: UUID
     user_id: UUID

@@ -35,12 +35,20 @@ def test_annotation_extraction_records_durable_workflow_boundary() -> None:
     )
 
     assert response.status_code == 202
+    assert response.json()["status"] == "queued"
     workflows = list(store.workflow_runs.values())
     assert len(workflows) == 1
     assert workflows[0].workflow_type == "ProcessContextAnnotationWorkflow"
-    assert workflows[0].status == "succeeded"
+    assert workflows[0].status == "queued"
     assert workflows[0].input_ref["annotation_id"] == annotation["id"]
-    assert workflows[0].result_ref["status"] == "needs_confirmation"
+    assert store.extracted_events == {}
+
+    processed = WorkflowWorker(InMemoryUnitOfWorkFactory(store)).drain_once()
+
+    assert processed == 1
+    refreshed = store.workflow_runs[workflows[0].id]
+    assert refreshed.status == "succeeded"
+    assert refreshed.result_ref["status"] == "needs_confirmation"
 
 
 def test_worker_processes_queued_context_annotation_workflow() -> None:
@@ -69,3 +77,19 @@ def test_worker_processes_queued_context_annotation_workflow() -> None:
     assert refreshed.status == "succeeded"
     assert refreshed.result_ref["status"] == "needs_confirmation"
     assert len(store.extracted_events) == 1
+
+
+def test_worker_marks_invalid_workflow_failed_without_stopping_queue() -> None:
+    store = InMemoryStore()
+    workflow = store.workflow_runs.create(
+        user_id=None,
+        workflow_type="InferPlaceFromContextWorkflow",
+        input_ref={"snapshot_id": "00000000-0000-0000-0000-000000000001"},
+    )
+
+    processed = WorkflowWorker(InMemoryUnitOfWorkFactory(store)).drain_once()
+
+    assert processed == 1
+    refreshed = store.workflow_runs[workflow.id]
+    assert refreshed.status == "failed"
+    assert refreshed.error_code == "ValueError"

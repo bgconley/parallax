@@ -4,6 +4,10 @@ from types import TracebackType
 from typing import Literal, Protocol
 from uuid import UUID
 
+from ..domain.latency_observations import (
+    StartLatencyObservationDraft,
+    TransitionObservationDraft,
+)
 from ..domain.timing_spans import TimingEventSpanDraft, TimingSpanTotals
 from ..schemas.activity import Activity, CreateActivityRequest, ResolveActivityCandidate
 from ..schemas.activity_metadata import (
@@ -23,6 +27,7 @@ from ..schemas.context import (
     CreatePlaceRequest,
     DeviceContextObservationInput,
     GeospatialObservationInput,
+    InferredPlaceObservation,
     RadioObservationInput,
     ResolvePlaceRequest,
     ResolvePlaceResponse,
@@ -50,6 +55,7 @@ from ..schemas.temporal import (
     CreatePredictionRequest,
     PredictionOutcome,
     RecordPredictionOutcomeRequest,
+    TemporalFeatureVector,
     TemporalPrediction,
     TemporalQueryAnswer,
     TemporalQueryRequest,
@@ -171,9 +177,19 @@ class TimingRepositoryProtocol(Protocol):
         span: TimingEventSpan,
     ) -> TimingEventSpan: ...
 
+    def replace_latency_observations(
+        self,
+        user_id: UUID,
+        session: TimingSession,
+        start_latency: StartLatencyObservationDraft | None,
+        transitions: list[TransitionObservationDraft],
+    ) -> None: ...
+
 
 class ProfileRepositoryProtocol(Protocol):
     def recompute_activity_stats(self, user_id: UUID, activity_id: UUID) -> None: ...
+
+    def recompute_checkpoint_stats(self, user_id: UUID, activity_id: UUID) -> None: ...
 
     def get_activity_profile(self, user_id: UUID, activity_id: UUID) -> ActivityProfile | None: ...
 
@@ -210,6 +226,12 @@ class ContextRepositoryProtocol(Protocol):
         radio_observations: list[RadioObservationInput],
         device_context_observations: list[DeviceContextObservationInput],
     ) -> CaptureContextSnapshot: ...
+
+    def infer_places_for_snapshot(
+        self,
+        user_id: UUID,
+        snapshot_id: UUID,
+    ) -> list[InferredPlaceObservation]: ...
 
     def list_capture_context_snapshots(
         self,
@@ -316,6 +338,24 @@ class PrivacyRepositoryProtocol(Protocol):
 
     def request_delete(self, user_id: UUID, request: PrivacyDeleteRequest) -> UUID: ...
 
+    def complete_export(
+        self,
+        user_id: UUID,
+        request: PrivacyExportRequest,
+    ) -> dict[str, object]: ...
+
+    def complete_redact(
+        self,
+        user_id: UUID,
+        request: PrivacyRedactRequest,
+    ) -> dict[str, object]: ...
+
+    def complete_delete(
+        self,
+        user_id: UUID,
+        request: PrivacyDeleteRequest,
+    ) -> dict[str, object]: ...
+
 
 class TemporalRepositoryProtocol(Protocol):
     def create_prediction(
@@ -338,6 +378,15 @@ class TemporalRepositoryProtocol(Protocol):
     ) -> TemporalQueryAnswer: ...
 
     def get_query_answer(self, user_id: UUID, answer_id: UUID) -> TemporalQueryAnswer | None: ...
+
+    def generate_feature_vectors(
+        self,
+        user_id: UUID,
+        *,
+        activity_id: UUID | None,
+        session_id: UUID | None,
+        feature_families: list[str],
+    ) -> list[TemporalFeatureVector]: ...
 
 
 class WorkflowRunRepositoryProtocol(Protocol):

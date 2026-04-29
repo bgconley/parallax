@@ -3,6 +3,10 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
+from ..domain.latency_observations import (
+    StartLatencyObservationDraft,
+    TransitionObservationDraft,
+)
 from ..domain.review_decisions import run_quality_for_decision, status_for_decision
 from ..domain.timing_reconstruction import project_timing_session
 from ..domain.timing_spans import TimingEventSpanDraft, TimingSpanTotals
@@ -16,6 +20,14 @@ from ..schemas.timing import (
     TimingEvent,
     TimingEventSpan,
     TimingSession,
+)
+from .checkpoint_run_state import (
+    apply_checkpoint_event,
+    checkpoint_event_payload,
+    create_checkpoint_runs_for_session,
+)
+from .latency_observation_state import (
+    replace_latency_observations as replace_memory_latency_observations,
 )
 from .memory import InMemoryStore
 
@@ -45,6 +57,7 @@ class TimingRepository:
         self._store.sessions[session.id] = session
         self._store.session_events[session.id] = []
         self._store.session_spans[session.id] = []
+        create_checkpoint_runs_for_session(self._store, user_id, session)
         return session
 
     def get_session(self, user_id: UUID, session_id: UUID) -> TimingSession | None:
@@ -86,6 +99,7 @@ class TimingRepository:
         request: AppendTimingEventRequest,
     ) -> TimingEvent:
         session = self._store.sessions[session_id]
+        payload = checkpoint_event_payload(self._store, user_id, session, request)
         event = TimingEvent(
             id=uuid4(),
             user_id=user_id,
@@ -101,9 +115,10 @@ class TimingRepository:
             idempotency_key=request.mutation.idempotency_key,
             capture_context_snapshot_id=request.capture_context_snapshot_id,
             capture_context_snapshot_ref=request.capture_context_snapshot_ref,
-            payload=request.payload,
+            payload=payload,
         )
         self._store.session_events[session_id].append(event)
+        apply_checkpoint_event(self._store, event)
         events = list(self._store.session_events[session_id])
         projection = project_timing_session(session, events)
         self._store.sessions[session_id] = session.model_copy(update=projection.session_updates)
@@ -276,6 +291,21 @@ class TimingRepository:
             }
         )
         return decision
+
+    def replace_latency_observations(
+        self,
+        user_id: UUID,
+        session: TimingSession,
+        start_latency: StartLatencyObservationDraft | None,
+        transitions: list[TransitionObservationDraft],
+    ) -> None:
+        replace_memory_latency_observations(
+            self._store,
+            user_id,
+            session,
+            start_latency,
+            transitions,
+        )
 
 
 def _update_session_friction_totals(

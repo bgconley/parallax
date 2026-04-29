@@ -6,7 +6,6 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from ..adapters.context_extractor import DeterministicContextExtractor
 from ..repositories.unit_of_work import UnitOfWork
 from ..schemas.activity import CreateActivityRequest
 from ..schemas.activity_metadata import (
@@ -54,7 +53,7 @@ from .context_service import (
 from .extraction_service import (
     confirm_extracted_event_in_uow,
     correct_extracted_event_in_uow,
-    process_context_annotation_workflow_in_uow,
+    enqueue_context_annotation_workflow_in_uow,
 )
 from .privacy_service import (
     request_privacy_delete_in_uow,
@@ -216,20 +215,11 @@ def _apply_context_snapshot(uow: UnitOfWork, user_id: UUID, operation: ParsedSyn
 def _apply_extract_annotation(
     uow: UnitOfWork, user_id: UUID, operation: ParsedSyncOperation
 ) -> None:
-    request = _require_payload(operation, ExtractAnnotationRequest)
-    workflow = uow.workflows.enqueue(
-        user_id,
-        "ProcessContextAnnotationWorkflow",
-        {
-            "annotation_id": str(_require_id(operation, "annotation_id")),
-            "mutation": request.mutation.model_dump(mode="json"),
-            "force": request.force,
-        },
-    )
-    process_context_annotation_workflow_in_uow(
+    enqueue_context_annotation_workflow_in_uow(
         uow,
-        workflow.id,
-        DeterministicContextExtractor(),
+        user_id,
+        _require_id(operation, "annotation_id"),
+        _require_payload(operation, ExtractAnnotationRequest),
     )
 
 

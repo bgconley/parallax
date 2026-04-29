@@ -47,16 +47,12 @@ class ExtractionService:
         request: ExtractAnnotationRequest,
     ) -> ExtractAnnotationResponse:
         with self._uow_factory() as uow:
-            workflow = uow.workflows.enqueue(
+            return enqueue_context_annotation_workflow_in_uow(
+                uow,
                 user_id,
-                "ProcessContextAnnotationWorkflow",
-                {
-                    "annotation_id": str(annotation_id),
-                    "mutation": request.mutation.model_dump(mode="json"),
-                    "force": request.force,
-                },
+                annotation_id,
+                request,
             )
-            return process_context_annotation_workflow_in_uow(uow, workflow.id, self._extractor)
 
     def confirm_extracted_event(
         self,
@@ -84,105 +80,159 @@ def extract_annotation_in_uow(
     request: ExtractAnnotationRequest,
     extractor: ContextExtractor,
 ) -> ExtractAnnotationResponse:
-    annotation = _load_annotation(uow, user_id, annotation_id)
     mutations = MutationReplayService(uow.mutations)
 
     def apply() -> tuple[UUID, ExtractAnnotationResponse]:
-        if _blocked_by_privacy(annotation, request):
-            uow.contexts.update_annotation_status(
-                user_id,
-                annotation_id,
-                "extraction_pending",
-                {"extraction": {"status": "blocked_by_privacy"}},
-            )
-            return annotation_id, ExtractAnnotationResponse(
-                annotation_id=annotation_id,
-                status="blocked_by_privacy",
-                model_invocation_id=None,
-                extracted_events=[],
-            )
-
-        try:
-            raw_output = extractor.extract(annotation)
-        except ExtractionModelUnavailable:
-            invocation = _record_invocation(
-                uow,
-                user_id,
-                annotation,
-                output=None,
-                schema_valid=None,
-                metadata={"status": "model_unavailable"},
-            )
-            uow.contexts.update_annotation_status(
-                user_id,
-                annotation_id,
-                "extraction_pending",
-                {"extraction": {"status": "model_unavailable"}},
-            )
-            return annotation_id, ExtractAnnotationResponse(
-                annotation_id=annotation_id,
-                status="model_unavailable",
-                model_invocation_id=invocation.id,
-                extracted_events=[],
-            )
-
-        try:
-            output = ExtractorOutput.model_validate(raw_output)
-        except ValidationError:
-            invocation = _record_invocation(
-                uow,
-                user_id,
-                annotation,
-                output=raw_output,
-                schema_valid=False,
-                metadata={"status": "model_output_invalid"},
-            )
-            uow.contexts.update_annotation_status(
-                user_id,
-                annotation_id,
-                "extraction_pending",
-                {"extraction": {"status": "model_output_invalid"}},
-            )
-            return annotation_id, ExtractAnnotationResponse(
-                annotation_id=annotation_id,
-                status="model_output_invalid",
-                model_invocation_id=invocation.id,
-                extracted_events=[],
-            )
-
-        invocation = _record_invocation(
+        response = _extract_annotation_once(
             uow,
             user_id,
-            annotation,
-            output=output.model_dump(mode="json"),
-            schema_valid=True,
-            metadata={"candidate_count": len(output.candidates)},
-        )
-        events = [
-            uow.contexts.create_extracted_event(
-                _event_from_candidate(user_id, annotation, invocation.id, candidate)
-            )
-            for candidate in output.candidates
-        ]
-        status = _response_status(events)
-        uow.contexts.update_annotation_status(
-            user_id,
             annotation_id,
-            "needs_confirmation" if events else "extraction_pending",
-            {"extraction": {"status": status, "candidate_count": len(events)}},
+            request,
+            extractor,
         )
-        return annotation_id, ExtractAnnotationResponse(
-            annotation_id=annotation_id,
-            status=status,
-            model_invocation_id=invocation.id,
-            extracted_events=events,
-        )
+        return annotation_id, response
 
     return mutations.replay_or_apply(
         user_id=user_id,
         mutation=request.mutation,
         mutation_type="extract_context_annotation",
         entity_type="temporal_context_annotation",
+        result_type=ExtractAnnotationResponse,
+        apply=apply,
+    )
+
+
+def _extract_annotation_once(
+    uow: UnitOfWork,
+    user_id: UUID,
+    annotation_id: UUID,
+    request: ExtractAnnotationRequest,
+    extractor: ContextExtractor,
+) -> ExtractAnnotationResponse:
+    annotation = _load_annotation(uow, user_id, annotation_id)
+    if _blocked_by_privacy(annotation, request):
+        uow.contexts.update_annotation_status(
+            user_id,
+            annotation_id,
+            "extraction_pending",
+            {"extraction": {"status": "blocked_by_privacy"}},
+        )
+        return ExtractAnnotationResponse(
+            annotation_id=annotation_id,
+            status="blocked_by_privacy",
+            model_invocation_id=None,
+            extracted_events=[],
+        )
+
+    try:
+        raw_output = extractor.extract(annotation)
+    except ExtractionModelUnavailable:
+        invocation = _record_invocation(
+            uow,
+            user_id,
+            annotation,
+            output=None,
+            schema_valid=None,
+            metadata={"status": "model_unavailable"},
+        )
+        uow.contexts.update_annotation_status(
+            user_id,
+            annotation_id,
+            "extraction_pending",
+            {"extraction": {"status": "model_unavailable"}},
+        )
+        return ExtractAnnotationResponse(
+            annotation_id=annotation_id,
+            status="model_unavailable",
+            model_invocation_id=invocation.id,
+            extracted_events=[],
+        )
+
+    try:
+        output = ExtractorOutput.model_validate(raw_output)
+    except ValidationError:
+        invocation = _record_invocation(
+            uow,
+            user_id,
+            annotation,
+            output=raw_output,
+            schema_valid=False,
+            metadata={"status": "model_output_invalid"},
+        )
+        uow.contexts.update_annotation_status(
+            user_id,
+            annotation_id,
+            "extraction_pending",
+            {"extraction": {"status": "model_output_invalid"}},
+        )
+        return ExtractAnnotationResponse(
+            annotation_id=annotation_id,
+            status="model_output_invalid",
+            model_invocation_id=invocation.id,
+            extracted_events=[],
+        )
+
+    invocation = _record_invocation(
+        uow,
+        user_id,
+        annotation,
+        output=output.model_dump(mode="json"),
+        schema_valid=True,
+        metadata={"candidate_count": len(output.candidates)},
+    )
+    events = [
+        uow.contexts.create_extracted_event(
+            _event_from_candidate(user_id, annotation, invocation.id, candidate)
+        )
+        for candidate in output.candidates
+    ]
+    status = _response_status(events)
+    uow.contexts.update_annotation_status(
+        user_id,
+        annotation_id,
+        "needs_confirmation" if events else "extraction_pending",
+        {"extraction": {"status": status, "candidate_count": len(events)}},
+    )
+    return ExtractAnnotationResponse(
+        annotation_id=annotation_id,
+        status=status,
+        model_invocation_id=invocation.id,
+        extracted_events=events,
+    )
+
+
+def enqueue_context_annotation_workflow_in_uow(
+    uow: UnitOfWork,
+    user_id: UUID,
+    annotation_id: UUID,
+    request: ExtractAnnotationRequest,
+) -> ExtractAnnotationResponse:
+    if uow.contexts.get_annotation(user_id, annotation_id) is None:
+        raise HTTPException(status_code=404, detail="context annotation not found")
+    mutations = MutationReplayService(uow.mutations)
+
+    def apply() -> tuple[UUID, ExtractAnnotationResponse]:
+        workflow = uow.workflows.enqueue(
+            user_id,
+            "ProcessContextAnnotationWorkflow",
+            {
+                "annotation_id": str(annotation_id),
+                "mutation": request.mutation.model_dump(mode="json"),
+                "force": request.force,
+            },
+        )
+        return workflow.id, ExtractAnnotationResponse(
+            annotation_id=annotation_id,
+            status="queued",
+            model_invocation_id=None,
+            extracted_events=[],
+        )
+
+    return mutations.replay_or_apply(
+        user_id=user_id,
+        mutation=request.mutation,
+        mutation_type="enqueue_context_annotation_extraction",
+        entity_type="workflow_run",
         result_type=ExtractAnnotationResponse,
         apply=apply,
     )
@@ -203,7 +253,7 @@ def process_context_annotation_workflow_in_uow(
         )
         if workflow.user_id is None:
             raise HTTPException(status_code=400, detail="workflow missing user scope")
-        response = extract_annotation_in_uow(
+        response = _extract_annotation_once(
             uow,
             workflow.user_id,
             annotation_id,

@@ -5,6 +5,7 @@ from typing import Literal
 from uuid import UUID
 
 from fastapi import HTTPException
+from pydantic import BaseModel
 
 from ..repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from ..schemas.privacy import (
@@ -145,13 +146,16 @@ def _privacy_workflow_response(
         workflow = uow.workflows.enqueue(
             user_id,
             workflow_type,
-            {"request_id": str(request_id), "request_type": request_type},
+            {
+                "request_id": str(request_id),
+                "request_type": request_type,
+                "request": request.model_dump(mode="json"),
+            },
         )
-        uow.workflows.mark_succeeded(workflow.id, {"request_id": str(request_id)})
         response = PrivacyWorkflowResponse(
             request_id=request_id,
             request_type=request_type,
-            status="accepted",
+            status="queued",
             workflow_run_id=workflow.id,
         )
         return request_id, response
@@ -164,3 +168,53 @@ def _privacy_workflow_response(
         result_type=PrivacyWorkflowResponse,
         apply=apply_mutation,
     )
+
+
+def process_privacy_workflow_in_uow(
+    uow: UnitOfWork,
+    workflow_id: UUID,
+) -> dict[str, object]:
+    workflow = uow.workflows.mark_running(workflow_id)
+    try:
+        if workflow.user_id is None:
+            raise HTTPException(status_code=400, detail="privacy workflow missing user scope")
+        request_type = str(workflow.input_ref.get("request_type", ""))
+        request_payload = workflow.input_ref.get("request")
+        if not isinstance(request_payload, dict):
+            raise HTTPException(status_code=400, detail="privacy workflow missing request payload")
+        request_id = UUID(str(workflow.input_ref["request_id"]))
+        request = _privacy_request_from_payload(request_type, request_payload)
+        result = _complete_privacy_request(uow, workflow.user_id, request)
+    except Exception as exc:
+        uow.workflows.mark_failed(workflow_id, exc.__class__.__name__, str(exc))
+        raise
+    result_ref = {"request_id": str(request_id), "request_type": request_type, **result}
+    uow.workflows.mark_succeeded(workflow_id, result_ref)
+    return result_ref
+
+
+def _privacy_request_from_payload(
+    request_type: str,
+    payload: dict[str, object],
+) -> PrivacyExportRequest | PrivacyRedactRequest | PrivacyDeleteRequest:
+    if request_type == "export":
+        return PrivacyExportRequest.model_validate(payload)
+    if request_type == "redact":
+        return PrivacyRedactRequest.model_validate(payload)
+    if request_type == "delete":
+        return PrivacyDeleteRequest.model_validate(payload)
+    raise HTTPException(status_code=400, detail="unsupported privacy workflow type")
+
+
+def _complete_privacy_request(
+    uow: UnitOfWork,
+    user_id: UUID,
+    request: BaseModel,
+) -> dict[str, object]:
+    if isinstance(request, PrivacyExportRequest):
+        return uow.privacy.complete_export(user_id, request)
+    if isinstance(request, PrivacyRedactRequest):
+        return uow.privacy.complete_redact(user_id, request)
+    if isinstance(request, PrivacyDeleteRequest):
+        return uow.privacy.complete_delete(user_id, request)
+    raise HTTPException(status_code=400, detail="unsupported privacy request model")

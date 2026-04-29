@@ -10,13 +10,15 @@ router.
 
 ## Implementation Depth
 
-Phases 0-4 remain the deepest implemented product paths:
+Phases 0-5 remain the deepest implemented product paths:
 
 - Phase 1 activity/timing/mutation replay paths are behaviorally implemented.
 - Phase 2 review/profile paths are behaviorally implemented.
 - Phase 3 context capture/place/review-flag paths are behaviorally implemented.
 - Phase 4 extraction/correction paths are behaviorally implemented with durable
   workflow-run audit boundaries.
+- Phase 5 checkpoint, start-latency, transition-latency, and baseline temporal
+  feature-vector paths are behaviorally implemented.
 
 Later-phase endpoints are intentionally conservative baseline implementations.
 They validate canonical schemas, enforce authenticated user scope and mutation

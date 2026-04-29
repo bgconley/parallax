@@ -5,6 +5,10 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from ..domain.latency_observations import (
+    derive_start_latency_observation,
+    derive_transition_observations,
+)
 from ..domain.review_decisions import is_discard_decision, is_model_inclusion_allowed
 from ..domain.timing_spans import derive_timing_spans, summarize_timing_spans
 from ..repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
@@ -239,6 +243,8 @@ def save_review_decision_in_uow(
 
     span_drafts = derive_timing_spans(session, session.events)
     totals = summarize_timing_spans(session, span_drafts)
+    start_latency = derive_start_latency_observation(session)
+    transitions = derive_transition_observations(session, span_drafts)
     mutations = MutationReplayService(uow.mutations)
 
     def apply() -> tuple[UUID, ModelUpdateDecision]:
@@ -249,7 +255,14 @@ def save_review_decision_in_uow(
             span_drafts,
             totals,
         )
+        uow.timing.replace_latency_observations(
+            user_id,
+            session,
+            start_latency,
+            transitions,
+        )
         uow.profiles.recompute_activity_stats(user_id, session.activity_id)
+        uow.profiles.recompute_checkpoint_stats(user_id, session.activity_id)
         return decision.id, decision
 
     return mutations.replay_or_apply(

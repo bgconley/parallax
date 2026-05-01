@@ -5,6 +5,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 import httpx
+from release_auth_helpers import release_auth_headers
 
 
 def main() -> int:
@@ -13,10 +14,15 @@ def main() -> int:
     parser.add_argument("--log-dir", default="/srv/parallax/logs")
     parser.add_argument("--user-id", default="00000000-0000-0000-0000-0000000000a2")
     parser.add_argument("--bearer-token")
+    parser.add_argument("--app-check-token")
     args = parser.parse_args()
 
     marker = f"parallax-sensitive-marker-{uuid4()}"
-    headers = _auth_headers(UUID(args.user_id), args.bearer_token)
+    headers = release_auth_headers(
+        fallback_user_id=UUID(args.user_id),
+        bearer_token=args.bearer_token,
+        app_check_token=args.app_check_token,
+    )
     body_text = _probe_validation_error(args.api_url, headers, marker)
     if marker in body_text:
         print("privacy scan failed: sensitive marker appeared in structured error response")
@@ -31,12 +37,6 @@ def main() -> int:
 
     print("privacy log scan passed")
     return 0
-
-
-def _auth_headers(user_id: UUID, bearer_token: str | None) -> dict[str, str]:
-    if bearer_token:
-        return {"Authorization": f"Bearer {bearer_token}"}
-    return {"X-Parallax-User-Id": str(user_id)}
 
 
 def _probe_validation_error(api_url: str, headers: dict[str, str], marker: str) -> str:

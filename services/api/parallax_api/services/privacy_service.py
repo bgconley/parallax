@@ -16,6 +16,7 @@ from ..schemas.privacy import (
     PrivacyWorkflowResponse,
     UpdatePrivacySettingsRequest,
 )
+from ..settings import get_settings
 from .mutations import MutationReplayService
 
 
@@ -185,6 +186,12 @@ def process_privacy_workflow_in_uow(
         request_id = UUID(str(workflow.input_ref["request_id"]))
         request = _privacy_request_from_payload(request_type, request_payload)
         result = _complete_privacy_request(uow, workflow.user_id, request)
+        if isinstance(request, PrivacyDeleteRequest) and request.delete_scope == "account":
+            tombstoned = uow.identities.tombstone_external_identities_for_user(
+                workflow.user_id,
+                get_settings().auth_identity_tombstone_secret,
+            )
+            result = {**result, "external_identities_tombstoned": tombstoned}
     except Exception as exc:
         uow.workflows.mark_failed(workflow_id, exc.__class__.__name__, str(exc))
         raise

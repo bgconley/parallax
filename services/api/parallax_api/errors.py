@@ -12,12 +12,15 @@ from .validation_errors import safe_validation_errors
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-        return _api_error_response(
+        response = _api_error_response(
             status_code=exc.status_code,
             detail=exc.detail,
             fallback_code=_status_error_code(exc.status_code),
             request=request,
         )
+        if exc.headers:
+            response.headers.update(exc.headers)
+        return response
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(

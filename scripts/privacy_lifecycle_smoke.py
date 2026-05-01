@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 import httpx
 import psycopg
 from psycopg.rows import dict_row
+from release_auth_helpers import release_auth_headers
 
 
 def main() -> int:
@@ -16,11 +17,17 @@ def main() -> int:
     parser.add_argument("--api-url", default="http://127.0.0.1:18000")
     parser.add_argument("--database-url", required=True)
     parser.add_argument("--keep-data", action="store_true")
+    parser.add_argument("--bearer-token")
+    parser.add_argument("--app-check-token")
     args = parser.parse_args()
 
     user_id = uuid4()
     device_id = f"privacy-smoke-{user_id.hex[:8]}"
-    headers = {"X-Parallax-User-Id": str(user_id)}
+    headers = release_auth_headers(
+        fallback_user_id=user_id,
+        bearer_token=args.bearer_token,
+        app_check_token=args.app_check_token,
+    )
     summary: dict[str, object] = {"user_id": str(user_id), "device_id": device_id}
 
     try:
@@ -49,6 +56,8 @@ def main() -> int:
                 ),
                 201,
             )
+            user_id = UUID(str(place["user_id"]))
+            summary["user_id"] = str(user_id)
             delete = _expect(
                 client.post(
                     "/v1/privacy/delete",

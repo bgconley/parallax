@@ -13,7 +13,7 @@ from .routes.sync import router as sync_router
 from .routes.temporal import router as temporal_router
 from .routes.timing import router as timing_router
 from .services.health import HealthChecker, RuntimeHealthChecker
-from .settings import get_settings
+from .settings import get_settings, validate_runtime_settings
 
 
 def create_app(
@@ -23,6 +23,7 @@ def create_app(
     app = FastAPI(title="Parallax API", version="0.1.0")
     install_error_handlers(app)
     settings = get_settings()
+    validate_runtime_settings(settings)
     app.state.uow_factory = uow_factory or PostgresUnitOfWorkFactory(settings.database_url)
     app.state.health_checker = health_checker or RuntimeHealthChecker()
     app.include_router(health_router)

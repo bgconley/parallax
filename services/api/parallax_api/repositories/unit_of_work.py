@@ -4,6 +4,7 @@ from types import TracebackType
 from typing import Literal, Protocol
 from uuid import UUID
 
+from ..domain.identity import FirebasePrincipal, IdentityProvisioningPolicy
 from ..domain.latency_observations import (
     StartLatencyObservationDraft,
     TransitionObservationDraft,
@@ -121,6 +122,20 @@ class ActivityRepositoryProtocol(Protocol):
         activity_id: UUID,
         request: CreatePreflightCheckRequest,
     ) -> PreflightCheck: ...
+
+
+class IdentityRepositoryProtocol(Protocol):
+    def resolve_or_create_external_identity(
+        self,
+        principal: FirebasePrincipal,
+        policy: IdentityProvisioningPolicy,
+    ) -> UUID: ...
+
+    def tombstone_external_identities_for_user(
+        self,
+        user_id: UUID,
+        tombstone_secret: str | None,
+    ) -> int: ...
 
 
 class TimingRepositoryProtocol(Protocol):
@@ -412,6 +427,7 @@ class WorkflowRunRepositoryProtocol(Protocol):
 
 
 class UnitOfWork(Protocol):
+    identities: IdentityRepositoryProtocol
     activities: ActivityRepositoryProtocol
     timing: TimingRepositoryProtocol
     profiles: ProfileRepositoryProtocol

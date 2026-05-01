@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel
 
+from ..domain.identity import ExternalIdentityRecord
 from ..schemas.activity import Activity
 from ..schemas.activity_metadata import (
     ActivityAlias,
@@ -49,6 +50,7 @@ from .mutation_log import StoredMutation, StoredSyncChange
 
 DeviceMutationKey = tuple[UUID, str, str]
 IdempotencyMutationKey = tuple[UUID, str]
+ExternalIdentityKey = tuple[str, str, str, str]
 
 
 @dataclass
@@ -139,6 +141,12 @@ class InMemoryStore:
     workflow_runs: WorkflowRunStore = field(default_factory=WorkflowRunStore)
     mutation_records: dict[DeviceMutationKey, MutationRecord] = field(default_factory=dict)
     idempotency_records: dict[IdempotencyMutationKey, MutationRecord] = field(default_factory=dict)
+    external_identities: dict[ExternalIdentityKey, ExternalIdentityRecord] = field(
+        default_factory=dict
+    )
+    user_identity_keys: dict[UUID, set[ExternalIdentityKey]] = field(default_factory=dict)
+    app_user_emails: dict[UUID, str] = field(default_factory=dict)
+    deleted_external_identity_keys: set[ExternalIdentityKey] = field(default_factory=set)
 
 
 class InMemoryMutationLogRepository:

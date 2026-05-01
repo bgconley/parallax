@@ -8,6 +8,7 @@ from psycopg.rows import dict_row
 
 from .postgres_activity_repository import PostgresActivityRepository
 from .postgres_context_repository import PostgresContextRepository
+from .postgres_external_identity import PostgresExternalIdentityRepository
 from .postgres_mutation_log import PostgresMutationLogRepository
 from .postgres_privacy_repository import PostgresPrivacyRepository
 from .postgres_profile_repository import PostgresProfileRepository
@@ -17,6 +18,7 @@ from .postgres_workflow_repository import PostgresWorkflowRunRepository
 from .unit_of_work import (
     ActivityRepositoryProtocol,
     ContextRepositoryProtocol,
+    IdentityRepositoryProtocol,
     PrivacyRepositoryProtocol,
     ProfileRepositoryProtocol,
     TemporalRepositoryProtocol,
@@ -36,6 +38,7 @@ class PostgresUnitOfWork:
         self.privacy: PrivacyRepositoryProtocol
         self.temporal: TemporalRepositoryProtocol
         self.workflows: WorkflowRunRepositoryProtocol
+        self.identities: IdentityRepositoryProtocol
         self.mutations: PostgresMutationLogRepository
 
     def __enter__(self) -> PostgresUnitOfWork:
@@ -47,6 +50,7 @@ class PostgresUnitOfWork:
         self.privacy = PostgresPrivacyRepository(self._connection)
         self.temporal = PostgresTemporalRepository(self._connection)
         self.workflows = PostgresWorkflowRunRepository(self._connection)
+        self.identities = PostgresExternalIdentityRepository(self._connection)
         self.mutations = PostgresMutationLogRepository(self._connection)
         return self
 

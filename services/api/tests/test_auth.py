@@ -59,8 +59,9 @@ def test_missing_auth_header_is_rejected_with_structured_error() -> None:
     response = client.post("/v1/activities", json=activity_payload())
 
     assert response.status_code == 401
-    assert response.json()["error_code"] == "authentication_required"
+    assert response.json()["error_code"] == "auth_missing"
     assert response.json()["retryable"] is False
+    assert response.headers["WWW-Authenticate"] == "Bearer"
 
 
 def test_default_auth_mode_is_external_bearer(monkeypatch) -> None:
@@ -81,16 +82,12 @@ def test_invalid_auth_header_is_rejected_without_internal_error() -> None:
 
 def test_dev_header_auth_is_rejected_outside_development(monkeypatch) -> None:
     monkeypatch.setenv("PARALLAX_ENV", "production")
-    client = TestClient(make_app())
-
-    response = client.post(
-        "/v1/activities",
-        headers={"X-Parallax-User-Id": "00000000-0000-0000-0000-0000000000f1"},
-        json=activity_payload(),
-    )
-
-    assert response.status_code == 503
-    assert response.json()["error_code"] == "auth_provider_not_configured"
+    try:
+        make_app()
+    except RuntimeError as exc:
+        assert "dev_header" in str(exc)
+    else:
+        raise AssertionError("expected production dev_header startup guard")
 
 
 def test_external_bearer_auth_accepts_signed_jwt_in_production(monkeypatch) -> None:

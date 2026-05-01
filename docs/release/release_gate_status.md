@@ -17,7 +17,7 @@ silently absent at the API boundary.
 | `backup_restore` | proof-required | `scripts/release_backup_restore_drill.py` restores the logical PostgreSQL dump into a throwaway database and restores object bytes into a separate restore namespace. |
 | `privacy_export_delete_redact` | proof-required | `scripts/privacy_lifecycle_smoke.py` proves export/delete/redact enqueue durable workflows and worker completion mutates or reports source and derived lifecycle scope. |
 | `performance_slo` | proof-required | `scripts/release_slo_smoke.py` exercises health, readiness, activity, timing, context, and extraction hot paths with p95 reporting. |
-| `production_auth_provider` | proof-required | `scripts/release_auth_provider_probe.py` requires a real bearer token from the configured provider and proves authenticated runtime access. |
+| `production_auth_provider` | proof-required | `scripts/release_auth_provider_probe.py` requires a real Firebase ID token, or mints one from release Firebase credentials, and proves authenticated runtime access. |
 | `production_log_privacy_scan` | proof-required | `scripts/release_log_privacy_scan.py` proves representative sensitive payloads do not appear in structured errors or normal app logs. |
 | `deployed_commit_parity` | proof-required | `scripts/verify_gpu_commit_parity.sh` checks `/tank/repos/parallax` against the audited Git SHA before GPU runtime evidence is accepted. |
 
@@ -35,3 +35,13 @@ the live bearer-auth provider probe, privacy lifecycle smoke, SLO smoke, privacy
 log scan, or real backup/restore drill cannot be executed successfully for the
 current release candidate. A ready release must also publish a commit-matched
 evidence JSON artifact with non-empty evidence for every gate.
+
+For Firebase auth mode, the release auth provider probe accepts a fresh token in
+`PARALLAX_RELEASE_BEARER_TOKEN`. If that is absent, it mints a short-lived token
+using `PARALLAX_FIREBASE_WEB_API_KEY`, `PARALLAX_RELEASE_FIREBASE_EMAIL`, and
+`PARALLAX_RELEASE_FIREBASE_PASSWORD`. Those values must come from secret
+storage. The probe never writes ID tokens, refresh tokens, App Check tokens,
+service-account JSON, raw Firebase UID, or raw email to release evidence. When
+App Check enforce mode is configured, pass a fresh production App Check token in
+`PARALLAX_RELEASE_APP_CHECK_TOKEN`; debug-provider App Check tokens are allowed
+only in non-production Firebase projects.

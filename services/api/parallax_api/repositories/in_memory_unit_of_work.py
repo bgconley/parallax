@@ -7,6 +7,7 @@ from typing import Literal
 
 from .activity_repository import ActivityRepository
 from .context_repository import ContextRepository
+from .identity_repository import IdentityRepository
 from .memory import InMemoryMutationLogRepository, InMemoryStore
 from .mutation_log import MutationLogRepository
 from .privacy_repository import PrivacyRepository
@@ -16,6 +17,7 @@ from .timing_repository import TimingRepository
 from .unit_of_work import (
     ActivityRepositoryProtocol,
     ContextRepositoryProtocol,
+    IdentityRepositoryProtocol,
     PrivacyRepositoryProtocol,
     ProfileRepositoryProtocol,
     TemporalRepositoryProtocol,
@@ -26,6 +28,7 @@ from .workflow_repository import WorkflowRunRepository
 
 
 class InMemoryUnitOfWork:
+    identities: IdentityRepositoryProtocol
     activities: ActivityRepositoryProtocol
     timing: TimingRepositoryProtocol
     profiles: ProfileRepositoryProtocol
@@ -38,6 +41,7 @@ class InMemoryUnitOfWork:
     def __init__(self, store: InMemoryStore) -> None:
         self._store = store
         self._rollback_snapshot: InMemoryStore | None = None
+        self.identities = IdentityRepository(store)
         self.activities = ActivityRepository(store)
         self.timing = TimingRepository(store)
         self.profiles = ProfileRepository(store)

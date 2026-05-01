@@ -7,6 +7,7 @@ from collections.abc import Callable
 from uuid import UUID, uuid4
 
 import httpx
+from release_auth_helpers import release_auth_headers
 
 
 def main() -> int:
@@ -16,10 +17,15 @@ def main() -> int:
     parser.add_argument("--p95-ms", type=float, default=750.0)
     parser.add_argument("--user-id", default="00000000-0000-0000-0000-0000000000a1")
     parser.add_argument("--bearer-token")
+    parser.add_argument("--app-check-token")
     args = parser.parse_args()
 
     user_id = UUID(args.user_id)
-    headers = _auth_headers(user_id, args.bearer_token)
+    headers = release_auth_headers(
+        fallback_user_id=user_id,
+        bearer_token=args.bearer_token,
+        app_check_token=args.app_check_token,
+    )
     latencies: list[tuple[str, float]] = []
 
     with httpx.Client(base_url=args.api_url, timeout=10.0) as client:
@@ -40,12 +46,6 @@ def main() -> int:
         f"slowest={slowest[0]}:{slowest[1]:.2f}ms"
     )
     return 0 if p95 <= args.p95_ms else 1
-
-
-def _auth_headers(user_id: UUID, bearer_token: str | None) -> dict[str, str]:
-    if bearer_token:
-        return {"Authorization": f"Bearer {bearer_token}"}
-    return {"X-Parallax-User-Id": str(user_id)}
 
 
 def _create_timed_annotation(

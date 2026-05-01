@@ -29,8 +29,15 @@ def test_baseline_migration_discovery_excludes_optional_profiles() -> None:
         "0008",
         "0011",
         "0014",
+        "0015",
     ]
     assert all("optional_profiles" not in path.as_posix() for path in migrations)
+
+
+def test_prototype_compose_passes_documented_firebase_credentials_json_setting() -> None:
+    compose = (ROOT / "infra/compose/docker-compose.parallax.prototype.yml").read_text()
+
+    assert "PARALLAX_FIREBASE_CREDENTIALS_JSON" in compose
 
 
 def test_runtime_workflow_types_are_canonical_contract_names() -> None:

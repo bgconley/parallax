@@ -17,11 +17,14 @@ profile in numeric order:
 8. `0008_jobs_sync_model_audit.sql`
 9. `0011_capture_context_geospatial_sensor_fusion.sql` when implementing v1.3 context phases
 10. `0014_timing_review_flags.sql` when implementing context/anomaly review prompts
-11. Dev only: `9999_seed_dev_data.sql`
+11. `0015_firebase_external_identity.sql` when enabling Firebase Auth private-alpha identity
+12. Dev only: `9999_seed_dev_data.sql`
 
 Core timing and review features require migrations 0001–0006 and 0008.
 Context-aware v1.3 features require 0011 after the core timing/event tables are
-available, then 0014 for persisted review prompts. Retrieval/Ask can begin with native PostgreSQL FTS in 0007; the
+available, then 0014 for persisted review prompts. Firebase-backed private-alpha
+auth requires 0015 for durable external identity mapping, invite/provisioning
+metadata, and deleted-identity tombstones. Retrieval/Ask can begin with native PostgreSQL FTS in 0007; the
 pgvector embedding tables self-skip unless the `vector` extension is available
 and can be enabled. pgvector, TimescaleDB, ParadeDB, PostGIS, and the Timescale
 capture-context profile are optional profiles and must not be required for the
@@ -71,6 +74,8 @@ Rollback notes are in `database/rollback/README.md`. For private alpha and later
 
 - `0011_capture_context_geospatial_sensor_fusion.sql` adds capture context snapshots, user places, geospatial observations, radio observations, device context observations, inferred place observations, and temporal feature vectors.
 - `0014_timing_review_flags.sql` adds durable review flags for possible forgotten timers, context-quality issues, and anomaly prompts.
+- `0015_firebase_external_identity.sql` adds Firebase external identity mapping,
+  alpha invite metadata, and deleted identity tombstones for private-alpha auth.
 - `optional_profiles/0012_postgis_optional_geospatial_profile.sql` is optional. It adds PostGIS geography columns and GiST indexes for place/radius queries.
 - `optional_profiles/0013_timescale_capture_context_profile.sql` is optional. It adds TimescaleDB shadow metric tables for high-volume context analytics.
 

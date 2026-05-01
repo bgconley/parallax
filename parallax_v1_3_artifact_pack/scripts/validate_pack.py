@@ -30,6 +30,7 @@ REQUIRED = [
     "contracts/json_schema/timing_review_flag.schema.json",
     "contracts/design/design_tokens.json",
     "database/migrations/0014_timing_review_flags.sql",
+    "database/migrations/0015_firebase_external_identity.sql",
     "database/optional_profiles/0009_timescale_optional_analytics_profile.sql",
     "database/optional_profiles/0010_paradedb_optional_search_profile.sql",
     "database/optional_profiles/0012_postgis_optional_geospatial_profile.sql",
@@ -128,7 +129,20 @@ def main(argv: list[str] | None = None) -> int:
             errors.append(f"python parse failure: {p.relative_to(ROOT)}: {exc}")
 
     sql_files = sorted((ROOT / "database/migrations").glob("*.sql"))
-    expected_prefixes = ["0001","0002","0003","0004","0005","0006","0007","0008","0011","0014","9999"]
+    expected_prefixes = [
+        "0001",
+        "0002",
+        "0003",
+        "0004",
+        "0005",
+        "0006",
+        "0007",
+        "0008",
+        "0011",
+        "0014",
+        "0015",
+        "9999",
+    ]
     found_prefixes = [p.name[:4] for p in sql_files]
     for prefix in expected_prefixes:
         if prefix not in found_prefixes:

@@ -2,6 +2,7 @@
 
 PARALLAX_HOST_DATABASE_URL ?= postgresql://parallax:parallax_dev_password@127.0.0.1:15432/parallax
 PARALLAX_API_URL ?= http://127.0.0.1:18000
+RELEASE_PROOF_DIR ?= .release-gate-proofs
 
 validate:
 	python3 parallax_v1_3_artifact_pack/scripts/validate_pack.py --skip-zip-check
@@ -24,13 +25,14 @@ release-status:
 	uv run python scripts/release_gate_status.py --summary
 
 release-gate:
-	scripts/verify_gpu_commit_parity.sh
-	uv run python scripts/release_auth_provider_probe.py --api-url "$(PARALLAX_API_URL)" --bearer-token "$$PARALLAX_RELEASE_BEARER_TOKEN" --app-check-token "$$PARALLAX_RELEASE_APP_CHECK_TOKEN"
-	uv run python scripts/privacy_lifecycle_smoke.py --api-url "$(PARALLAX_API_URL)" --database-url "$(PARALLAX_HOST_DATABASE_URL)" --bearer-token "$$PARALLAX_RELEASE_BEARER_TOKEN" --app-check-token "$$PARALLAX_RELEASE_APP_CHECK_TOKEN"
-	uv run python scripts/release_slo_smoke.py --api-url "$(PARALLAX_API_URL)" --bearer-token "$$PARALLAX_RELEASE_BEARER_TOKEN" --app-check-token "$$PARALLAX_RELEASE_APP_CHECK_TOKEN"
-	uv run python scripts/release_log_privacy_scan.py --api-url "$(PARALLAX_API_URL)" --bearer-token "$$PARALLAX_RELEASE_BEARER_TOKEN" --app-check-token "$$PARALLAX_RELEASE_APP_CHECK_TOKEN"
-	uv run python scripts/release_backup_restore_drill.py --database-url "$(PARALLAX_HOST_DATABASE_URL)" --object-root "$${PARALLAX_OBJECTS_DIR:-/srv/parallax/objects}" --restore-root "$${PARALLAX_RESTORE_DRILL_ROOT:-/srv/parallax/backups/release-restore-drill}"
-	uv run python scripts/write_release_gate_evidence.py
+	uv run python scripts/clear_release_gate_proofs.py --proof-dir "$(RELEASE_PROOF_DIR)"
+	uv run python scripts/record_release_gate.py --gate deployed_commit_parity --proof-dir "$(RELEASE_PROOF_DIR)" -- scripts/verify_gpu_commit_parity.sh
+	uv run python scripts/record_release_gate.py --gate production_auth_provider --proof-dir "$(RELEASE_PROOF_DIR)" -- uv run python scripts/release_auth_provider_probe.py --api-url "$(PARALLAX_API_URL)" --bearer-token "$$PARALLAX_RELEASE_BEARER_TOKEN" --app-check-token "$$PARALLAX_RELEASE_APP_CHECK_TOKEN"
+	uv run python scripts/record_release_gate.py --gate privacy_export_delete_redact --proof-dir "$(RELEASE_PROOF_DIR)" -- uv run python scripts/privacy_lifecycle_smoke.py --api-url "$(PARALLAX_API_URL)" --database-url "$(PARALLAX_HOST_DATABASE_URL)" --bearer-token "$$PARALLAX_RELEASE_BEARER_TOKEN" --app-check-token "$$PARALLAX_RELEASE_APP_CHECK_TOKEN"
+	uv run python scripts/record_release_gate.py --gate performance_slo --proof-dir "$(RELEASE_PROOF_DIR)" -- uv run python scripts/release_slo_smoke.py --api-url "$(PARALLAX_API_URL)" --bearer-token "$$PARALLAX_RELEASE_BEARER_TOKEN" --app-check-token "$$PARALLAX_RELEASE_APP_CHECK_TOKEN"
+	uv run python scripts/record_release_gate.py --gate production_log_privacy_scan --proof-dir "$(RELEASE_PROOF_DIR)" -- uv run python scripts/release_log_privacy_scan.py --api-url "$(PARALLAX_API_URL)" --bearer-token "$$PARALLAX_RELEASE_BEARER_TOKEN" --app-check-token "$$PARALLAX_RELEASE_APP_CHECK_TOKEN"
+	uv run python scripts/record_release_gate.py --gate backup_restore --proof-dir "$(RELEASE_PROOF_DIR)" -- uv run python scripts/release_backup_restore_drill.py --database-url "$(PARALLAX_HOST_DATABASE_URL)" --object-root "$${PARALLAX_OBJECTS_DIR:-/srv/parallax/objects}" --restore-root "$${PARALLAX_RESTORE_DRILL_ROOT:-/srv/parallax/backups/release-restore-drill}"
+	uv run python scripts/write_release_gate_evidence.py --proof-dir "$(RELEASE_PROOF_DIR)"
 
 release-slo:
 	uv run python scripts/release_slo_smoke.py --api-url "$(PARALLAX_API_URL)"

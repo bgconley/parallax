@@ -1,6 +1,7 @@
 .DS_Store
 .env
 .firecrawl/
+.release-gate-proofs/
 .venv/
 __pycache__/
 .pytest_cache/

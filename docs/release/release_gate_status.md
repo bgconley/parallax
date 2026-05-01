@@ -5,7 +5,10 @@ release readiness: blocked
 This document describes the Parallax release/private-alpha gates. The
 machine-readable gate state lives in `docs/release/release_gate_evidence.json`;
 `make release-status` reads that evidence file and treats missing, stale, or
-evidence-free passed gates as blocked.
+evidence-free passed gates as blocked. `make release-gate` records a structured
+proof artifact for each gate under `.release-gate-proofs/` before it writes the
+final evidence JSON; the writer refuses to mark release readiness ready when any
+gate proof is missing, stale, malformed, or for another commit.
 The canonical v1.3 API surface is now exposed by runtime routes; later product
 depth still follows the phased implementation plan, but no canonical endpoint is
 silently absent at the API boundary.
@@ -33,8 +36,9 @@ uv run python scripts/release_gate_status.py --summary
 `make release-gate` is intentionally proof-based. It fails if GPU commit parity,
 the live bearer-auth provider probe, privacy lifecycle smoke, SLO smoke, privacy
 log scan, or real backup/restore drill cannot be executed successfully for the
-current release candidate. A ready release must also publish a commit-matched
-evidence JSON artifact with non-empty evidence for every gate.
+current release candidate. Each proof command must emit a sanitized, structured
+proof artifact for the current commit. A ready release must also publish a
+commit-matched evidence JSON artifact with non-empty evidence for every gate.
 
 For Firebase auth mode, the release auth provider probe accepts a fresh token in
 `PARALLAX_RELEASE_BEARER_TOKEN`. If that is absent, it mints a short-lived token

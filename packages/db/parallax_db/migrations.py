@@ -13,6 +13,8 @@ BASELINE_MIGRATION_PREFIXES = (
     "0011",
     "0014",
     "0015",
+    "0016",
+    "0017",
 )
 
 

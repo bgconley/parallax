@@ -54,7 +54,7 @@ def test_phase_docs_record_compose_derivation_and_phase_boundary() -> None:
 
     assert "implementation derivative of the canonical prototype Compose file" in phase0_doc
     assert (
-        "Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 are complete"
+        "Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 are complete"
         in agents_doc
     )
     assert "runtime exposes the canonical" in readme

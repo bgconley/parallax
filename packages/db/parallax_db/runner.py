@@ -37,6 +37,7 @@ def current_schema_smoke_checks() -> list[SchemaSmokeCheck]:
         *(_table_check(name) for name in _PHASE3_TABLES),
         *(_table_check(name) for name in _PHASE4_TABLES),
         *(_table_check(name) for name in _PHASE5_TABLES),
+        *(_table_check(name) for name in _PHASE6_TABLES),
         *(_table_check(name) for name in _AUTH_TABLES),
         *(_enum_check(name) for name in _PHASE3_ENUMS),
         *(_enum_check(name) for name in _PHASE4_ENUMS),
@@ -216,6 +217,10 @@ _PHASE5_TABLES = (
     "start_latency_observation",
     "transition_observation",
     "temporal_feature_vector",
+)
+
+_PHASE6_TABLES = (
+    "activity_identity_change",
 )
 
 _AUTH_TABLES = (

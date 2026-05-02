@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/ResourceDependency.schema.json",
+  "title": "ResourceDependency",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "activity_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "resource_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "required_state": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "usual_location": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "failure_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "median_delay_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "p80_delay_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "suggest_precheck": {
+      "type": "boolean"
+    },
+    "last_failed_at": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/date_time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_from_event_id": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "$ref": "#/$defs/date_time"
+    },
+    "updated_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "activity_id",
+    "resource_name",
+    "failure_count",
+    "suggest_precheck",
+    "created_at",
+    "updated_at"
+  ]
+}

@@ -1,17 +1,20 @@
 # Parallax v1.3 artifact manifest
 # path | size_bytes | sha256
 AGENT_START_HERE.md | 5108 | 20edc8fac74b070d9410dee90feca5b1d99ae5a77d76fd56264fb387639f393e
-CHECKSUMS.sha256 | 13428 | ba344e5df5cea557bc629c39d463e6da0114aa4df19fc148ceecf606db3b9afc
+CHECKSUMS.sha256 | 14176 | 09dba798be66d5eda044c7bb74c5498b04ca0e747c37addd2ef80b6e80fdf9ad
 README.md | 5781 | 4f68f25cd4dd3e37f898880241e4183b629f68c6b97b385744ae1dec2ba526d5
 VALIDATION_REPORT.md | 8713 | 57b97f27bd1dc3e03a88be951b185bd146892bb06e50f80402e59955434adb61
 VERSION.txt | 62 | fba401cc86d6fd87a4b83effa8c2b426336b69cfb8665ff5c5a33b7e0ba9965e
 contracts/design/README.md | 356 | 847e3cc2d9e962f2d3925779cd0b37901c91f343b9b4f53464ba65d143cadacc
 contracts/design/design_tokens.css | 3518 | 8bed1687c4b629d58637a300705ba51bb59c6185ae4684df808fcc69c71974f8
 contracts/design/design_tokens.json | 5463 | d749fbbae353c103833472329be18df02fd45b3da15c789002083b0a92f7f961
-contracts/events/parallax_event_contracts_v1_3.yaml | 5328 | edfcbc0390ffdc2e28e77dd3cb51173f7b4c03f3981f8db86901aa7d6bf6f7f7
-contracts/jobs/parallax_workflows_v1_3.yaml | 6322 | 61e0e38bc2dea5479b78fc2fa494bb92742d8e487e08e0c33d40028e747eb74d
+contracts/events/parallax_event_contracts_v1_3.yaml | 6047 | 6cb414402479dce669e07e3013c4ae7c922022515f57393294e84a70b006ec32
+contracts/jobs/parallax_workflows_v1_3.yaml | 6452 | c219c58ab99f9fca4aeb298bb67b907a64e493cc30b0962a07f5444868cc8d61
 contracts/json_schema/activity.schema.json | 6812 | 17a8a93c37e3aa747399d8fa481fe3cbe70cd77ff5a0ff5e6fe23553a8f0532c
+contracts/json_schema/activity_alias.schema.json | 1273 | fcfe1c72c0df0eaef0c518523eb4769945cf939149259e8dbdf0b8ab57b2c0eb
+contracts/json_schema/activity_identity_change.schema.json | 1121 | b6d2bc5fdcf94bdf1b4d066115539df749b8b0f1835419efe8069e667dff75b4
 contracts/json_schema/activity_profile.schema.json | 58329 | 9a248d0a3d257f1f7f282f9fc15e81d429082f88e02ad3f0678b3f46d9314f5f
+contracts/json_schema/activity_relationship.schema.json | 1355 | d33064e6fd3d07013f51e836f8ce429653777a6f845ddba9075899b8a52a457f
 contracts/json_schema/capture_context_snapshot.schema.json | 3809 | bc8c6509a48910f807a5d21a0f7753802f7299482371a3e1cd4f530266acf37a
 contracts/json_schema/common.schema.json | 8827 | ad1732d462e6098366652128d3c033e63345f622e0553d4bf0ef06968a37b322
 contracts/json_schema/context_capture_policy.schema.json | 1949 | 1160f7028c54fc7e3229dece947d3b1cbf7dcf1d1518dc352a016448a566854d
@@ -21,9 +24,10 @@ contracts/json_schema/geospatial_observation.schema.json | 2149 | edfc8687fe671f
 contracts/json_schema/inferred_place_observation.schema.json | 1580 | 9322fe17b0767203f332c40f015650d9245b120a05c104a8a01982bff329b9dd
 contracts/json_schema/model_update_decision.schema.json | 6558 | 57e70a7b874322df6cab91317e59aab34fa9178790a8f6c72600623da52dbe04
 contracts/json_schema/mutation_envelope.schema.json | 6338 | e8f953c8da8938130924ff51aeace8630d50546d3989714fe48be3328eb54ed6
-contracts/json_schema/preflight_check.schema.json | 6921 | 60c035c57d87c775deaae2e811013812d26168e8d233b1987ac70abacc924a71
+contracts/json_schema/preflight_check.schema.json | 7796 | 791c631f9122232293b42a9ccc9e0493e768b6b31c8d18a538b7eb7c93ef15a5
 contracts/json_schema/privacy_settings.schema.json | 6885 | e6894b63b9f4c589da27f4e3dc05d4d73c54fa95fd566e733b5f6d081ba77351
 contracts/json_schema/radio_observation.schema.json | 2380 | c8122f53651e9dad1a1eca679288fef6922114408c9bad1adabca4c0ce994f1a
+contracts/json_schema/resource_dependency.schema.json | 1791 | 17434abe434db9950af774742ca1be16297806887902b39020f53dcf8e988e30
 contracts/json_schema/temporal_context_annotation.schema.json | 7893 | f5534f0c74e0d593810e8e0bf96e2f3db9092ef9c84f5ecb5c4415215602792d
 contracts/json_schema/temporal_feature_vector.schema.json | 1902 | 1ff9e1c4f119ae0bf9dcbb426f17a6f11368ecef4b383d9dc72bc1f3775c95ee
 contracts/json_schema/temporal_prediction.schema.json | 7565 | 6868fbc0e4c0657fad1ecce3359891ed116565a6eae752fd7f5b23c01142a37c
@@ -34,9 +38,9 @@ contracts/json_schema/timing_review_flag.schema.json | 1714 | df2998c9e86d0373f2
 contracts/json_schema/timing_session.schema.json | 27248 | fc95c965689f74663eb97d8f9d0b3784ad336e11a219ba94949ae8c0d4d74148
 contracts/json_schema/user_place.schema.json | 1673 | 29a4a1d84238e3164031247e0f1346792a4d73955ffa7184b8843348c7a43c82
 contracts/json_schema/workflow_payloads.schema.json | 6671 | 8c6bdbecb0bd3749bd0a62aec406576b506bfeb16a8950dd808e8527c736857f
-contracts/openapi/parallax_api_v1_3.yaml | 131466 | 433bd28055c975a9a1f614783c89d03633052d31f0125361489f1a418aab3780
+contracts/openapi/parallax_api_v1_3.yaml | 147557 | 43c0fe1773e371835bfd86f4d6ecd104f34ec6071943ad07883e6e6955d8301d
 contracts/pydantic/parallax_contracts_v1_3.py | 23472 | e167dad3f103fd4fc308fb7209ed095c13cd69ef9ff931e41fa7edd69a093d33
-database/README.md | 4405 | edcb20022bf8b700b1426151f8eed47dda8b1e0aaa1e92f64088fd7ee0a7cf0b
+database/README.md | 4846 | 225714833e4fd48bd68f037d2b5e5ffe7c3fa25fb876531c450368bca5f1f1c0
 database/migrations/0001_extensions_and_enums.sql | 4185 | e53fda6c34e3cebcd2fe117742ba0380fa1fe9e38c50a3535ce48cfd549d086c
 database/migrations/0002_identity_privacy_audit.sql | 2374 | 5445e1fcb6ca6f22f56ad626d88cb5e5df15171964f076955b110f5d2ebe4b30
 database/migrations/0003_activity_identity.sql | 2481 | ff656d3ab63f18b0819d6cef1aa3b225efff50e7902777cc2fe946478abf19d5
@@ -48,6 +52,8 @@ database/migrations/0008_jobs_sync_model_audit.sql | 4004 | f0137423eec14b6e06ee
 database/migrations/0011_capture_context_geospatial_sensor_fusion.sql | 13257 | 025b4a9f579c26a10a2863dff317b698da87cb436d93a6af4dc2192bc71f272d
 database/migrations/0014_timing_review_flags.sql | 1599 | 8ad1f7c46183121dbfdee51858e3525b4a750a3528d9b2854a6d2d2a279e840e
 database/migrations/0015_firebase_external_identity.sql | 1859 | 8844172150a2d1140347c31a3c5f85aae8468f4e17eb86536c9092f7a3140b31
+database/migrations/0016_activity_identity_preflight_decisions.sql | 2224 | 0b39b99e5b035869945dc33b631be4422cc67dfa7c03ca9ff8b0916ba464da26
+database/migrations/0017_resource_dependency_event_idempotency.sql | 418 | 1de2fc29000c1c306cf974eaf57463a756a9c30889471a32f1717a3c1a562de3
 database/migrations/9999_seed_dev_data.sql | 1018 | 8d540fe71559e5ebf7d679ca166a5cd9aae99afb7cb750210f9380ebfb15e64d
 database/optional_profiles/0009_timescale_optional_analytics_profile.sql | 2176 | 5b18a6f2e61c2668c3c0c2e47c791f2d3616af93dbba69a76850e0d71eea8e45
 database/optional_profiles/0010_paradedb_optional_search_profile.sql | 429 | 45c610df4d68a00e9dbf6c9cc3616fa0a500e94abf8f91418d42dcec4b4d5afe
@@ -63,7 +69,7 @@ database/rollback/README.md | 870 | 236aadfc36337dc84d50b811db394c028a0d82972abe
 docs/00_pack_summary.md | 3589 | 93b046a54e140246d07d9191a96ba95b5c218b63e3bd5f3e5177fc9b3c9667d7
 docs/01_app_system_spec.md | 9730 | 8a0dfbaac4da11ce11dcb3515ccdd913ee33bba7fe2e468cb106de5908f664d5
 docs/02_temporal_domain_model.md | 13562 | 481df6068929abc7b937ab313c2edf18563c7bf37190fd14797e24cfd7e921ae
-docs/03_phased_implementation_plan.md | 17186 | b34f1bbd4545ba3a20c589cc21e8e423fd0e14c2a256743a2f2e8502ed01079d
+docs/03_phased_implementation_plan.md | 17455 | 7777feb057d6ef5c9e09146b9155c4b74530b22dd4fff97cf5654e4d8dc6eb78
 docs/04_user_stories_acceptance_criteria.md | 10848 | 0ae11f389018ecbccfdc9891cab1bd325b58e73e4b77bdb33370c3ee5f6e343f
 docs/05_design_language_figma_handoff.md | 9390 | 55141aef7c5c8149f2dd615c51de84ff7d2fb5cc9ff9cd6a8a3dfce44472e531
 docs/06_architecture_runtime.md | 6165 | 6760c4997493f4bf80133f52cd016cb32f8c0361a19d6a246b62cafc55224f1b
@@ -83,7 +89,7 @@ docs/19_capture_workflows_and_sensor_fusion.md | 8751 | 72600fbeb5af8369fca295cf
 docs/20_mobile_location_radio_privacy_reference.md | 6599 | 004125ec0608a11223cae6a420adee114598e5471abae87094cfb968610b714d
 docs/21_current_platform_and_extension_references.md | 2733 | 87f691ff2f062f4977d7400d6ef2522196da984dbb574169b704e88c809e8de9
 docs/22_v1_3_gap_closure_summary.md | 6303 | 67aeb4f4e658ce422817bf371b9059b5d59dbc9b8aedb474c6ba32b4e9d65e60
-docs/23_agentic_implementation_guardrails.md | 6511 | a8672b29c729f51c4415b18b1f3d24536b2dae53c78669c4fe6883e99cb5867b
+docs/23_agentic_implementation_guardrails.md | 6638 | 427bdbc4eb459b2379f92484e3c367f4131aac707fe56f6a42c98705ef4a8154
 examples/payloads/sample_activity_profile_response.json | 1521 | e312ed4bb55f1e7108b10cb99823e95723a2ff7d247099cd98c6903399c3172c
 examples/payloads/sample_capture_context_snapshot.json | 4113 | 48ed624a71002779fdce756b65831e3d25791b34aaa88a252013d927bc496d32
 examples/payloads/sample_context_capture_policy.json | 606 | 82575b8b15b53ecdcb341fb53cad3141716d6ac2caddd3fe1f4cfd3d652a947d
@@ -108,7 +114,7 @@ infrastructure/zfs/create_parallax_datasets.sh | 1166 | 5b052c156684d7d1f7126322
 infrastructure/zfs/zfs_dataset_plan.md | 1498 | f0238a8150eaa9a06554604c62a207c1fe00245ae9b2319be523feb19c316f21
 scripts/bootstrap_dev.sh | 406 | 24c814d4b6ae16645a4becb69cdc553991c629a1a8d5bebd06af97c41bd8f7ac
 scripts/generate_manifest.py | 824 | 4684eaca16630d298885b030dbda0a28671eeb5b8cd7a91ebd36cba493f59875
-scripts/validate_pack.py | 10025 | 844ffcd8f44308758ab4fa35664414b00d1039676a7837ba52e8bdc6d47dbe70
+scripts/validate_pack.py | 10164 | a73739ae69ea812433e22548766a9cfef82ea6c23b8b8fd7b72c7fb3e15ba54b
 source_inputs/source_alignment_summary.md | 1973 | 4538e0292737883b7dc9227eb97f6a5c40cd8652709f9c7917579c77f74daf58
 tests_or_eval/accessibility_checklist.md | 428 | b663d43e7074742baad00694243f7debbd17a330c43ae2a06f8af67603629b51
 tests_or_eval/capture_workflow_scenario_matrix.csv | 737 | e5154e6f62d7611299961466546e0168f676e7e6c4cfff335c6e786f2000cc5b

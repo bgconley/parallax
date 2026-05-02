@@ -110,7 +110,10 @@ def extract_annotation_candidate(
     assert response.status_code == 202
     assert response.json()["status"] == "queued"
     drain_one_workflow(store)
-    return next(iter(store.extracted_events.values())).model_dump(mode="json")
+    for event in store.extracted_events.values():
+        if event.annotation_id == UUID(annotation_id):
+            return event.model_dump(mode="json")
+    raise AssertionError(f"no extracted event found for annotation {annotation_id}")
 
 
 def test_sponge_detour_extraction_creates_candidate_without_mutating_source_timing() -> None:

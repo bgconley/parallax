@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from ..schemas.activity import CreateActivityRequest
 from ..schemas.activity_metadata import (
+    ActivityMergeRequest,
     AddActivityAliasRequest,
     CreateActivityRelationshipRequest,
     CreatePreflightCheckRequest,
+    DecideActivityAliasRequest,
+    DecideActivityRelationshipRequest,
+    DecidePreflightCheckRequest,
     PutCheckpointsRequest,
 )
 from ..schemas.context import CreateAnnotationRequest, CreateCaptureContextSnapshotRequest
@@ -49,10 +53,46 @@ SUPPORTED_MUTATING_OPERATIONS: dict[str, OperationSpec] = {
         AddActivityAliasRequest,
         "activity_id",
     ),
+    "decide_activity_alias": OperationSpec(
+        "decide_activity_alias",
+        ("/v1/activities/", "/aliases/", "/decision"),
+        DecideActivityAliasRequest,
+        ("activity_id", "alias_id"),
+    ),
+    "decideActivityAlias": OperationSpec(
+        "decide_activity_alias",
+        ("/v1/activities/", "/aliases/", "/decision"),
+        DecideActivityAliasRequest,
+        ("activity_id", "alias_id"),
+    ),
     "create_activity_relationship": OperationSpec(
         "create_activity_relationship",
         ("/v1/activities/", "/relationships"),
         CreateActivityRelationshipRequest,
+        "activity_id",
+    ),
+    "decide_activity_relationship": OperationSpec(
+        "decide_activity_relationship",
+        ("/v1/activities/", "/relationships/", "/decision"),
+        DecideActivityRelationshipRequest,
+        ("activity_id", "relationship_id"),
+    ),
+    "decideActivityRelationship": OperationSpec(
+        "decide_activity_relationship",
+        ("/v1/activities/", "/relationships/", "/decision"),
+        DecideActivityRelationshipRequest,
+        ("activity_id", "relationship_id"),
+    ),
+    "merge_activities": OperationSpec(
+        "merge_activities",
+        ("/v1/activities/", "/merge"),
+        ActivityMergeRequest,
+        "activity_id",
+    ),
+    "mergeActivities": OperationSpec(
+        "merge_activities",
+        ("/v1/activities/", "/merge"),
+        ActivityMergeRequest,
         "activity_id",
     ),
     "createActivityRelationship": OperationSpec(
@@ -84,6 +124,18 @@ SUPPORTED_MUTATING_OPERATIONS: dict[str, OperationSpec] = {
         ("/v1/activities/", "/preflight-checks"),
         CreatePreflightCheckRequest,
         "activity_id",
+    ),
+    "decide_preflight_check": OperationSpec(
+        "decide_preflight_check",
+        ("/v1/activities/", "/preflight-checks/", "/decision"),
+        DecidePreflightCheckRequest,
+        ("activity_id", "check_id"),
+    ),
+    "decidePreflightCheck": OperationSpec(
+        "decide_preflight_check",
+        ("/v1/activities/", "/preflight-checks/", "/decision"),
+        DecidePreflightCheckRequest,
+        ("activity_id", "check_id"),
     ),
     "create_timing_session": OperationSpec(
         "create_timing_session", ("/v1/timing/sessions",), CreateTimingSessionRequest

@@ -230,23 +230,145 @@ class PostgresContextExtractionRepository:
         activity_id: UUID,
         source_event: ExtractedContextEvent,
     ) -> None:
-        if not source_event.suggested_preflight_text:
+        if not source_event.suggested_preflight_text and not source_event.resource_name:
             return
         with self._connection.cursor() as cursor:
+            if source_event.suggested_preflight_text:
+                cursor.execute(
+                    """
+                    insert into preflight_check (
+                      user_id, activity_id, check_text, state, source, confidence,
+                      source_event_id, evidence_count, evidence_summary, metadata
+                    )
+                    select %s, %s, %s, 'suggested', 'model_suggested', %s, %s, 1,
+                      '1 confirmed extracted context event', %s
+                    where not exists (
+                      select 1
+                      from preflight_check
+                      where user_id = %s
+                        and activity_id = %s
+                        and lower(check_text) = lower(%s)
+                        and state <> 'retired'
+                    )
+                    """,
+                    (
+                        user_id,
+                        activity_id,
+                        source_event.suggested_preflight_text,
+                        source_event.confidence,
+                        source_event.id,
+                        Jsonb({"span_type": source_event.span_type}),
+                        user_id,
+                        activity_id,
+                        source_event.suggested_preflight_text,
+                    ),
+                )
+            if not source_event.resource_name:
+                return
             cursor.execute(
                 """
-                insert into preflight_check (
-                  user_id, activity_id, check_text, source, confidence,
-                  source_event_id, metadata
+                insert into resource_dependency (
+                  user_id, activity_id, resource_name, failure_count,
+                  median_delay_seconds, p80_delay_seconds, suggest_precheck,
+                  last_failed_at, created_from_event_id, counted_event_ids
                 )
-                values (%s, %s, %s, 'model_suggested', %s, %s, %s)
+                values (%s, %s, %s, 1, %s, %s, false, now(), %s, ARRAY[%s::uuid])
+                on conflict (activity_id, (lower(resource_name)))
+                do update set
+                  failure_count = CASE
+                    WHEN excluded.created_from_event_id = ANY(resource_dependency.counted_event_ids)
+                      THEN resource_dependency.failure_count
+                    ELSE resource_dependency.failure_count + 1
+                  END,
+                  median_delay_seconds = CASE
+                    WHEN excluded.created_from_event_id = ANY(resource_dependency.counted_event_ids)
+                      THEN resource_dependency.median_delay_seconds
+                    ELSE excluded.median_delay_seconds
+                  END,
+                  p80_delay_seconds = CASE
+                    WHEN excluded.created_from_event_id = ANY(resource_dependency.counted_event_ids)
+                      THEN resource_dependency.p80_delay_seconds
+                    ELSE greatest(
+                      coalesce(resource_dependency.p80_delay_seconds, 0),
+                      coalesce(excluded.p80_delay_seconds, 0)
+                    )
+                  END,
+                  suggest_precheck = CASE
+                    WHEN excluded.created_from_event_id = ANY(resource_dependency.counted_event_ids)
+                      THEN resource_dependency.suggest_precheck
+                    ELSE resource_dependency.failure_count + 1 >= 2
+                  END,
+                  last_failed_at = CASE
+                    WHEN excluded.created_from_event_id = ANY(resource_dependency.counted_event_ids)
+                      THEN resource_dependency.last_failed_at
+                    ELSE now()
+                  END,
+                  counted_event_ids = CASE
+                    WHEN excluded.created_from_event_id = ANY(resource_dependency.counted_event_ids)
+                      THEN resource_dependency.counted_event_ids
+                    ELSE array_append(
+                      resource_dependency.counted_event_ids,
+                      excluded.created_from_event_id
+                    )
+                  END,
+                  updated_at = CASE
+                    WHEN excluded.created_from_event_id = ANY(resource_dependency.counted_event_ids)
+                      THEN resource_dependency.updated_at
+                    ELSE now()
+                  END
+                returning *
                 """,
                 (
                     user_id,
                     activity_id,
-                    source_event.suggested_preflight_text,
-                    source_event.confidence,
+                    source_event.resource_name,
+                    source_event.duration_seconds,
+                    source_event.duration_seconds,
                     source_event.id,
+                    source_event.id,
+                ),
+            )
+            dependency = cursor.fetchone()
+            if dependency is None or int(dependency["failure_count"]) < 2:
+                return
+            check_text = _preflight_text(cursor, activity_id, source_event)
+            cursor.execute(
+                """
+                select 1
+                from preflight_check
+                where user_id = %s
+                  and activity_id = %s
+                  and lower(check_text) = lower(%s)
+                  and state <> 'retired'
+                limit 1
+                """,
+                (user_id, activity_id, check_text),
+            )
+            if cursor.fetchone() is not None:
+                return
+            cursor.execute(
+                """
+                insert into preflight_check (
+                  user_id, activity_id, check_text, state, source, confidence,
+                  failure_count, source_event_id, source_dependency_id,
+                  evidence_count, evidence_summary, metadata
+                )
+                values (%s, %s, %s, 'suggested', 'resource_dependency', %s,
+                  %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    user_id,
+                    activity_id,
+                    check_text,
+                    source_event.confidence,
+                    dependency["failure_count"],
+                    source_event.id,
+                    dependency["id"],
+                    dependency["failure_count"],
+                    (
+                        f"{dependency['failure_count']} confirmed detours for "
+                        f"{dependency['resource_name']}"
+                    ),
                     Jsonb({"span_type": source_event.span_type}),
                 ),
             )
@@ -278,6 +400,21 @@ def _event_params(event: ExtractedContextEvent) -> tuple[object, ...]:
         Jsonb(event.source_json),
         Jsonb(event.user_correction_json),
     )
+
+
+def _preflight_text(
+    cursor: psycopg.Cursor[Any],
+    activity_id: UUID,
+    source_event: ExtractedContextEvent,
+) -> str:
+    cursor.execute("select display_name from activity where id = %s", (activity_id,))
+    row = cursor.fetchone()
+    activity_name = str(row["display_name"]).casefold() if row is not None else "the activity"
+    if activity_name.startswith("wash "):
+        activity_name = f"washing {activity_name.removeprefix('wash ')}"
+    if source_event.resource_name and source_event.resource_name.casefold() == "sponge":
+        return f"Check sponge/scrubber before {activity_name}."
+    return source_event.suggested_preflight_text or f"Check resources before {activity_name}."
 
 
 def _event_from_row(row: Mapping[str, Any]) -> ExtractedContextEvent:

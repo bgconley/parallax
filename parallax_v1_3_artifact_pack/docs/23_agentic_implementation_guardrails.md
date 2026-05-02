@@ -32,8 +32,11 @@ The first working slice is:
 ## Mutation and resolver rules
 
 - Every mutating endpoint requires `MutationEnvelope`.
-- `POST /v1/activities/resolve` and `POST /v1/places/resolve` are read-only POST
-  exceptions. They must not create aliases, places, events, jobs, or domain audit rows.
+- `POST /v1/activities/resolve`, `POST /v1/places/resolve`,
+  `POST /v1/activities/{activity_id}/merge-preview`, and
+  `POST /v1/activities/{activity_id}/split-preview` are read-only POST
+  exceptions. They must not create aliases, places, identity changes, events,
+  jobs, or domain audit rows.
 - `POST /v1/sync/push` has a top-level batch mutation envelope. Each mutating
   operation inside the batch keeps its endpoint-level mutation envelope.
 - Duplicate mutation replay returns the original result and must not create a

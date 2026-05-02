@@ -19,7 +19,12 @@ RETIRED_PATTERNS = (
     r"Temporal App",
 )
 
-READ_ONLY_POST_OPERATION_IDS = {"resolveActivity", "resolveUserPlace"}
+READ_ONLY_POST_OPERATION_IDS = {
+    "resolveActivity",
+    "resolveUserPlace",
+    "previewActivityMerge",
+    "previewActivitySplit",
+}
 
 
 @dataclass(frozen=True)

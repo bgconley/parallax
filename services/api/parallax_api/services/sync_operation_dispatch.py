@@ -9,9 +9,13 @@ from pydantic import BaseModel
 from ..repositories.unit_of_work import UnitOfWork
 from ..schemas.activity import CreateActivityRequest
 from ..schemas.activity_metadata import (
+    ActivityMergeRequest,
     AddActivityAliasRequest,
     CreateActivityRelationshipRequest,
     CreatePreflightCheckRequest,
+    DecideActivityAliasRequest,
+    DecideActivityRelationshipRequest,
+    DecidePreflightCheckRequest,
     PutCheckpointsRequest,
 )
 from ..schemas.context import CreateAnnotationRequest, CreateCaptureContextSnapshotRequest
@@ -39,10 +43,14 @@ from ..schemas.timing import (
     CreateTimingSessionRequest,
     ReviewTimingSessionRequest,
 )
-from .activity_metadata_service import (
+from .activity_identity_service import (
     add_alias_in_uow,
-    create_preflight_check_in_uow,
     create_relationship_in_uow,
+    decide_alias_in_uow,
+    decide_relationship_in_uow,
+    merge_activities_in_uow,
+)
+from .activity_metadata_service import (
     replace_checkpoints_in_uow,
 )
 from .activity_service import create_activity_in_uow
@@ -54,6 +62,10 @@ from .extraction_service import (
     confirm_extracted_event_in_uow,
     correct_extracted_event_in_uow,
     enqueue_context_annotation_workflow_in_uow,
+)
+from .preflight_learning_service import (
+    create_preflight_check_in_uow,
+    decide_preflight_check_in_uow,
 )
 from .privacy_service import (
     request_privacy_delete_in_uow,
@@ -118,12 +130,49 @@ def _apply_add_alias(uow: UnitOfWork, user_id: UUID, operation: ParsedSyncOperat
     )
 
 
+def _apply_decide_alias(uow: UnitOfWork, user_id: UUID, operation: ParsedSyncOperation) -> None:
+    decide_alias_in_uow(
+        uow,
+        user_id,
+        _require_id(operation, "activity_id"),
+        _require_id(operation, "alias_id"),
+        _require_payload(operation, DecideActivityAliasRequest),
+    )
+
+
 def _apply_relationship(uow: UnitOfWork, user_id: UUID, operation: ParsedSyncOperation) -> None:
     create_relationship_in_uow(
         uow,
         user_id,
         _require_id(operation, "activity_id"),
         _require_payload(operation, CreateActivityRelationshipRequest),
+    )
+
+
+def _apply_decide_relationship(
+    uow: UnitOfWork,
+    user_id: UUID,
+    operation: ParsedSyncOperation,
+) -> None:
+    decide_relationship_in_uow(
+        uow,
+        user_id,
+        _require_id(operation, "activity_id"),
+        _require_id(operation, "relationship_id"),
+        _require_payload(operation, DecideActivityRelationshipRequest),
+    )
+
+
+def _apply_merge_activities(
+    uow: UnitOfWork,
+    user_id: UUID,
+    operation: ParsedSyncOperation,
+) -> None:
+    merge_activities_in_uow(
+        uow,
+        user_id,
+        _require_id(operation, "activity_id"),
+        _require_payload(operation, ActivityMergeRequest),
     )
 
 
@@ -144,6 +193,20 @@ def _apply_preflight(uow: UnitOfWork, user_id: UUID, operation: ParsedSyncOperat
         user_id,
         _require_id(operation, "activity_id"),
         _require_payload(operation, CreatePreflightCheckRequest),
+    )
+
+
+def _apply_decide_preflight(
+    uow: UnitOfWork,
+    user_id: UUID,
+    operation: ParsedSyncOperation,
+) -> None:
+    decide_preflight_check_in_uow(
+        uow,
+        user_id,
+        _require_id(operation, "activity_id"),
+        _require_id(operation, "check_id"),
+        _require_payload(operation, DecidePreflightCheckRequest),
     )
 
 
@@ -325,9 +388,13 @@ def _apply_recompute_feature_vectors(
 _APPLIERS: dict[str, OperationApplier] = {
     "create_activity": _apply_create_activity,
     "add_activity_alias": _apply_add_alias,
+    "decide_activity_alias": _apply_decide_alias,
     "create_activity_relationship": _apply_relationship,
+    "decide_activity_relationship": _apply_decide_relationship,
+    "merge_activities": _apply_merge_activities,
     "replace_checkpoints": _apply_replace_checkpoints,
     "create_preflight_check": _apply_preflight,
+    "decide_preflight_check": _apply_decide_preflight,
     "create_timing_session": _apply_timing_session,
     "append_timing_event": _apply_timing_event,
     "create_timing_event_span": _apply_timing_span,

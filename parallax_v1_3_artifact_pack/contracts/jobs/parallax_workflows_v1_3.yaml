@@ -44,7 +44,8 @@ workflows:
   - emit profile recompute event
   failure_behavior: mark session needs_timeline_recompute and retry
 - name: RecomputeActivityProfileWorkflow
-  trigger: review saved, correction, alias merge, checkpoint change
+  trigger: review saved, correction, alias decision, activity merge, checkpoint change,
+    resource dependency threshold crossed
   input:
     user_id: uuid
     activity_id: uuid
@@ -53,6 +54,7 @@ workflows:
   - load reviewed sessions
   - compute robust stats
   - aggregate friction and preflight candidates
+  - aggregate resource dependencies into suggested preflight checks
   - write activity_stats_snapshot
   - refresh retrieval documents
   failure_behavior: keep previous stats snapshot and record workflow failure

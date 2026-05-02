@@ -10,9 +10,11 @@ from ..domain.identity import ExternalIdentityRecord
 from ..schemas.activity import Activity
 from ..schemas.activity_metadata import (
     ActivityAlias,
+    ActivityIdentityChange,
     ActivityRelationship,
     CheckpointTemplate,
     PreflightCheck,
+    ResourceDependency,
 )
 from ..schemas.common import MutationEnvelope
 from ..schemas.context import (
@@ -110,9 +112,12 @@ class InMemoryStore:
     activity_keys: dict[tuple[UUID, str], UUID] = field(default_factory=dict)
     activity_aliases: dict[UUID, ActivityAlias] = field(default_factory=dict)
     activity_relationships: dict[UUID, ActivityRelationship] = field(default_factory=dict)
+    activity_identity_changes: dict[UUID, ActivityIdentityChange] = field(default_factory=dict)
     checkpoint_templates: dict[UUID, CheckpointTemplate] = field(default_factory=dict)
     checkpoint_runs: dict[UUID, CheckpointRun] = field(default_factory=dict)
     preflight_checks: dict[UUID, PreflightCheck] = field(default_factory=dict)
+    resource_dependencies: dict[UUID, ResourceDependency] = field(default_factory=dict)
+    resource_dependency_event_ids: dict[UUID, set[UUID]] = field(default_factory=dict)
     sessions: dict[UUID, TimingSession] = field(default_factory=dict)
     session_events: dict[UUID, list[TimingEvent]] = field(default_factory=dict)
     session_spans: dict[UUID, list[TimingEventSpan]] = field(default_factory=dict)

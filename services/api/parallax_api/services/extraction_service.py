@@ -449,6 +449,6 @@ def _apply_confirmed_event(
     session = uow.timing.get_session(user_id, event.session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="timing session not found")
-    if event.suggested_preflight_text:
+    if event.suggested_preflight_text or event.resource_name:
         uow.contexts.create_preflight_check(user_id, session.activity_id, event)
     uow.profiles.recompute_activity_stats(user_id, session.activity_id)

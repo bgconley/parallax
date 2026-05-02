@@ -141,6 +141,8 @@ def main(argv: list[str] | None = None) -> int:
         "0011",
         "0014",
         "0015",
+        "0016",
+        "0017",
         "9999",
     ]
     found_prefixes = [p.name[:4] for p in sql_files]
@@ -172,7 +174,12 @@ def main(argv: list[str] | None = None) -> int:
     if yaml is not None:
         openapi_path = ROOT / "contracts/openapi/parallax_api_v1_3.yaml"
         openapi = yaml.safe_load(openapi_path.read_text(encoding="utf-8"))
-        read_only_post_exceptions = {"resolveActivity", "resolveUserPlace"}
+        read_only_post_exceptions = {
+            "resolveActivity",
+            "resolveUserPlace",
+            "previewActivityMerge",
+            "previewActivitySplit",
+        }
         for path, path_item in openapi.get("paths", {}).items():
             for method, operation in path_item.items():
                 if method.lower() not in {"post", "put", "patch", "delete"}:

@@ -101,23 +101,59 @@ def _validate_payload(
 def _path_matches(path: str, expected_parts: tuple[str, ...]) -> bool:
     if len(expected_parts) == 1:
         return path == expected_parts[0]
-    return path.startswith(expected_parts[0]) and path.endswith(expected_parts[1])
+    position = 0
+    for index, part in enumerate(expected_parts):
+        if index == 0:
+            if not path.startswith(part):
+                return False
+            position = len(part)
+            continue
+        next_index = path.find(part, position)
+        if next_index == -1:
+            return False
+        position = next_index + len(part)
+    return position == len(path)
 
 
 def _ids_from_path(path: str, spec: OperationSpec, index: int) -> dict[str, UUID | None]:
     if spec.path_id_name is None:
         return {}
-    id_text = path.removeprefix(spec.path_parts[0]).removesuffix(spec.path_parts[1])
-    try:
-        path_id = UUID(id_text)
-    except ValueError as exc:
+    id_names = (spec.path_id_name,) if isinstance(spec.path_id_name, str) else spec.path_id_name
+    id_texts = _path_id_texts(path, spec.path_parts)
+    if len(id_texts) != len(id_names):
         raise HTTPException(
             status_code=400,
             detail={
                 "error_code": "invalid_sync_operation",
-                "message": "sync operation path contains an invalid resource id",
+                "message": "sync operation path does not expose expected resource ids",
                 "details": {"operation_index": index},
                 "retryable": False,
             },
-        ) from exc
-    return {spec.path_id_name: path_id}
+        )
+    ids: dict[str, UUID | None] = {}
+    for id_name, id_text in zip(id_names, id_texts, strict=True):
+        try:
+            ids[id_name] = UUID(id_text)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error_code": "invalid_sync_operation",
+                    "message": "sync operation path contains an invalid resource id",
+                    "details": {"operation_index": index},
+                    "retryable": False,
+                },
+            ) from exc
+    return ids
+
+
+def _path_id_texts(path: str, parts: tuple[str, ...]) -> list[str]:
+    if len(parts) == 1:
+        return []
+    id_texts: list[str] = []
+    position = len(parts[0])
+    for part in parts[1:]:
+        next_index = path.find(part, position)
+        id_texts.append(path[position:next_index])
+        position = next_index + len(part)
+    return id_texts

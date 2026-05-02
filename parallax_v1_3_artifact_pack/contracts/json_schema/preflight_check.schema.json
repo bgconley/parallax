@@ -288,6 +288,7 @@
     "state": {
       "type": "string",
       "enum": [
+        "suggested",
         "active",
         "snoozed",
         "hidden",
@@ -328,6 +329,57 @@
         "null"
       ],
       "format": "uuid"
+    },
+    "source_dependency_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "snoozed_until": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "evidence_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "evidence_summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "last_decided_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "decision_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
     }
   },
   "required": [
@@ -337,6 +389,7 @@
     "check_text",
     "state",
     "source",
-    "failure_count"
+    "failure_count",
+    "evidence_count"
   ]
 }

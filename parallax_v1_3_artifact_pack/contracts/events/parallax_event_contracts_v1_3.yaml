@@ -21,12 +21,33 @@ events:
   - alias_id
   - alias_text
   - user_confirmed
+- event_name: activity.alias_decided
+  aggregate_type: activity
+  payload_fields:
+  - activity_id
+  - alias_id
+  - decision
+  - reason
 - event_name: activity.relationship_created
   aggregate_type: activity
   payload_fields:
   - from_activity_id
   - to_activity_id
   - kind
+- event_name: activity.relationship_decided
+  aggregate_type: activity
+  payload_fields:
+  - relationship_id
+  - from_activity_id
+  - to_activity_id
+  - decision
+- event_name: activity.merged
+  aggregate_type: activity
+  payload_fields:
+  - source_activity_id
+  - target_activity_id
+  - affected_session_count
+  - audit_id
 - event_name: timing.session_created
   aggregate_type: timing_session
   payload_schema: TimingSession
@@ -85,6 +106,16 @@ events:
 - event_name: preflight.check_suggested
   aggregate_type: preflight_check
   payload_schema: PreflightCheck
+- event_name: preflight.check_decided
+  aggregate_type: preflight_check
+  payload_fields:
+  - check_id
+  - decision
+  - state
+  - snoozed_until
+- event_name: resource_dependency.updated
+  aggregate_type: resource_dependency
+  payload_schema: ResourceDependency
 - event_name: temporal_query.requested
   aggregate_type: temporal_query_answer
   payload_fields:

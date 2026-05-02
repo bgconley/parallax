@@ -415,9 +415,9 @@ Phases 2–5 complete.
 
 Deliverables:
 
-- add alias endpoint;
-- relationship endpoint;
-- merge/split UX contract;
+- add/list alias endpoint and alias decision endpoint;
+- add/list relationship endpoint and relationship decision endpoint;
+- merge/split UX contract, including merge preview, merge commit, and split preview;
 - audit records.
 
 Acceptance gate:
@@ -431,6 +431,8 @@ Deliverables:
 
 - `GET /v1/activities/{activity_id}/preflight-checks`
 - `POST /v1/activities/{activity_id}/preflight-checks`
+- `POST /v1/activities/{activity_id}/preflight-checks/{check_id}/decision`
+- `GET /v1/activities/{activity_id}/resource-dependencies`
 - resource dependency aggregation.
 - preflight suggestion thresholds.
 

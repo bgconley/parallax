@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/ActivityIdentityChange.schema.json",
+  "title": "ActivityIdentityChange",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "change_type": {
+      "type": "string",
+      "enum": [
+        "merge"
+      ]
+    },
+    "source_activity_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "target_activity_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "affected_session_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "audit_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "created_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "change_type",
+    "source_activity_id",
+    "target_activity_id",
+    "affected_session_count",
+    "audit_id",
+    "created_at"
+  ]
+}

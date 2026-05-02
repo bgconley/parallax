@@ -1,4 +1,4 @@
-.PHONY: validate test lint typecheck security release-status release-gate release-slo privacy-log-scan privacy-lifecycle-smoke backup-restore-drill migrate schema-smoke phase1-smoke phase2-smoke phase3-smoke phase4-smoke phase5-smoke dev-up dev-down dev-logs
+.PHONY: validate test lint typecheck security release-status release-gate release-slo privacy-log-scan privacy-lifecycle-smoke backup-restore-drill migrate schema-smoke phase1-smoke phase2-smoke phase3-smoke phase4-smoke phase5-smoke phase6-smoke dev-up dev-down dev-logs
 
 PARALLAX_HOST_DATABASE_URL ?= postgresql://parallax:parallax_dev_password@127.0.0.1:15432/parallax
 PARALLAX_API_URL ?= http://127.0.0.1:18000
@@ -66,6 +66,9 @@ phase4-smoke:
 
 phase5-smoke:
 	uv run python scripts/phase5_smoke.py --api-url "$(PARALLAX_API_URL)" --database-url "$(PARALLAX_HOST_DATABASE_URL)"
+
+phase6-smoke:
+	uv run python scripts/phase6_smoke.py --api-url "$(PARALLAX_API_URL)" --database-url "$(PARALLAX_HOST_DATABASE_URL)"
 
 dev-up:
 	docker compose -f docker-compose.yml --env-file .env up -d --build

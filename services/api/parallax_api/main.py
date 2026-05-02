@@ -6,6 +6,8 @@ from .errors import install_error_handlers
 from .repositories.postgres_unit_of_work import PostgresUnitOfWorkFactory
 from .repositories.unit_of_work import UnitOfWorkFactory
 from .routes.activities import router as activities_router
+from .routes.activity_identity import router as activity_identity_router
+from .routes.activity_preflight import router as activity_preflight_router
 from .routes.context import router as context_router
 from .routes.health import router as health_router
 from .routes.privacy import router as privacy_router
@@ -28,6 +30,8 @@ def create_app(
     app.state.health_checker = health_checker or RuntimeHealthChecker()
     app.include_router(health_router)
     app.include_router(activities_router)
+    app.include_router(activity_identity_router)
+    app.include_router(activity_preflight_router)
     app.include_router(timing_router)
     app.include_router(context_router)
     app.include_router(privacy_router)

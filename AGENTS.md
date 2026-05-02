@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This checkout contains the Parallax v1.3 artifact pack plus the Phase 0-5 implementation work. Do not advance Phase 6 or later unless the user explicitly starts that phase. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
+This checkout contains the Parallax v1.3 artifact pack plus the Phase 0-6 implementation work. Do not advance Phase 7 or later unless the user explicitly starts that phase. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
 
 Before making implementation or infrastructure decisions, read the relevant canonical artifact files first. Do not infer Parallax layout, storage, runtime, or service policy from existing GPU-node directories or other apps when a Parallax artifact covers the topic.
 
@@ -65,7 +65,7 @@ GPU-node runtime storage is verified under `tank/parallax` mounted at `/srv/para
 
 Current permission policy: `/srv/parallax` is `root:root 0755`; Postgres and WAL are numeric `999:999 0700`; service-writable objects/exports/models/cache/logs are `10001:bgconley 0770`; config and observability are `bgconley:bgconley 0755`; backups are `root:bgconley 0750`. Host names for UID/GID `999` may display as unrelated local accounts; verify numeric IDs against the pinned container image when the DB image is finalized.
 
-Phase work must be explicit. Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 are complete. Do not deepen Phase 6 or any later phase unless the user directly instructs you to begin that phase. The current runtime API exposes the canonical v1.3 method/path surface, but later-phase endpoints are baseline implementations until their owning phase receives explicit product-depth work.
+Phase work must be explicit. Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 are complete. Do not deepen Phase 7 or any later phase unless the user directly instructs you to begin that phase. The current runtime API exposes the canonical v1.3 method/path surface, but later-phase endpoints are baseline implementations until their owning phase receives explicit product-depth work.
 
 The Phase 0 runtime uses Parallax-specific localhost ports to coexist with other GPU-node stacks: API `18000`, Postgres `15432`, Redis `16379`, Temporal `17233`, Temporal UI `18088`, MinIO `19000/19001`, and Caddy `18080/18443`. Container-to-container URLs still use service names such as `postgres:5432` and `redis:6379`.
 

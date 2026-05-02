@@ -14,10 +14,14 @@ Current baseline order:
 8. `0011_capture_context_geospatial_sensor_fusion.sql`
 9. `0014_timing_review_flags.sql`
 10. `0015_firebase_external_identity.sql`
+11. `0016_activity_identity_preflight_decisions.sql`
+12. `0017_resource_dependency_event_idempotency.sql`
 
 `scripts/apply_migrations.py --smoke` runs the current implementation schema
 smoke, not only the original Phase 0 checks. The current smoke covers Phase 0
 core tables/enums, Phase 2 profile tables, Phase 3 context capture tables/enums,
 Phase 4 extraction, correction, model-invocation, and preflight tables/enums,
 Phase 5 checkpoint/latency/feature-vector tables, and Firebase external identity
-mapping tables.
+mapping tables. Phase 6 adds activity identity decision records, soft-merge
+auditability, idempotent resource dependency aggregation, and preflight lifecycle
+decisions.

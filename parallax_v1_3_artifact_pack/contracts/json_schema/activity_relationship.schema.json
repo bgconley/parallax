@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.parallax.local/v1.3/ActivityRelationship.schema.json",
+  "title": "ActivityRelationship",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "date_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "user_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "from_activity_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "to_activity_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "same_as",
+        "alias_of",
+        "part_of",
+        "has_checkpoint",
+        "variant_of",
+        "related_to",
+        "usually_before",
+        "usually_after"
+      ]
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "user_confirmed": {
+      "type": "boolean"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "suggested",
+        "confirmed",
+        "rejected"
+      ]
+    },
+    "created_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "from_activity_id",
+    "to_activity_id",
+    "kind",
+    "metadata",
+    "user_confirmed",
+    "state",
+    "created_at"
+  ]
+}

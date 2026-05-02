@@ -10,16 +10,6 @@ from ..domain.latency_observations import (
     TransitionObservationDraft,
 )
 from ..domain.timing_spans import TimingEventSpanDraft, TimingSpanTotals
-from ..schemas.activity import Activity, CreateActivityRequest, ResolveActivityCandidate
-from ..schemas.activity_metadata import (
-    ActivityAlias,
-    ActivityRelationship,
-    CheckpointTemplate,
-    CreateActivityRelationshipRequest,
-    CreatePreflightCheckRequest,
-    PreflightCheck,
-    PutCheckpointsRequest,
-)
 from ..schemas.context import (
     CaptureContextSnapshot,
     ContextCapturePolicy,
@@ -72,56 +62,8 @@ from ..schemas.timing import (
     TimingSession,
 )
 from ..schemas.workflows import WorkflowRun
+from .activity_protocol import ActivityRepositoryProtocol
 from .mutation_log import MutationLogRepository
-
-
-class ActivityRepositoryProtocol(Protocol):
-    def create(self, user_id: UUID, request: CreateActivityRequest) -> Activity: ...
-
-    def list_activities(
-        self,
-        user_id: UUID,
-        query: str | None = None,
-        limit: int = 50,
-    ) -> list[Activity]: ...
-
-    def get(self, user_id: UUID, activity_id: UUID) -> Activity | None: ...
-
-    def resolve(self, user_id: UUID, query: str, limit: int) -> list[ResolveActivityCandidate]: ...
-
-    def add_alias(
-        self,
-        user_id: UUID,
-        activity_id: UUID,
-        alias_text: str,
-        *,
-        user_confirmed: bool,
-    ) -> ActivityAlias: ...
-
-    def create_relationship(
-        self,
-        user_id: UUID,
-        activity_id: UUID,
-        request: CreateActivityRelationshipRequest,
-    ) -> ActivityRelationship: ...
-
-    def list_checkpoints(self, user_id: UUID, activity_id: UUID) -> list[CheckpointTemplate]: ...
-
-    def replace_checkpoints(
-        self,
-        user_id: UUID,
-        activity_id: UUID,
-        request: PutCheckpointsRequest,
-    ) -> list[CheckpointTemplate]: ...
-
-    def list_preflight_checks(self, user_id: UUID, activity_id: UUID) -> list[PreflightCheck]: ...
-
-    def create_preflight_check(
-        self,
-        user_id: UUID,
-        activity_id: UUID,
-        request: CreatePreflightCheckRequest,
-    ) -> PreflightCheck: ...
 
 
 class IdentityRepositoryProtocol(Protocol):

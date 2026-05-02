@@ -16,17 +16,18 @@ from ..schemas.temporal import (
     TemporalFeatureVector,
     TemporalPrediction,
     TemporalQueryAnswer,
-    TemporalQueryEvidenceItem,
     TemporalQueryRequest,
 )
 from ..schemas.timing import TimingSession
 from .postgres_context_policies import PostgresContextPolicyRepository
+from .postgres_temporal_query import PostgresTemporalQueryRepository
 from .postgres_timing_repository import PostgresTimingRepository
 
 
 class PostgresTemporalRepository:
     def __init__(self, connection: psycopg.Connection[Any]) -> None:
         self._connection = connection
+        self._queries = PostgresTemporalQueryRepository(connection)
 
     def create_prediction(
         self,
@@ -114,45 +115,10 @@ class PostgresTemporalRepository:
         user_id: UUID,
         request: TemporalQueryRequest,
     ) -> TemporalQueryAnswer:
-        evidence = self._activity_evidence(user_id, request.activity_id)
-        with self._connection.cursor() as cursor:
-            cursor.execute(
-                """
-                insert into temporal_query_answer (
-                  user_id, question, answer, confidence, sample_size, time_window,
-                  status, completed_at
-                )
-                values (%s, %s, %s, %s, %s, %s, 'complete', now())
-                returning id, user_id, question, answer, confidence, sample_size,
-                  time_window, status
-                """,
-                (
-                    user_id,
-                    request.question,
-                    "Deterministic facts are available in computed_facts.",
-                    "low" if evidence else "very_low",
-                    len(evidence),
-                    request.time_window,
-                ),
-            )
-            row = cursor.fetchone()
-        if row is None:
-            raise RuntimeError("temporal query answer insert returned no row")
-        return _query_answer_from_row(row, evidence)
+        return self._queries.create_query_answer(user_id, request)
 
     def get_query_answer(self, user_id: UUID, answer_id: UUID) -> TemporalQueryAnswer | None:
-        with self._connection.cursor() as cursor:
-            cursor.execute(
-                """
-                select id, user_id, question, answer, confidence, sample_size,
-                  time_window, status
-                from temporal_query_answer
-                where user_id = %s and id = %s
-                """,
-                (user_id, answer_id),
-            )
-            row = cursor.fetchone()
-        return _query_answer_from_row(row, []) if row is not None else None
+        return self._queries.get_query_answer(user_id, answer_id)
 
     def generate_feature_vectors(
         self,
@@ -234,44 +200,6 @@ class PostgresTemporalRepository:
             return {"sample_size": 0, "confidence": "very_low"}
         return dict(row)
 
-    def _activity_evidence(
-        self,
-        user_id: UUID,
-        activity_id: UUID | None,
-    ) -> list[TemporalQueryEvidenceItem]:
-        params: tuple[object, ...]
-        if activity_id is not None:
-            query = """
-                select id, display_name, created_at
-                from activity
-                where user_id = %s and id = %s
-                order by created_at desc
-                limit 5
-                """
-            params = (user_id, activity_id)
-        else:
-            query = """
-                select id, display_name, created_at
-                from activity
-                where user_id = %s
-                order by created_at desc
-                limit 5
-                """
-            params = (user_id,)
-        with self._connection.cursor() as cursor:
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
-        return [
-            TemporalQueryEvidenceItem(
-                entity_type="activity",
-                entity_id=row["id"],
-                summary=f"Activity: {row['display_name']}",
-                occurred_at=row["created_at"],
-                score=1.0,
-            )
-            for row in rows
-        ]
-
     def _reviewed_sessions(
         self,
         user_id: UUID,
@@ -337,22 +265,3 @@ class PostgresTemporalRepository:
             """,
             (user_id, activity_id, activity_id, session_id, session_id, families),
         )
-
-
-def _query_answer_from_row(
-    row: Mapping[str, Any],
-    evidence: list[TemporalQueryEvidenceItem],
-) -> TemporalQueryAnswer:
-    return TemporalQueryAnswer(
-        id=row["id"],
-        user_id=row["user_id"],
-        question=row["question"],
-        answer=row["answer"],
-        confidence=row["confidence"],
-        sample_size=row["sample_size"],
-        time_window=row["time_window"],
-        computed_facts={"evidence_count": len(evidence)},
-        limitations=["baseline deterministic query path"],
-        evidence=evidence,
-        status=row["status"],
-    )

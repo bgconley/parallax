@@ -1,10 +1,17 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import cast
 from uuid import UUID, uuid4
 
 from ..domain.feature_vectors import build_temporal_feature_vectors
+from ..domain.temporal_query import (
+    base_query_limitations,
+    build_temporal_query_plan,
+    confidence_for_sample_size,
+    deterministic_delay_answer,
+    deterministic_duration_answer,
+)
 from ..schemas.temporal import (
     CreatePredictionRequest,
     FeatureFamily,
@@ -20,6 +27,11 @@ from ..schemas.timing import TimingSession
 from .context_policy_defaults import default_context_capture_policy
 from .memory import InMemoryStore
 from .timing_repository import TimingRepository
+
+_ACTIVE_DURATION_INCLUSIONS = {"full", "active_duration_only"}
+_WALL_DURATION_INCLUSIONS = {"full", "wall_envelope_only"}
+_DURATION_BASELINE_INCLUSIONS = _ACTIVE_DURATION_INCLUSIONS | _WALL_DURATION_INCLUSIONS
+_FRICTION_INCLUSIONS = {"full", "friction_patterns_only", "query_evidence_only"}
 
 
 class TemporalRepository:
@@ -81,28 +93,52 @@ class TemporalRepository:
         user_id: UUID,
         request: TemporalQueryRequest,
     ) -> TemporalQueryAnswer:
-        evidence = [
-            TemporalQueryEvidenceItem(
-                entity_type="activity",
-                entity_id=activity.id,
-                summary=f"Activity: {activity.display_name}",
-                occurred_at=activity.created_at,
-                score=1.0,
-            )
-            for activity in self._store.activities.values()
-            if activity.user_id == user_id
-            and (request.activity_id is None or activity.id == request.activity_id)
-        ][:5]
+        activity_name = (
+            self._store.activities[request.activity_id].display_name
+            if request.activity_id in self._store.activities
+            else None
+        )
+        plan = build_temporal_query_plan(
+            question=request.question,
+            activity_id=request.activity_id,
+            activity_name=activity_name,
+            time_window=request.time_window,
+        )
+        if plan.intent == "delay_drivers":
+            facts, evidence = self._delay_facts(user_id, plan.activity_id, plan.window.days)
+            answer_text = deterministic_delay_answer(facts)
+        else:
+            facts, evidence = self._duration_facts(user_id, plan.activity_id, plan.window.days)
+            answer_text = deterministic_duration_answer(facts)
+        facts.update(
+            {
+                "intent": plan.intent,
+                "activity_id": str(plan.activity_id) if plan.activity_id else None,
+                "activity_name": plan.activity_name,
+                "time_window": plan.window.label,
+                "window_days": plan.window.days,
+            }
+        )
+        sample_size = _int_value(facts.get("sample_size"))
+        confidence = confidence_for_sample_size(sample_size)
+        facts["confidence"] = confidence
+        privacy_settings = self._store.privacy_settings.get(user_id)
         answer = TemporalQueryAnswer(
             id=uuid4(),
             user_id=user_id,
             question=request.question,
-            answer="Deterministic facts are available in computed_facts.",
-            confidence="low" if evidence else "very_low",
-            sample_size=len(evidence),
-            time_window=request.time_window,
-            computed_facts={"evidence_count": len(evidence)},
-            limitations=["baseline deterministic query path"],
+            answer=answer_text,
+            confidence=confidence,
+            sample_size=sample_size,
+            time_window=plan.window.label,
+            computed_facts=facts,
+            limitations=base_query_limitations(
+                sample_size=sample_size,
+                include_raw_quotes=request.include_raw_quotes,
+                raw_quotes_allowed=bool(
+                    privacy_settings and privacy_settings.allow_raw_notes_in_query_answers
+                ),
+            ),
             evidence=evidence,
             status="complete",
         )
@@ -114,6 +150,106 @@ class TemporalRepository:
         if answer is None or answer.user_id != user_id:
             return None
         return answer
+
+    def _duration_facts(
+        self,
+        user_id: UUID,
+        activity_id: UUID | None,
+        window_days: int,
+    ) -> tuple[dict[str, object], list[TemporalQueryEvidenceItem]]:
+        sessions = [
+            session
+            for session in self._query_sessions(user_id, activity_id, window_days)
+            if session.model_inclusion in _DURATION_BASELINE_INCLUSIONS
+        ]
+        active_values = sorted(
+            session.active_seconds
+            for session in sessions
+            if session.model_inclusion in _ACTIVE_DURATION_INCLUSIONS
+            and session.active_seconds is not None
+        )
+        wall_values = sorted(
+            session.wall_seconds
+            for session in sessions
+            if session.model_inclusion in _WALL_DURATION_INCLUSIONS
+            and session.wall_seconds is not None
+        )
+        evidence = [
+            TemporalQueryEvidenceItem(
+                entity_type="timing_session",
+                entity_id=session.id,
+                summary=_duration_evidence_summary(session),
+                occurred_at=session.completed_at,
+                score=1.0,
+            )
+            for session in sessions[:5]
+        ]
+        return {
+            "sample_size": max(len(active_values), len(wall_values)),
+            "active_sample_size": len(active_values),
+            "wall_sample_size": len(wall_values),
+            "active_p50_seconds": _percentile(active_values, 0.5),
+            "active_p80_seconds": _percentile(active_values, 0.8),
+            "wall_p50_seconds": _percentile(wall_values, 0.5),
+            "wall_p80_seconds": _percentile(wall_values, 0.8),
+        }, evidence
+
+    def _delay_facts(
+        self,
+        user_id: UUID,
+        activity_id: UUID | None,
+        window_days: int,
+    ) -> tuple[dict[str, object], list[TemporalQueryEvidenceItem]]:
+        sessions = [
+            session
+            for session in self._query_sessions(user_id, activity_id, window_days)
+            if session.model_inclusion in _FRICTION_INCLUSIONS
+        ]
+        session_ids = {session.id for session in sessions}
+        spans = [
+            span
+            for spans_for_session in self._store.session_spans.values()
+            for span in spans_for_session
+            if span.user_id == user_id
+            and span.session_id in session_ids
+            and span.friction_category not in {"none", "unknown"}
+        ]
+        grouped: dict[str, list[int]] = {}
+        for span in spans:
+            grouped.setdefault(span.friction_category, []).append(span.duration_seconds or 0)
+        categories: list[dict[str, object]] = [
+            {
+                "friction_category": category,
+                "event_count": len(values),
+                "total_seconds": sum(values),
+                "p80_seconds": _percentile(sorted(values), 0.8),
+            }
+            for category, values in grouped.items()
+        ]
+        categories.sort(
+            key=lambda item: (
+                -_int_value(item["event_count"]),
+                -_int_value(item["total_seconds"]),
+                str(item["friction_category"]),
+            )
+        )
+        evidence = [
+            TemporalQueryEvidenceItem(
+                entity_type="timing_event_span",
+                entity_id=span.id,
+                summary=(
+                    f"{span.friction_category} friction: {span.duration_seconds}s, "
+                    f"policy={span.count_policy}."
+                ),
+                occurred_at=span.started_at,
+                score=1.0,
+            )
+            for span in spans[:5]
+        ]
+        return {
+            "sample_size": len(sessions),
+            "friction_categories": categories,
+        }, evidence
 
     def generate_feature_vectors(
         self,
@@ -183,6 +319,19 @@ class TemporalRepository:
             if session is not None and session.model_inclusion != "exclude"
         ]
 
+    def _query_sessions(
+        self,
+        user_id: UUID,
+        activity_id: UUID | None,
+        window_days: int,
+    ) -> list[TimingSession]:
+        cutoff = datetime.now(UTC) - timedelta(days=window_days)
+        return [
+            session
+            for session in self._reviewed_sessions(user_id, activity_id, None)
+            if _is_at_or_after(session.completed_at, cutoff)
+        ]
+
     def _eligible_snapshot_count(self, user_id: UUID, sessions: list[TimingSession]) -> int:
         session_ids = {session.id for session in sessions}
         return sum(
@@ -208,3 +357,35 @@ class TemporalRepository:
                 and vector.feature_family in families
             )
         }
+
+
+def _percentile(values: list[int], percentile: float) -> int | None:
+    if not values:
+        return None
+    index = min(len(values) - 1, max(0, round((len(values) - 1) * percentile)))
+    return values[index]
+
+
+def _duration_evidence_summary(session: TimingSession) -> str:
+    metrics: list[str] = []
+    if session.model_inclusion in _ACTIVE_DURATION_INCLUSIONS:
+        metrics.append(f"active={session.active_seconds}s")
+    if session.model_inclusion in _WALL_DURATION_INCLUSIONS:
+        metrics.append(f"wall={session.wall_seconds}s")
+    return f"Reviewed run: {', '.join(metrics)}."
+
+
+def _is_at_or_after(value: datetime | None, cutoff: datetime) -> bool:
+    if value is None:
+        return False
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return value >= cutoff
+
+
+def _int_value(value: object) -> int:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float | str):
+        return int(value)
+    return 0

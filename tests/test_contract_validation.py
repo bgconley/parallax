@@ -26,6 +26,7 @@ def test_baseline_migration_discovery_excludes_optional_profiles() -> None:
         "0004",
         "0005",
         "0006",
+        "0007",
         "0008",
         "0011",
         "0014",

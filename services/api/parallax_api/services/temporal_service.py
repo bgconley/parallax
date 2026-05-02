@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import re
 from uuid import UUID
 
 from fastapi import HTTPException
 
 from ..repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
+from ..schemas.activity import Activity
 from ..schemas.temporal import (
     CreatePredictionRequest,
     JobAcceptedResponse,
@@ -116,8 +118,7 @@ def create_query_answer_in_uow(
     user_id: UUID,
     request: TemporalQueryRequest,
 ) -> TemporalQueryAnswer:
-    if request.activity_id is not None and uow.activities.get(user_id, request.activity_id) is None:
-        raise HTTPException(status_code=404, detail="activity not found")
+    request = _resolve_query_activity(uow, user_id, request)
     mutations = MutationReplayService(uow.mutations)
 
     def apply() -> tuple[UUID, TemporalQueryAnswer]:
@@ -132,6 +133,52 @@ def create_query_answer_in_uow(
         result_type=TemporalQueryAnswer,
         apply=apply,
     )
+
+
+def _resolve_query_activity(
+    uow: UnitOfWork,
+    user_id: UUID,
+    request: TemporalQueryRequest,
+) -> TemporalQueryRequest:
+    if request.activity_id is not None:
+        if uow.activities.get(user_id, request.activity_id) is None:
+            raise HTTPException(status_code=404, detail="activity not found")
+        return request
+
+    activity = _activity_mentioned_in_question(
+        uow.activities.list_activities(user_id, query=None, limit=100),
+        request.question,
+    )
+    if activity is None:
+        return request
+    return request.model_copy(update={"activity_id": activity.id})
+
+
+def _activity_mentioned_in_question(
+    activities: list[Activity],
+    question: str,
+) -> Activity | None:
+    question_tokens = set(_query_tokens(question))
+    if not question_tokens:
+        return None
+    candidates: list[tuple[int, Activity]] = []
+    for activity in activities:
+        tokens = set(_query_tokens(activity.display_name))
+        if tokens and tokens.issubset(question_tokens):
+            candidates.append((len(tokens), activity))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: (-item[0], item[1].display_name.casefold()))
+    return candidates[0][1]
+
+
+def _query_tokens(value: str) -> list[str]:
+    tokens: list[str] = []
+    for token in re.findall(r"[a-z0-9]+", value.casefold().replace("&", " and ")):
+        tokens.append(token)
+        if token.endswith("ing") and len(token) > 5:
+            tokens.append(token[:-3])
+    return tokens
 
 
 def request_feature_vector_recompute_in_uow(

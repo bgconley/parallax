@@ -38,6 +38,7 @@ def current_schema_smoke_checks() -> list[SchemaSmokeCheck]:
         *(_table_check(name) for name in _PHASE4_TABLES),
         *(_table_check(name) for name in _PHASE5_TABLES),
         *(_table_check(name) for name in _PHASE6_TABLES),
+        *(_table_check(name) for name in _PHASE7_TABLES),
         *(_table_check(name) for name in _AUTH_TABLES),
         *(_enum_check(name) for name in _PHASE3_ENUMS),
         *(_enum_check(name) for name in _PHASE4_ENUMS),
@@ -221,6 +222,11 @@ _PHASE5_TABLES = (
 
 _PHASE6_TABLES = (
     "activity_identity_change",
+)
+
+_PHASE7_TABLES = (
+    "embedding_model",
+    "retrieval_document",
 )
 
 _AUTH_TABLES = (

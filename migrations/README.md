@@ -17,6 +17,7 @@ Current baseline order:
 11. `0015_firebase_external_identity.sql`
 12. `0016_activity_identity_preflight_decisions.sql`
 13. `0017_resource_dependency_event_idempotency.sql`
+14. `0018_workflow_retry_hardening.sql`
 
 `scripts/apply_migrations.py --smoke` runs the current implementation schema
 smoke, not only the original Phase 0 checks. The current smoke covers Phase 0
@@ -26,3 +27,5 @@ Phase 5 checkpoint/latency/feature-vector tables, and Firebase external identity
 mapping tables. Phase 6 adds activity identity decision records, soft-merge
 auditability, idempotent resource dependency aggregation, and preflight lifecycle
 decisions. Phase 7 adds baseline retrieval documents for grounded Ask About Time.
+Migration 0018 hardens workflow retry metadata so transient background failures
+can be retried without losing durable audit state.

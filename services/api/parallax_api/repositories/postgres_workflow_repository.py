@@ -41,7 +41,8 @@ class PostgresWorkflowRunRepository:
                 select *
                 from workflow_run
                 where status = 'queued'
-                order by created_at, id
+                  and next_run_at <= now()
+                order by next_run_at, created_at, id
                 limit 1
                 for update skip locked
                 """
@@ -54,7 +55,11 @@ class PostgresWorkflowRunRepository:
             workflow_id,
             """
             update workflow_run
-            set status = 'running', started_at = now(), updated_at = now()
+            set status = 'running',
+                attempts = attempts + 1,
+                started_at = now(),
+                last_heartbeat_at = now(),
+                updated_at = now()
             where id = %s
             returning *
             """,
@@ -68,6 +73,8 @@ class PostgresWorkflowRunRepository:
             update workflow_run
             set status = 'succeeded',
                 result_ref = %s,
+                error_code = null,
+                error_message = null,
                 completed_at = now(),
                 updated_at = now()
             where id = %s
@@ -76,20 +83,43 @@ class PostgresWorkflowRunRepository:
             (Jsonb(result_ref), workflow_id),
         )
 
-    def mark_failed(self, workflow_id: UUID, error_code: str, error_message: str) -> WorkflowRun:
+    def mark_failed(
+        self,
+        workflow_id: UUID,
+        error_code: str,
+        error_message: str,
+        *,
+        retryable: bool = True,
+    ) -> WorkflowRun:
         return self._update(
             workflow_id,
             """
             update workflow_run
-            set status = 'failed',
+            set status = case
+                    when %s and attempts < max_attempts then 'queued'::job_status
+                    else 'failed'::job_status
+                end,
                 error_code = %s,
                 error_message = %s,
-                completed_at = now(),
+                completed_at = case
+                    when %s and attempts < max_attempts then null
+                    else now()
+                end,
+                next_run_at = case
+                    when %s and attempts < max_attempts then
+                      now() + make_interval(
+                        secs => least(
+                          300,
+                          greatest(1, (power(2, attempts - 1))::int)
+                        )
+                      )
+                    else next_run_at
+                end,
                 updated_at = now()
             where id = %s
             returning *
             """,
-            (error_code, error_message, workflow_id),
+            (retryable, error_code, error_message, retryable, retryable, workflow_id),
         )
 
     def _update(

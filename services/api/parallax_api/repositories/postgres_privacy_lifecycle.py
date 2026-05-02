@@ -8,6 +8,7 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 from ..schemas.privacy import PrivacyDeleteRequest, PrivacyExportRequest, PrivacyRedactRequest
+from .postgres_privacy_derivatives import PostgresPrivacyDerivedArtifactRepository
 
 _COUNT_SQL = {
     "activity": "select count(*) from activity where user_id = %s",
@@ -48,6 +49,7 @@ class PostgresPrivacyLifecycleRepository:
 
     def __init__(self, connection: psycopg.Connection[Any]) -> None:
         self._connection = connection
+        self._derived = PostgresPrivacyDerivedArtifactRepository(connection)
 
     def complete_export(self, user_id: UUID, request: PrivacyExportRequest) -> dict[str, object]:
         counts: dict[str, object] = {
@@ -81,11 +83,16 @@ class PostgresPrivacyLifecycleRepository:
             "entity_id": str(request.entity_id),
             "count": count,
         }
+        if count:
+            redacted["derived_artifacts"] = self._derived.invalidate_temporal_query_artifacts(
+                user_id
+            )
         self._record_completion(user_id, "privacy_redact_completed", redacted)
         return {"redacted": redacted}
 
     def complete_delete(self, user_id: UUID, request: PrivacyDeleteRequest) -> dict[str, object]:
         deleted: dict[str, int] = {}
+        deleted.update(self._derived.invalidate_temporal_query_artifacts(user_id))
         if request.delete_scope in {"raw_context", "account"}:
             deleted["annotations"] = self._redact_annotation(
                 user_id,

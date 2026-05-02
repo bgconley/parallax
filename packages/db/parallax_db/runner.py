@@ -40,6 +40,7 @@ def current_schema_smoke_checks() -> list[SchemaSmokeCheck]:
         *(_table_check(name) for name in _PHASE6_TABLES),
         *(_table_check(name) for name in _PHASE7_TABLES),
         *(_table_check(name) for name in _AUTH_TABLES),
+        *(_column_check(table, column) for table, column in _WORKFLOW_RETRY_COLUMNS),
         *(_enum_check(name) for name in _PHASE3_ENUMS),
         *(_enum_check(name) for name in _PHASE4_ENUMS),
     ]
@@ -147,6 +148,19 @@ def _enum_check(name: str) -> SchemaSmokeCheck:
     )
 
 
+def _column_check(table_name: str, column_name: str) -> SchemaSmokeCheck:
+    return SchemaSmokeCheck(
+        name=f"column:{table_name}.{column_name}",
+        sql="""
+            select exists (
+            select 1 from information_schema.columns
+            where table_schema = 'public' and table_name = %s and column_name = %s
+            )
+        """,
+        params=(table_name, column_name),
+    )
+
+
 _PHASE0_TABLES = (
     "app_user",
     "privacy_settings",
@@ -233,4 +247,11 @@ _AUTH_TABLES = (
     "external_identity",
     "alpha_invite",
     "deleted_external_identity_tombstone",
+)
+
+_WORKFLOW_RETRY_COLUMNS = (
+    ("workflow_run", "attempts"),
+    ("workflow_run", "max_attempts"),
+    ("workflow_run", "next_run_at"),
+    ("workflow_run", "last_heartbeat_at"),
 )

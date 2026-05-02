@@ -99,6 +99,7 @@ class WorkflowRunStore(dict[UUID, WorkflowRun]):
             status="queued",
             input_ref=input_ref,
             result_ref={},
+            next_run_at=now,
             created_at=now,
             updated_at=now,
         )

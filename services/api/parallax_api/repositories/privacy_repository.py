@@ -64,16 +64,20 @@ class PrivacyRepository:
 
     def complete_redact(self, user_id: UUID, request: PrivacyRedactRequest) -> dict[str, object]:
         count = _redact_entity(self._store, user_id, request.entity_type, request.entity_id)
+        derived_artifacts = (
+            _invalidate_temporal_query_artifacts(self._store, user_id) if count else {}
+        )
         return {
             "redacted": {
                 "entity_type": request.entity_type,
                 "entity_id": str(request.entity_id),
                 "count": count,
+                "derived_artifacts": derived_artifacts,
             }
         }
 
     def complete_delete(self, user_id: UUID, request: PrivacyDeleteRequest) -> dict[str, object]:
-        deleted: dict[str, int] = {}
+        deleted: dict[str, int] = _invalidate_temporal_query_artifacts(self._store, user_id)
         if request.delete_scope in {"raw_context", "account"}:
             deleted["annotations"] = _delete_annotations(self._store, user_id, request.entity_id)
         elif request.delete_scope == "location_context":
@@ -251,6 +255,22 @@ def _delete_feature_vectors(store: InMemoryStore, user_id: UUID, entity_id: UUID
         del store.temporal_feature_vectors[vector_id]
         count += 1
     return count
+
+
+def _invalidate_temporal_query_artifacts(store: InMemoryStore, user_id: UUID) -> dict[str, int]:
+    count = 0
+    for answer_id, answer in list(store.temporal_query_answers.items()):
+        if answer.user_id != user_id:
+            continue
+        del store.temporal_query_answers[answer_id]
+        count += 1
+    return {
+        "query_answers": count,
+        "query_retrieval_documents": 0,
+        "query_evidence_items": 0,
+        "query_evidence_bundles": 0,
+        "query_outbox_events": 0,
+    }
 
 
 def _deleted_annotation(annotation: TemporalContextAnnotation) -> TemporalContextAnnotation:

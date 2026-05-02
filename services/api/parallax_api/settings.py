@@ -39,12 +39,29 @@ class ApiSettings(BaseSettings):
     auth_allowed_firebase_uids_file: str | None = None
     auth_email_conflict_policy: Literal["reject"] = "reject"
     auth_identity_tombstone_secret: str | None = None
+    metrics_enabled: bool = True
+    metrics_token: str | None = None
 
 
 def validate_runtime_settings(settings: ApiSettings) -> None:
     production_like = settings.env in {"production", "private-alpha", "private_alpha"}
     if production_like and settings.auth_mode == "dev_header":
         raise RuntimeError("PARALLAX_AUTH_MODE=dev_header is not allowed outside development/test")
+    if production_like and settings.auth_mode == "external_bearer":
+        if settings.auth_jwt_algorithm == "HS256":
+            raise RuntimeError(
+                "PARALLAX_AUTH_JWT_ALGORITHM=HS256 is not allowed for production "
+                "external_bearer auth"
+            )
+        if not (
+            settings.auth_jwks_url
+            and settings.auth_jwt_issuer
+            and settings.auth_jwt_audience
+        ):
+            raise RuntimeError(
+                "production external_bearer auth requires PARALLAX_AUTH_JWKS_URL, "
+                "PARALLAX_AUTH_JWT_ISSUER, and PARALLAX_AUTH_JWT_AUDIENCE"
+            )
     if production_like and os.getenv("FIREBASE_AUTH_EMULATOR_HOST"):
         raise RuntimeError("FIREBASE_AUTH_EMULATOR_HOST is not allowed outside development/test")
     if settings.auth_mode == "firebase" and not settings.firebase_project_id:
@@ -64,6 +81,8 @@ def validate_runtime_settings(settings: ApiSettings) -> None:
             "PARALLAX_FIREBASE_PROJECT_NUMBER or "
             "PARALLAX_FIREBASE_APP_CHECK_PROJECT_NUMBER is required for App Check enforce mode"
         )
+    if production_like and settings.metrics_enabled and not settings.metrics_token:
+        raise RuntimeError("PARALLAX_METRICS_TOKEN is required when metrics are enabled")
 
 
 def get_settings() -> ApiSettings:

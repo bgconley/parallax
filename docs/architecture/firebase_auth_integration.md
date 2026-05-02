@@ -58,9 +58,11 @@ App Check is app attestation, not user authentication. It is controlled by
 Production/private-alpha runtime refuses:
 
 - `PARALLAX_AUTH_MODE=dev_header`
+- `PARALLAX_AUTH_MODE=external_bearer` unless it is issuer/audience-bound JWKS
 - `FIREBASE_AUTH_EMULATOR_HOST`
 - Firebase auth mode without `PARALLAX_FIREBASE_PROJECT_ID`
 - Firebase auth mode without `PARALLAX_AUTH_IDENTITY_TOMBSTONE_SECRET`
+- enabled `/metrics` exposure without `PARALLAX_METRICS_TOKEN`
 
 The tombstone secret is used to prevent a deleted Parallax account from being
 silently recreated by the same Firebase UID. Raw Firebase UIDs, ID tokens,

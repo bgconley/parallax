@@ -1,5 +1,3 @@
-# Parallax v1.3 artifact manifest
-# path | size_bytes | sha256
 AGENT_START_HERE.md | 5108 | 20edc8fac74b070d9410dee90feca5b1d99ae5a77d76fd56264fb387639f393e
 CHECKSUMS.sha256 | 14176 | 09dba798be66d5eda044c7bb74c5498b04ca0e747c37addd2ef80b6e80fdf9ad
 README.md | 5781 | 4f68f25cd4dd3e37f898880241e4183b629f68c6b97b385744ae1dec2ba526d5
@@ -40,7 +38,7 @@ contracts/json_schema/user_place.schema.json | 1673 | 29a4a1d84238e3164031247e0f
 contracts/json_schema/workflow_payloads.schema.json | 6671 | 8c6bdbecb0bd3749bd0a62aec406576b506bfeb16a8950dd808e8527c736857f
 contracts/openapi/parallax_api_v1_3.yaml | 147557 | 43c0fe1773e371835bfd86f4d6ecd104f34ec6071943ad07883e6e6955d8301d
 contracts/pydantic/parallax_contracts_v1_3.py | 23472 | e167dad3f103fd4fc308fb7209ed095c13cd69ef9ff931e41fa7edd69a093d33
-database/README.md | 4846 | 225714833e4fd48bd68f037d2b5e5ffe7c3fa25fb876531c450368bca5f1f1c0
+database/README.md | 5045 | 4f8b8ec81644f3f041e349f4e3b239a292b20ede1cd75635605751cf74b7dc63
 database/migrations/0001_extensions_and_enums.sql | 4185 | e53fda6c34e3cebcd2fe117742ba0380fa1fe9e38c50a3535ce48cfd549d086c
 database/migrations/0002_identity_privacy_audit.sql | 2374 | 5445e1fcb6ca6f22f56ad626d88cb5e5df15171964f076955b110f5d2ebe4b30
 database/migrations/0003_activity_identity.sql | 2481 | ff656d3ab63f18b0819d6cef1aa3b225efff50e7902777cc2fe946478abf19d5
@@ -54,6 +52,7 @@ database/migrations/0014_timing_review_flags.sql | 1599 | 8ad1f7c46183121dbfdee5
 database/migrations/0015_firebase_external_identity.sql | 1859 | 8844172150a2d1140347c31a3c5f85aae8468f4e17eb86536c9092f7a3140b31
 database/migrations/0016_activity_identity_preflight_decisions.sql | 2224 | 0b39b99e5b035869945dc33b631be4422cc67dfa7c03ca9ff8b0916ba464da26
 database/migrations/0017_resource_dependency_event_idempotency.sql | 418 | 1de2fc29000c1c306cf974eaf57463a756a9c30889471a32f1717a3c1a562de3
+database/migrations/0018_workflow_retry_hardening.sql | 532 | 52e6b8decd2d010e065d7c87820e94cfceb870f0a99001b0a9c034bf66a30763
 database/migrations/9999_seed_dev_data.sql | 1018 | 8d540fe71559e5ebf7d679ca166a5cd9aae99afb7cb750210f9380ebfb15e64d
 database/optional_profiles/0009_timescale_optional_analytics_profile.sql | 2176 | 5b18a6f2e61c2668c3c0c2e47c791f2d3616af93dbba69a76850e0d71eea8e45
 database/optional_profiles/0010_paradedb_optional_search_profile.sql | 429 | 45c610df4d68a00e9dbf6c9cc3616fa0a500e94abf8f91418d42dcec4b4d5afe
@@ -114,7 +113,7 @@ infrastructure/zfs/create_parallax_datasets.sh | 1166 | 5b052c156684d7d1f7126322
 infrastructure/zfs/zfs_dataset_plan.md | 1498 | f0238a8150eaa9a06554604c62a207c1fe00245ae9b2319be523feb19c316f21
 scripts/bootstrap_dev.sh | 406 | 24c814d4b6ae16645a4becb69cdc553991c629a1a8d5bebd06af97c41bd8f7ac
 scripts/generate_manifest.py | 824 | 4684eaca16630d298885b030dbda0a28671eeb5b8cd7a91ebd36cba493f59875
-scripts/validate_pack.py | 10164 | a73739ae69ea812433e22548766a9cfef82ea6c23b8b8fd7b72c7fb3e15ba54b
+scripts/validate_pack.py | 10180 | 9ea08b144da2cf890d4086a9645d45494650ecf5fd7a2971b3ecdcb80f1e78d8
 source_inputs/source_alignment_summary.md | 1973 | 4538e0292737883b7dc9227eb97f6a5c40cd8652709f9c7917579c77f74daf58
 tests_or_eval/accessibility_checklist.md | 428 | b663d43e7074742baad00694243f7debbd17a330c43ae2a06f8af67603629b51
 tests_or_eval/capture_workflow_scenario_matrix.csv | 737 | e5154e6f62d7611299961466546e0168f676e7e6c4cfff335c6e786f2000cc5b

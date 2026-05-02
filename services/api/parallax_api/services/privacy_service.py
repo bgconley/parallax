@@ -193,7 +193,12 @@ def process_privacy_workflow_in_uow(
             )
             result = {**result, "external_identities_tombstoned": tombstoned}
     except Exception as exc:
-        uow.workflows.mark_failed(workflow_id, exc.__class__.__name__, str(exc))
+        uow.workflows.mark_failed(
+            workflow_id,
+            exc.__class__.__name__,
+            str(exc),
+            retryable=not isinstance(exc, (KeyError, ValueError, HTTPException)),
+        )
         raise
     result_ref = {"request_id": str(request_id), "request_type": request_type, **result}
     uow.workflows.mark_succeeded(workflow_id, result_ref)

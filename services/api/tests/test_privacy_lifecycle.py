@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from typing import Any, cast
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 from parallax_api.main import create_app
 from parallax_api.repositories.in_memory_unit_of_work import InMemoryUnitOfWorkFactory
 from parallax_api.repositories.memory import InMemoryStore
+from parallax_api.schemas.temporal import TemporalQueryAnswer
 from parallax_worker.workflow_worker import WorkflowWorker
 
 USER_ID = "00000000-0000-0000-0000-00000000d001"
@@ -28,6 +29,24 @@ def make_client_and_store() -> tuple[TestClient, InMemoryStore]:
     store = InMemoryStore()
     client = TestClient(create_app(uow_factory=InMemoryUnitOfWorkFactory(store)))
     return client, store
+
+
+def seed_temporal_query_answer(store: InMemoryStore) -> TemporalQueryAnswer:
+    answer = TemporalQueryAnswer(
+        id=uuid4(),
+        user_id=UUID(USER_ID),
+        question="What did my private context say?",
+        answer="Derived answer",
+        confidence="very_low",
+        sample_size=0,
+        time_window="last_180_days",
+        computed_facts={},
+        limitations=[],
+        evidence=[],
+        status="complete",
+    )
+    store.temporal_query_answers[answer.id] = answer
+    return answer
 
 
 def test_place_context_delete_is_durable_and_redacts_place_after_worker_runs() -> None:
@@ -66,6 +85,7 @@ def test_place_context_delete_is_durable_and_redacts_place_after_worker_runs() -
     assert response.json()["status"] == "queued"
     listed_places = client.get("/v1/places", headers=HEADERS).json()
     assert listed_places[0]["display_name"] == "Private Home Label"
+    query_answer = seed_temporal_query_answer(store)
 
     processed = WorkflowWorker(InMemoryUnitOfWorkFactory(store)).drain_once()
 
@@ -81,6 +101,8 @@ def test_place_context_delete_is_durable_and_redacts_place_after_worker_runs() -
     assert workflow.status == "succeeded"
     deleted = cast(dict[str, Any], workflow.result_ref["deleted"])
     assert deleted["places"] == 1
+    assert deleted["query_answers"] == 1
+    assert query_answer.id not in store.temporal_query_answers
 
 
 def test_privacy_redact_waits_for_worker_and_redacts_annotation_payload() -> None:
@@ -128,6 +150,7 @@ def test_privacy_redact_waits_for_worker_and_redacts_annotation_payload() -> Non
     assert client.get(f"/v1/timing/annotations/{annotation['id']}", headers=HEADERS).json()[
         "raw_text"
     ] == "PRIVATE_ANNOTATION_TEXT"
+    query_answer = seed_temporal_query_answer(store)
 
     processed = WorkflowWorker(InMemoryUnitOfWorkFactory(store)).drain_once()
 
@@ -136,6 +159,11 @@ def test_privacy_redact_waits_for_worker_and_redacts_annotation_payload() -> Non
     assert redacted["raw_text"] is None
     assert redacted["audio_object_ref"] is None
     assert redacted["status"] == "redacted"
+    assert query_answer.id not in store.temporal_query_answers
+    workflow = next(iter(store.workflow_runs.values()))
+    redacted_result = cast(dict[str, Any], workflow.result_ref["redacted"])
+    derived = cast(dict[str, Any], redacted_result["derived_artifacts"])
+    assert derived["query_answers"] == 1
 
 
 def test_privacy_export_worker_records_export_manifest() -> None:

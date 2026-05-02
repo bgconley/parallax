@@ -143,6 +143,7 @@ def main(argv: list[str] | None = None) -> int:
         "0015",
         "0016",
         "0017",
+        "0018",
         "9999",
     ]
     found_prefixes = [p.name[:4] for p in sql_files]

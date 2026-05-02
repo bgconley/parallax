@@ -261,7 +261,12 @@ def process_context_annotation_workflow_in_uow(
             extractor,
         )
     except Exception as exc:
-        uow.workflows.mark_failed(workflow_id, exc.__class__.__name__, str(exc))
+        uow.workflows.mark_failed(
+            workflow_id,
+            exc.__class__.__name__,
+            str(exc),
+            retryable=not isinstance(exc, (KeyError, ValueError, ValidationError, HTTPException)),
+        )
         raise
     uow.workflows.mark_succeeded(
         workflow_id,

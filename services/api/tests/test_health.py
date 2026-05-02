@@ -118,6 +118,32 @@ def test_readiness_requests_migration_aware_check() -> None:
     assert checker.readiness_values == [True]
 
 
+def test_metrics_endpoint_records_route_templates() -> None:
+    client = TestClient(create_app(health_checker=HealthyChecker()))
+
+    client.get("/v1/health")
+    response = client.get("/metrics")
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    body = response.text
+    assert "parallax_api_requests_total" in body
+    assert 'route="/v1/health"' in body
+    assert 'route="/metrics"' in body
+
+
+def test_metrics_endpoint_requires_configured_token(monkeypatch) -> None:
+    monkeypatch.setenv("PARALLAX_METRICS_TOKEN", "metrics-secret")
+    client = TestClient(create_app(health_checker=HealthyChecker()))
+
+    forbidden = client.get("/metrics")
+    allowed = client.get("/metrics", headers={"X-Parallax-Metrics-Token": "metrics-secret"})
+
+    assert forbidden.status_code == 403
+    assert forbidden.json()["error_code"] == "metrics_forbidden"
+    assert allowed.status_code == 200
+
+
 def test_liveness_does_not_depend_on_downstream_services() -> None:
     client = TestClient(create_app(health_checker=UnhealthyChecker()))
 

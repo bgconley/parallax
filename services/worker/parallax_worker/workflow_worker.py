@@ -3,10 +3,12 @@ from __future__ import annotations
 import logging
 from uuid import UUID
 
+from fastapi import HTTPException
 from parallax_api.adapters.context_extractor import ContextExtractor, DeterministicContextExtractor
 from parallax_api.repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
 from parallax_api.services.extraction_service import process_context_annotation_workflow_in_uow
 from parallax_api.services.privacy_service import process_privacy_workflow_in_uow
+from pydantic import ValidationError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,6 +41,7 @@ class WorkflowWorker:
                         workflow.id,
                         "unsupported_workflow_type",
                         str(workflow.workflow_type),
+                        retryable=False,
                     )
             except Exception as exc:
                 LOGGER.exception(
@@ -52,6 +55,10 @@ class WorkflowWorker:
                     workflow.id,
                     exc.__class__.__name__,
                     str(exc),
+                    retryable=not isinstance(
+                        exc,
+                        (HTTPException, KeyError, ValueError, ValidationError),
+                    ),
                 )
         return 1
 
@@ -66,7 +73,12 @@ def _process_place_inference_workflow(uow: UnitOfWork, workflow_id: UUID) -> Non
             raise ValueError("place inference workflow missing snapshot_id")
         inferred = uow.contexts.infer_places_for_snapshot(workflow.user_id, snapshot_id)
     except Exception as exc:
-        uow.workflows.mark_failed(workflow_id, exc.__class__.__name__, str(exc))
+        uow.workflows.mark_failed(
+            workflow_id,
+            exc.__class__.__name__,
+            str(exc),
+            retryable=not isinstance(exc, ValueError),
+        )
         raise
     uow.workflows.mark_succeeded(
         workflow_id,
@@ -82,11 +94,21 @@ def _process_place_inference_workflow(uow: UnitOfWork, workflow_id: UUID) -> Non
 def _process_feature_vector_workflow(uow: UnitOfWork, workflow_id: UUID) -> None:
     workflow = uow.workflows.mark_running(workflow_id)
     if workflow.user_id is None:
-        uow.workflows.mark_failed(workflow_id, "missing_user_scope", "workflow missing user scope")
+        uow.workflows.mark_failed(
+            workflow_id,
+            "missing_user_scope",
+            "workflow missing user scope",
+            retryable=False,
+        )
         return
     input_ref = workflow.input_ref
     if not isinstance(input_ref, dict):
-        uow.workflows.mark_failed(workflow_id, "invalid_input_ref", "workflow input_ref is invalid")
+        uow.workflows.mark_failed(
+            workflow_id,
+            "invalid_input_ref",
+            "workflow input_ref is invalid",
+            retryable=False,
+        )
         return
     activity_id = _input_uuid(workflow, "activity_id")
     session_id = _input_uuid(workflow, "session_id")

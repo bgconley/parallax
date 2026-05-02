@@ -115,11 +115,22 @@ def main() -> int:
                 ),
                 201,
             )
+            query_answer = _expect(
+                client.post(
+                    "/v1/temporal/query",
+                    json={
+                        "mutation": _mutation(device_id, "query-answer", 6),
+                        "question": "How long does the privacy lifecycle activity take?",
+                        "activity_id": activity["id"],
+                    },
+                ),
+                202,
+            )
             redact = _expect(
                 client.post(
                     "/v1/privacy/redact",
                     json={
-                        "mutation": _mutation(device_id, "redact-annotation", 6),
+                        "mutation": _mutation(device_id, "redact-annotation", 7),
                         "entity_type": "temporal_context_annotation",
                         "entity_id": annotation["id"],
                         "reason": "privacy smoke",
@@ -143,12 +154,17 @@ def main() -> int:
                 raise AssertionError(
                     f"privacy redact did not redact annotation: {redacted_annotation}"
                 )
+            derived_counts = _derived_artifact_counts(args.database_url, user_id)
+            if any(derived_counts.values()):
+                raise AssertionError(
+                    f"privacy redact did not invalidate query artifacts: {derived_counts}"
+                )
 
             export = _expect(
                 client.post(
                     "/v1/privacy/export",
                     json={
-                        "mutation": _mutation(device_id, "export", 7),
+                        "mutation": _mutation(device_id, "export", 8),
                         "include_raw_context": True,
                         "include_audio": False,
                     },
@@ -169,6 +185,7 @@ def main() -> int:
             {
                 "place_id": place["id"],
                 "annotation_id": annotation["id"],
+                "query_answer_id": query_answer["id"],
                 "delete_workflow_id": delete["workflow_run_id"],
                 "redact_workflow_id": redact["workflow_run_id"],
                 "export_workflow_id": export["workflow_run_id"],
@@ -279,6 +296,34 @@ def _annotation_row(database_url: str, user_id: UUID, annotation_id: UUID) -> di
     if row is None:
         raise AssertionError(f"annotation not found after redact workflow: {annotation_id}")
     return dict(row)
+
+
+def _derived_artifact_counts(database_url: str, user_id: UUID) -> dict[str, int]:
+    queries = {
+        "temporal_query_answers": """
+            select count(*) from temporal_query_answer where user_id = %s
+        """,
+        "query_evidence_bundles": """
+            select count(*) from evidence_bundle
+            where user_id = %s and purpose = 'temporal_query_answer'
+        """,
+        "query_retrieval_documents": """
+            select count(*) from retrieval_document
+            where user_id = %s and entity_type = 'temporal_query_answer'
+        """,
+        "query_outbox_events": """
+            select count(*) from outbox_event
+            where user_id = %s and aggregate_type = 'temporal_query_answer'
+        """,
+    }
+    counts: dict[str, int] = {}
+    with psycopg.connect(database_url, row_factory=dict_row) as connection:
+        with connection.cursor() as cursor:
+            for name, sql in queries.items():
+                cursor.execute(sql, (user_id,))
+                row = cursor.fetchone()
+                counts[name] = int(row["count"]) if row is not None else 0
+    return counts
 
 
 def _cleanup(database_url: str, user_id: UUID) -> None:

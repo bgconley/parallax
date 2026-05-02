@@ -20,7 +20,8 @@ profile in numeric order:
 11. `0015_firebase_external_identity.sql` when enabling Firebase Auth private-alpha identity
 12. `0016_activity_identity_preflight_decisions.sql` when implementing Phase 6 identity/preflight decisions
 13. `0017_resource_dependency_event_idempotency.sql` when implementing Phase 6 resource dependency evidence aggregation
-14. Dev only: `9999_seed_dev_data.sql`
+14. `0018_workflow_retry_hardening.sql` when hardening workflow retry/recovery behavior
+15. Dev only: `9999_seed_dev_data.sql`
 
 Core timing and review features require migrations 0001–0006 and 0008.
 Context-aware v1.3 features require 0011 after the core timing/event tables are
@@ -29,7 +30,8 @@ auth requires 0015 for durable external identity mapping, invite/provisioning
 metadata, and deleted-identity tombstones. Phase 6 identity/preflight API
 correction requires 0016 for decision endpoints, soft merge audit records,
 resource dependencies, and preflight lifecycle state, then 0017 for idempotent
-resource-evidence counting. Retrieval/Ask can begin with native PostgreSQL FTS
+resource-evidence counting. Migration 0018 adds retry metadata to durable
+workflow runs so transient failures can be retried idempotently. Retrieval/Ask can begin with native PostgreSQL FTS
 in 0007; the
 pgvector embedding tables self-skip unless the `vector` extension is available
 and can be enabled. pgvector, TimescaleDB, ParadeDB, PostGIS, and the Timescale

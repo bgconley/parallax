@@ -8,6 +8,7 @@ import time
 from collections.abc import Mapping
 
 import jwt
+import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -82,6 +83,7 @@ def test_invalid_auth_header_is_rejected_without_internal_error() -> None:
 
 def test_dev_header_auth_is_rejected_outside_development(monkeypatch) -> None:
     monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_AUTH_MODE", "dev_header")
     try:
         make_app()
     except RuntimeError as exc:
@@ -90,10 +92,10 @@ def test_dev_header_auth_is_rejected_outside_development(monkeypatch) -> None:
         raise AssertionError("expected production dev_header startup guard")
 
 
-def test_external_bearer_auth_accepts_signed_jwt_in_production(monkeypatch) -> None:
+def test_external_bearer_auth_accepts_signed_hs256_jwt_in_development(monkeypatch) -> None:
     user_id = "00000000-0000-0000-0000-0000000000f2"
     secret = "private-alpha-test-secret-32-bytes-min"
-    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_ENV", "development")
     monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
     monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", secret)
     token = encode_hs256_jwt({"sub": user_id, "exp": int(time.time()) + 300}, secret)
@@ -111,7 +113,7 @@ def test_external_bearer_auth_accepts_signed_jwt_in_production(monkeypatch) -> N
 
 def test_external_bearer_auth_rejects_expired_jwt(monkeypatch) -> None:
     secret = "private-alpha-test-secret-32-bytes-min"
-    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_ENV", "development")
     monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
     monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", secret)
     token = encode_hs256_jwt(
@@ -127,7 +129,7 @@ def test_external_bearer_auth_rejects_expired_jwt(monkeypatch) -> None:
 
 
 def test_external_bearer_auth_rejects_invalid_signature_without_echoing_token(monkeypatch) -> None:
-    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_ENV", "development")
     monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
     monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", "expected-secret-32-bytes-minimum")
     token = encode_hs256_jwt(
@@ -147,7 +149,7 @@ def test_external_bearer_auth_rejects_invalid_signature_without_echoing_token(mo
 def test_external_bearer_auth_verifies_configured_issuer_and_audience(monkeypatch) -> None:
     user_id = "00000000-0000-0000-0000-0000000000f5"
     secret = "issuer-audience-test-secret-32-bytes"
-    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_ENV", "development")
     monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
     monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", secret)
     monkeypatch.setenv("PARALLAX_AUTH_JWT_ISSUER", "https://auth.parallax.test")
@@ -170,7 +172,7 @@ def test_external_bearer_auth_verifies_configured_issuer_and_audience(monkeypatc
 
 def test_external_bearer_auth_rejects_wrong_audience(monkeypatch) -> None:
     secret = "issuer-audience-test-secret-32-bytes"
-    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_ENV", "development")
     monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
     monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", secret)
     monkeypatch.setenv("PARALLAX_AUTH_JWT_AUDIENCE", "parallax-api")
@@ -191,7 +193,7 @@ def test_external_bearer_auth_rejects_wrong_audience(monkeypatch) -> None:
 
 
 def test_external_bearer_auth_requires_secret_configuration(monkeypatch) -> None:
-    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_ENV", "development")
     monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
     monkeypatch.delenv("PARALLAX_AUTH_JWT_SECRET", raising=False)
     client = TestClient(make_app())
@@ -203,7 +205,7 @@ def test_external_bearer_auth_requires_secret_configuration(monkeypatch) -> None
 
 
 def test_external_bearer_auth_rejects_short_hs256_secret(monkeypatch) -> None:
-    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_ENV", "development")
     monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
     monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", "too-short")
     client = TestClient(make_app())
@@ -230,6 +232,7 @@ def test_external_bearer_auth_accepts_rs256_jwks_token(monkeypatch) -> None:
     monkeypatch.setenv("PARALLAX_AUTH_JWT_ISSUER", "https://auth.parallax.test")
     monkeypatch.setenv("PARALLAX_AUTH_JWT_AUDIENCE", "parallax-api")
     monkeypatch.setenv("PARALLAX_AUTH_JWT_ALGORITHM", "RS256")
+    monkeypatch.setenv("PARALLAX_METRICS_TOKEN", "metrics-token")
     token = jwt.encode(
         {
             "sub": user_id,
@@ -248,15 +251,23 @@ def test_external_bearer_auth_accepts_rs256_jwks_token(monkeypatch) -> None:
     assert response.status_code == 200
 
 
-def test_external_bearer_auth_requires_jwks_or_secret_in_production(monkeypatch) -> None:
+def test_production_external_bearer_requires_jwks_issuer_and_audience(monkeypatch) -> None:
     monkeypatch.setenv("PARALLAX_ENV", "production")
     monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
     monkeypatch.setenv("PARALLAX_AUTH_JWT_ALGORITHM", "RS256")
+    monkeypatch.setenv("PARALLAX_METRICS_TOKEN", "metrics-token")
     monkeypatch.delenv("PARALLAX_AUTH_JWKS_URL", raising=False)
     monkeypatch.delenv("PARALLAX_AUTH_JWT_SECRET", raising=False)
-    client = TestClient(make_app())
 
-    response = client.get("/v1/activities", headers={"Authorization": "Bearer token"})
+    with pytest.raises(RuntimeError, match="production external_bearer auth requires"):
+        make_app()
 
-    assert response.status_code == 503
-    assert response.json()["error_code"] == "auth_provider_not_configured"
+
+def test_production_external_bearer_rejects_hs256(monkeypatch) -> None:
+    monkeypatch.setenv("PARALLAX_ENV", "production")
+    monkeypatch.setenv("PARALLAX_AUTH_MODE", "external_bearer")
+    monkeypatch.setenv("PARALLAX_AUTH_JWT_SECRET", "private-alpha-test-secret-32-bytes-min")
+    monkeypatch.setenv("PARALLAX_METRICS_TOKEN", "metrics-token")
+
+    with pytest.raises(RuntimeError, match="HS256 is not allowed"):
+        make_app()

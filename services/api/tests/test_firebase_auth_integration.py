@@ -48,6 +48,7 @@ def _configure_firebase_env(
     monkeypatch.setenv("PARALLAX_AUTH_AUTO_PROVISION", "true" if auto_provision else "false")
     monkeypatch.setenv("PARALLAX_AUTH_INVITE_REQUIRED", "true" if invite_required else "false")
     monkeypatch.setenv("PARALLAX_AUTH_IDENTITY_TOMBSTONE_SECRET", "test-tombstone-secret")
+    monkeypatch.setenv("PARALLAX_METRICS_TOKEN", "metrics-token")
 
 
 def _install_firebase_principals(

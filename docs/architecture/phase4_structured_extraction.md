@@ -23,6 +23,11 @@ names. API requests enqueue work and return a queued response; the lightweight
 worker drains the same workflow records and owns extraction/place-inference
 completion, retry, success, and failure state transitions.
 
+Workflow retry state is persisted directly on `workflow_run` through
+`attempts`, `max_attempts`, `next_run_at`, and `last_heartbeat_at`. Retryable
+failures are requeued with bounded backoff; malformed or unsupported workflow
+inputs fail permanently so they do not churn the queue.
+
 ## Semantics
 
 Extraction produces `temporal_extracted_context_event` candidates only. It does

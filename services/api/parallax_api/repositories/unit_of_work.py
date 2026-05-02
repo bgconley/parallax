@@ -365,6 +365,8 @@ class WorkflowRunRepositoryProtocol(Protocol):
         workflow_id: UUID,
         error_code: str,
         error_message: str,
+        *,
+        retryable: bool = True,
     ) -> WorkflowRun: ...
 
 

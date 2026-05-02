@@ -43,3 +43,12 @@ Phase 7 is proven by `make phase7-smoke`, which:
 - checks query-grounding eval fixture requirements;
 - verifies backing `evidence_bundle`, `evidence_item`, `retrieval_document`, and
   `outbox_event` rows.
+
+## Privacy lifecycle hardening
+
+Privacy redaction and deletion invalidate grounded Ask artifacts conservatively.
+Until query-answer lineage records source provenance at a finer granularity,
+privacy lifecycle completion removes the user's `temporal_query_answer`,
+`retrieval_document`, `evidence_bundle`, `evidence_item`, and temporal-query
+`outbox_event` rows rather than risking stale derived disclosure after a source
+context or place is removed.

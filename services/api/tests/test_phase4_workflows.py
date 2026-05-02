@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import cast
 
 from fastapi.testclient import TestClient
 from parallax_api.main import create_app
 from parallax_api.repositories.in_memory_unit_of_work import InMemoryUnitOfWorkFactory
 from parallax_api.repositories.memory import InMemoryStore
+from parallax_api.schemas.context import TemporalContextAnnotation
 from parallax_worker.workflow_worker import WorkflowWorker
 from test_phase4_structured_extraction import (
     USER_ID,
@@ -93,3 +95,53 @@ def test_worker_marks_invalid_workflow_failed_without_stopping_queue() -> None:
     refreshed = store.workflow_runs[workflow.id]
     assert refreshed.status == "failed"
     assert refreshed.error_code == "ValueError"
+    assert refreshed.attempts == 1
+
+
+def test_worker_requeues_retryable_failures_with_backoff() -> None:
+    store = InMemoryStore()
+    client = TestClient(create_app(uow_factory=InMemoryUnitOfWorkFactory(store)))
+    activity_id = create_activity(client, "Workflow retry")
+    session_id = create_started_session(client, activity_id, "workflow-retry")
+    annotation = create_annotation(
+        client,
+        session_id,
+        "I had to stop and find the sponge, which took about 10 minutes.",
+        mutation_id="annotation-workflow-retry",
+    )
+    workflow = store.workflow_runs.create_context_annotation_workflow(
+        user_id=USER_ID,
+        annotation_id=cast(str, annotation["id"]),
+        mutation=mutation("extract-worker-retry", 6),
+        force=False,
+    )
+
+    processed = WorkflowWorker(
+        InMemoryUnitOfWorkFactory(store),
+        extractor=TransientExtractor(),
+    ).drain_once()
+
+    assert processed == 1
+    retrying = store.workflow_runs[workflow.id]
+    assert retrying.status == "queued"
+    assert retrying.error_code == "RuntimeError"
+    assert retrying.attempts == 1
+    assert retrying.next_run_at is not None
+    assert retrying.next_run_at > retrying.updated_at
+
+    store.workflow_runs[workflow.id] = retrying.model_copy(
+        update={"next_run_at": datetime.now(UTC) - timedelta(seconds=1)}
+    )
+    processed = WorkflowWorker(InMemoryUnitOfWorkFactory(store)).drain_once()
+
+    assert processed == 1
+    refreshed = store.workflow_runs[workflow.id]
+    assert refreshed.status == "succeeded"
+    assert refreshed.attempts == 2
+    assert refreshed.error_code is None
+    assert refreshed.error_message is None
+
+
+class TransientExtractor:
+    def extract(self, annotation: TemporalContextAnnotation) -> dict[str, object]:
+        raise RuntimeError("transient extractor outage")

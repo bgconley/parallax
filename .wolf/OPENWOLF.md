@@ -29,11 +29,19 @@ You are working in an OpenWolf-managed project. These rules apply every turn.
 - Remote sudo over SSH needs a TTY. Use `ssh -tt ... 'sudo -v && sudo <command>'`; do not prefix the Mac-side SSH command with local `sudo`.
 - Current runtime permission policy: `/srv/parallax` `root:root 0755`; `postgres` and `postgres_wal` numeric `999:999 0700`; `objects`, `exports`, `models`, `hf_cache`, and `logs` numeric `10001:bgconley 0770`; `config` and `observability` `bgconley:bgconley 0755`; `backups` `root:bgconley 0750`.
 - Host passwd/group names for numeric UID/GID `999` may display as unrelated local accounts. Treat the numeric IDs as the source of truth until the pinned Postgres image is verified.
-- Do not begin any later phase without explicit user instruction. Phase 0, Phase 1, and Phase 2 are complete; Phase 3 is active only because the user explicitly started it. Do not start Phase 4 without user instruction. Phase gates must be proven with repo validation, Compose render/start, health readiness, baseline migrations, and GPU-node validation.
+- Do not begin any later phase without explicit user instruction. Phase 0 through Phase 7 are complete; Phase 8 is active only because the user explicitly started design/UI implementation and Figma alignment. Do not start Phase 9 or broaden Phase 8 beyond temporal UI scope without explicit user instruction. Phase gates must be proven with repo validation, Compose render/start, health readiness, baseline migrations, and GPU-node validation.
 - Phase 0 Compose uses Parallax-specific localhost ports to avoid conflicts with other GPU-node stacks: API `18000`, Postgres `15432`, Redis `16379`, Temporal `17233`, Temporal UI `18088`, MinIO `19000/19001`, and Caddy `18080/18443`.
 - Baseline migrations are run with `scripts/apply_migrations.py`; the runner reads `migrations/` only and excludes optional profiles unless explicitly enabled later.
 - Temporal auto-setup `1.24` requires `DB=postgres12`, not `DB=postgresql`.
 - Deferred release work that must be implemented at the right later phase: production/private-alpha auth provider and JWT/session validation, remaining canonical v1.3 endpoint surface, backup/restore plus WAL/archive proof, load/performance SLO validation, later-phase Temporal workflows, and production traffic/log privacy-scrub proof. Do not pull these into Phase 3 unless the user explicitly starts that scope.
+
+## Parallax UI/UX Scope Guard
+
+- Treat `figma_expansion_readiness_pack_v0_8_1/` as design-language reference only: native iOS grammar, spacing, typography, card/chip patterns, accessibility posture, interaction tone, and Liquid Glass treatment. It is not product-scope authority for Parallax.
+- Keep active Parallax UI scope temporal: timing sessions, timing launcher/calibration, timing review/correction, checkpoints or "break it down" only as timing workflow support, temporal home/current focus, offline/sync/AI-pending/needs-review/high-contrast/Dynamic Type/reduced-motion states for those workflows, and grounded temporal answers only where Phase 7 supports them.
+- Do not add broad task/project management, generic inbox/task-tracker flows, routine builders, broad weekly reviews, broad personalization/settings, or unrelated assistant/planning workflows just because they appear in the expansion pack or Figma reference material. Require a canonical artifact or explicit product decision first.
+- Active Figma work must be source-backed or canonical-derived from `parallax_v1_3_artifact_pack/examples/` and the current canonical Figma reference pages. Simplified vector drafts are not finished mockups.
+- Before declaring Figma/UI work complete, capture screenshots, scrutinize spacing/alignment/centering/clipping/overlap/text fit, and compare directly against the canonical mockups.
 
 ## After Actions
 

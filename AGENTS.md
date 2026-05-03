@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This checkout contains the Parallax v1.3 artifact pack plus the Phase 0-7 implementation work. Do not advance Phase 8 or later unless the user explicitly starts that phase. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
+This checkout contains the Parallax v1.3 artifact pack plus the Phase 0-7 implementation work and active Phase 8 design/UI work. Do not advance later phases unless the user explicitly starts that phase. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
 
 Before making implementation or infrastructure decisions, read the relevant canonical artifact files first. Do not infer Parallax layout, storage, runtime, or service policy from existing GPU-node directories or other apps when a Parallax artifact covers the topic.
 
@@ -49,6 +49,16 @@ Use `Parallax` for product copy, `parallax` for packages/services/databases, and
 
 Use `docs/12_testing_qa_release_rollback.md` as the test authority. Seed timing semantics from `tests_or_eval/temporal_semantics_test_matrix.csv`; use JSONL files in `tests_or_eval/` for LLM/retrieval evaluation. Contract changes must update OpenAPI, JSON Schema, examples, docs, and tests together.
 
+## Phase 8 UI/UX Scope Guard
+
+For Parallax, `figma_expansion_readiness_pack_v0_8_1/` is a design-language reference only: native iOS grammar, spacing, typography, card/chip patterns, accessibility posture, interaction tone, and Liquid Glass treatment. It is not product-scope authority.
+
+Active Parallax UI scope is temporal: timing sessions, timing launcher/calibration, timing review/correction, checkpoints or "break it down" only as timing workflow support, temporal home/current focus, offline/sync/AI-pending/needs-review/high-contrast/Dynamic Type/reduced-motion states for those workflows, and grounded temporal answers only where Phase 7 supports them.
+
+Do not pull in broad task/project management, generic inbox/task-tracker flows, routine builders, broad weekly reviews, broad personalization/settings, or unrelated assistant/planning workflows just because they are visible in the expansion pack or in Figma. Any non-temporal UI surface needs a canonical artifact or explicit product decision before implementation.
+
+Active Figma visual targets must be source-backed or canonical-derived from `parallax_v1_3_artifact_pack/examples/` and the current canonical Figma reference pages. Simplified vector drafts are not finished mockups. Before treating Figma work as complete, capture screenshots of the new work, inspect for alignment, spacing, centering, clipping, overlap, cramped boundaries, and text fit, then compare directly against the canonical mockups.
+
 ## Environment Routing
 
 Unit tests may run locally on the Mac. Run all functional tests, integration tests, end-of-phase verification/validation tests, and backend operations on the GPU node, because that is the deployment host. Keep frontend testing, Xcode and SwiftUI work, initial Figma work, and Playwright-based UI validation on the Mac.
@@ -67,7 +77,7 @@ GPU-node runtime storage is verified under `tank/parallax` mounted at `/srv/para
 
 Current permission policy: `/srv/parallax` is `root:root 0755`; Postgres and WAL are numeric `999:999 0700`; service-writable objects/exports/models/cache/logs are `10001:bgconley 0770`; config and observability are `bgconley:bgconley 0755`; backups are `root:bgconley 0750`. Host names for UID/GID `999` may display as unrelated local accounts; verify numeric IDs against the pinned container image when the DB image is finalized.
 
-Phase work must be explicit. Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 are complete. Do not deepen Phase 8 or any later phase unless the user directly instructs you to begin that phase. The current runtime API exposes the canonical v1.3 method/path surface, but later-phase endpoints are baseline implementations until their owning phase receives explicit product-depth work.
+Phase work must be explicit. Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 are complete. Phase 8 is active only for explicitly requested design/UI implementation and Figma alignment work. Do not start Phase 9 or broaden Phase 8 beyond temporal UI scope unless the user directly instructs you to begin that scope. The current runtime API exposes the canonical v1.3 method/path surface, but later-phase endpoints are baseline implementations until their owning phase receives explicit product-depth work.
 
 The Phase 0 runtime uses Parallax-specific localhost ports to coexist with other GPU-node stacks: API `18000`, Postgres `15432`, Redis `16379`, Temporal `17233`, Temporal UI `18088`, MinIO `19000/19001`, and Caddy `18080/18443`. Container-to-container URLs still use service names such as `postgres:5432` and `redis:6379`.
 

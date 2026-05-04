@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This checkout contains the Parallax v1.3 artifact pack plus the Phase 0-8 implementation work. Do not advance Phase 9 or later unless the user explicitly starts that phase. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
+This checkout contains the Parallax v1.3 artifact pack plus the Phase 0-9 implementation work. Do not advance Phase 10 or later unless the user explicitly starts that phase. The canonical artifact source remains `parallax_v1_3_artifact_pack/`; keep the zip archive in sync only when intentionally rebuilding it. Start with `README.md` and `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`.
 
 Before making implementation or infrastructure decisions, read the relevant canonical artifact files first. Do not infer Parallax layout, storage, runtime, or service policy from existing GPU-node directories or other apps when a Parallax artifact covers the topic.
 
@@ -39,6 +39,7 @@ Run implementation commands from the repository root unless noted.
 - `make phase6-smoke`: runs the Phase 6 activity-identity/preflight API/Postgres acceptance smoke against the configured API and host database URL.
 - `make phase7-smoke`: runs the Phase 7 grounded Ask About Time API/Postgres acceptance smoke against the configured API and host database URL.
 - `make phase8-smoke`: validates the Phase 8 repo-side design handoff and SwiftUI view-model contract tests on the Mac.
+- `make phase9-smoke`: runs the Phase 9 optional-extension smoke against isolated Docker databases for pgvector, ParadeDB, PostGIS, and Timescale, and statically checks k3s readiness manifests.
 - `make release-status`: prints the current full-release gate blockers without failing.
 - `make release-gate`: fails while full-release/private-alpha blockers in `docs/release/release_gate_status.md` remain open.
 
@@ -78,7 +79,7 @@ GPU-node runtime storage is verified under `tank/parallax` mounted at `/srv/para
 
 Current permission policy: `/srv/parallax` is `root:root 0755`; Postgres and WAL are numeric `999:999 0700`; service-writable objects/exports/models/cache/logs are `10001:bgconley 0770`; config and observability are `bgconley:bgconley 0755`; backups are `root:bgconley 0750`. Host names for UID/GID `999` may display as unrelated local accounts; verify numeric IDs against the pinned container image when the DB image is finalized.
 
-Phase work must be explicit. Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, and Phase 8 are complete. Do not start Phase 9 or broaden later optional-extension work unless the user directly instructs you to begin that scope. The current runtime API exposes the canonical v1.3 method/path surface, but later-phase endpoints are baseline implementations until their owning phase receives explicit product-depth work.
+Phase work must be explicit. Phase 0, Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, and Phase 9 are complete. Do not start Phase 10 or broaden later work unless the user directly instructs you to begin that scope. The current runtime API exposes the canonical v1.3 method/path surface, but later-phase endpoints are baseline implementations until their owning phase receives explicit product-depth work.
 
 The Phase 0 runtime uses Parallax-specific localhost ports to coexist with other GPU-node stacks: API `18000`, Postgres `15432`, Redis `16379`, Temporal `17233`, Temporal UI `18088`, MinIO `19000/19001`, and Caddy `18080/18443`. Container-to-container URLs still use service names such as `postgres:5432` and `redis:6379`.
 

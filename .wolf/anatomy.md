@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-27T06:29:41Z
-> Files: manual Phase 0 update | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-04T01:27:30Z
+> Files: manual Phase 9 update | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -9,7 +9,7 @@
 - `.env.example` — Phase 0 runtime environment, ZFS bind paths, and Parallax-specific host ports (~180 tok)
 - `AGENTS.md` — Repository Guidelines (~833 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
-- `Makefile` — validation, lint/test, migration, and Compose lifecycle targets (~120 tok)
+- `Makefile` — validation, lint/test, migration, phase smoke, security, release, and Compose lifecycle targets (~170 tok)
 - `docker-compose.yml` — root Compose include for Phase 0 runtime (~20 tok)
 - `pyproject.toml` — Python 3.12 dependency and lint/test configuration (~160 tok)
 
@@ -108,6 +108,17 @@
 - `0012_postgis_optional_geospatial_profile.sql` — Parallax v1.3 migration 0012 (~542 tok)
 - `0013_timescale_capture_context_profile.sql` — Parallax v1.3 migration 0013 (~610 tok)
 
+## database/
+
+- `README.md` — root database helper README for baseline migrations versus optional profiles (~140 tok)
+
+## database/optional_profiles/
+
+- `0009_timescale_optional_analytics_profile.sql` — root-copied optional Timescale analytics shadow profile; excluded from baseline migrations (~622 tok)
+- `0010_paradedb_optional_search_profile.sql` — root-copied optional ParadeDB BM25 retrieval profile (~123 tok)
+- `0012_postgis_optional_geospatial_profile.sql` — root-copied optional PostGIS geography/GiST profile preserving numeric lat/lon baseline (~542 tok)
+- `0013_timescale_capture_context_profile.sql` — root-copied optional Timescale capture-context shadow analytics profile (~610 tok)
+
 ## parallax_v1_3_artifact_pack/database/queries/
 
 - `activity_profile.sql` — Activity Profile query examples. (~306 tok)
@@ -199,7 +210,23 @@
 - `apply_migrations.py` — repo-root runnable baseline migration CLI with optional schema smoke checks (~120 tok)
 - `phase2_smoke.py` — GPU-node Phase 2 review/profile acceptance smoke covering review, discard, spans, stats snapshots, and SQL proof (~560 tok)
 - `phase3_smoke.py` — GPU-node Phase 3 context capture acceptance smoke covering annotations, capture policy/snapshots, places, review flags, and SQL proof (~760 tok)
+- `phase9_smoke.py` — Docker-backed Phase 9 optional-extension smoke for pgvector HNSW, ParadeDB BM25, PostGIS ST_DWithin/GiST, Timescale continuous aggregates, backup/restore, and k3s static checks (~1500 tok)
 - `setup_gpu_node_storage.sh` — GPU-node ZFS dataset, repo checkout, venv directory, and permission bootstrap (~205 tok)
+
+## infra/k3s/base/
+
+- `parallax-namespace.yaml` — k3s namespace, secret contract, and production config map for Parallax (~190 tok)
+- `parallax-storage.yaml` — local-path PVCs for Postgres data/WAL, objects, and logs (~160 tok)
+- `parallax-data-plane.yaml` — ClusterIP Postgres, Redis, and MinIO services/workloads with probes and storage mounts (~720 tok)
+- `parallax-app-plane.yaml` — ClusterIP Temporal/API/worker/model endpoint manifests with secret wiring and health probes (~760 tok)
+
+## docs/architecture/
+
+- `phase9_optional_extension_hardening.md` — Phase 9 scope, Firecrawl-backed extension notes, re-embedding/dual-read plan, k3s boundary, and verification contract (~850 tok)
+
+## tests/
+
+- `test_phase9_optional_extension_hardening.py` — Phase 9 structural tests for optional profile placement, Makefile wiring, k3s manifest contracts, PostGIS preservation, and re-embedding docs (~360 tok)
 
 ## services/api/
 

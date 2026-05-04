@@ -1,0 +1,206 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: parallax-temporal
+  namespace: parallax
+spec:
+  type: ClusterIP
+  ports:
+    - name: grpc
+      port: 7233
+      targetPort: grpc
+  selector:
+    app.kubernetes.io/component: temporal
+    app.kubernetes.io/name: parallax
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parallax-temporal
+  namespace: parallax
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: temporal
+      app.kubernetes.io/name: parallax
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: temporal
+        app.kubernetes.io/name: parallax
+    spec:
+      containers:
+        - name: temporal
+          image: temporalio/auto-setup:1.24@sha256:98cdb6b5e02d64cb933864a9ba91cb66065eb320623a0dafdf44beba535bca88
+          ports:
+            - name: grpc
+              containerPort: 7233
+          env:
+            - name: DB
+              value: postgres12
+            - name: DB_PORT
+              value: "5432"
+            - name: POSTGRES_SEEDS
+              value: parallax-postgres.parallax.svc.cluster.local
+            - name: POSTGRES_USER
+              value: parallax
+            - name: POSTGRES_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: parallax-secrets
+                  key: postgres-password
+          readinessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 60
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: parallax-api
+  namespace: parallax
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+  selector:
+    app.kubernetes.io/component: api
+    app.kubernetes.io/name: parallax
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parallax-api
+  namespace: parallax
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: api
+      app.kubernetes.io/name: parallax
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: api
+        app.kubernetes.io/name: parallax
+    spec:
+      containers:
+        - name: api
+          image: parallax-api:dev
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: parallax-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: parallax-secrets
+                  key: postgres-password
+            - name: PARALLAX_DATABASE_URL
+              value: postgresql://parallax:$(POSTGRES_PASSWORD)@parallax-postgres.parallax.svc.cluster.local:5432/parallax
+            - name: PARALLAX_AUTH_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: parallax-secrets
+                  key: auth-jwt-secret
+            - name: PARALLAX_METRICS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: parallax-secrets
+                  key: metrics-token
+            - name: PARALLAX_LOG_DIR
+              value: /srv/parallax/logs
+          readinessProbe:
+            httpGet:
+              path: /v1/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v1/live
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          volumeMounts:
+            - name: logs
+              mountPath: /srv/parallax/logs
+      volumes:
+        - name: logs
+          persistentVolumeClaim:
+            claimName: parallax-logs
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parallax-worker
+  namespace: parallax
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: worker
+      app.kubernetes.io/name: parallax
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: worker
+        app.kubernetes.io/name: parallax
+    spec:
+      containers:
+        - name: worker
+          image: parallax-worker:dev
+          envFrom:
+            - configMapRef:
+                name: parallax-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: parallax-secrets
+                  key: postgres-password
+            - name: PARALLAX_DATABASE_URL
+              value: postgresql://parallax:$(POSTGRES_PASSWORD)@parallax-postgres.parallax.svc.cluster.local:5432/parallax
+            - name: PARALLAX_LOG_DIR
+              value: /srv/parallax/logs
+          readinessProbe:
+            exec:
+              command: ["python", "-c", "import parallax_worker.workflow_worker"]
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          livenessProbe:
+            exec:
+              command: ["python", "-c", "import parallax_worker.workflow_worker"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          volumeMounts:
+            - name: logs
+              mountPath: /srv/parallax/logs
+      volumes:
+        - name: logs
+          persistentVolumeClaim:
+            claimName: parallax-logs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: parallax-model-internal
+  namespace: parallax
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

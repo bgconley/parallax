@@ -228,6 +228,54 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-03T20:46:07Z"
+    },
+    {
+      "id": "bug-020",
+      "timestamp": "2026-05-04T01:27:30Z",
+      "error_message": "uv run pytest -q failed because tests/test_phase0_bootstrap.py still expected Phase 0-7 completion wording in AGENTS.md",
+      "file": "tests/test_phase0_bootstrap.py",
+      "root_cause": "The phase-boundary assertion was not updated when Phase 8 was recorded as complete in AGENTS.md.",
+      "fix": "Updated the assertion to expect Phase 0 through Phase 8 as complete before Phase 9 work.",
+      "tags": ["phase9", "pytest", "phase-boundary", "agents"],
+      "related_bugs": ["bug-019"],
+      "occurrences": 1,
+      "last_seen": "2026-05-04T01:27:30Z"
+    },
+    {
+      "id": "bug-021",
+      "timestamp": "2026-05-04T01:27:30Z",
+      "error_message": "make security failed on scripts/phase9_smoke.py with Bandit hardcoded password/tmp-path findings and Semgrep raw SQL finding",
+      "file": "scripts/phase9_smoke.py",
+      "root_cause": "The first Phase 9 smoke script used a test-container password constant, a hardcoded /tmp dump path, and a dynamic vector table query.",
+      "fix": "Marked the isolated test-container password, replaced the dynamic vector SQL with dimension-specific literal queries, and built the container dump path with PurePosixPath.",
+      "tags": ["phase9", "security", "bandit", "semgrep", "smoke"],
+      "related_bugs": ["bug-016"],
+      "occurrences": 1,
+      "last_seen": "2026-05-04T01:27:30Z"
+    },
+    {
+      "id": "bug-022",
+      "timestamp": "2026-05-04T01:27:30Z",
+      "error_message": "GPU make phase9-smoke failed in Timescale proof with refresh_continuous_aggregate transaction/current-bucket behavior and plain restore catalog errors",
+      "file": "scripts/phase9_smoke.py",
+      "root_cause": "The Timescale proof refreshed continuous aggregates inside a transaction, inserted samples into an open current bucket, and used plain psql restore instead of Timescale's supported custom-format pre/post restore flow.",
+      "fix": "Used autocommit Timescale proof connections, moved sample data into closed historical buckets, refreshed explicit windows, and switched backup/restore to pg_dump -Fc plus timescaledb_pre_restore/timescaledb_post_restore.",
+      "tags": ["phase9", "timescale", "backup-restore", "continuous-aggregate", "gpu-smoke"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-04T01:27:30Z"
+    },
+    {
+      "id": "bug-023",
+      "timestamp": "2026-05-04T02:53:59Z",
+      "error_message": "Review found Phase 9 k3s manifests would crash the API under production external_bearer auth and used /v1/health for both readiness and liveness probes",
+      "file": "infra/k3s/base/parallax-namespace.yaml, infra/k3s/base/parallax-app-plane.yaml, scripts/phase9_smoke.py, tests/test_phase9_optional_extension_hardening.py",
+      "root_cause": "The k3s readiness artifacts did not include the production external-bearer JWKS/issuer/audience/asymmetric-algorithm contract, and reused the dependency health endpoint for lifecycle probes.",
+      "fix": "Added RS256 JWKS/issuer/audience placeholders to the k3s config map, pointed API readiness at /v1/ready and liveness at /v1/live, and extended tests plus phase9-smoke to enforce those contracts.",
+      "tags": ["phase9", "k3s", "auth", "readiness", "liveness", "review"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-04T02:53:59Z"
     }
   ]
 }

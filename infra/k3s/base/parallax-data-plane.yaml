@@ -1,0 +1,198 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: parallax-postgres
+  namespace: parallax
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+  selector:
+    app.kubernetes.io/component: postgres
+    app.kubernetes.io/name: parallax
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: parallax-postgres
+  namespace: parallax
+spec:
+  serviceName: parallax-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: postgres
+      app.kubernetes.io/name: parallax
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: postgres
+        app.kubernetes.io/name: parallax
+    spec:
+      containers:
+        - name: postgres
+          image: pgvector/pgvector:pg16@sha256:7d400e340efb42f4d8c9c12c6427adb253f726881a9985d2a471bf0eed824dff
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: parallax
+            - name: POSTGRES_USER
+              value: parallax
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: parallax-secrets
+                  key: postgres-password
+            - name: POSTGRES_INITDB_WALDIR
+              value: /var/lib/postgresql/wal
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "parallax", "-d", "parallax"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "parallax", "-d", "parallax"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: postgres-wal
+              mountPath: /var/lib/postgresql/wal
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: parallax-postgres-data
+        - name: postgres-wal
+          persistentVolumeClaim:
+            claimName: parallax-postgres-wal
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: parallax-redis
+  namespace: parallax
+spec:
+  type: ClusterIP
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+  selector:
+    app.kubernetes.io/component: redis
+    app.kubernetes.io/name: parallax
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parallax-redis
+  namespace: parallax
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: redis
+      app.kubernetes.io/name: parallax
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: redis
+        app.kubernetes.io/name: parallax
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine@sha256:02f2cc4882f8bf87c79a220ac958f58c700bdec0dfb9b9ea61b62fb0e8f1bfcf
+          ports:
+            - name: redis
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: parallax-minio
+  namespace: parallax
+spec:
+  type: ClusterIP
+  ports:
+    - name: api
+      port: 9000
+      targetPort: api
+    - name: console
+      port: 9001
+      targetPort: console
+  selector:
+    app.kubernetes.io/component: minio
+    app.kubernetes.io/name: parallax
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: parallax-minio
+  namespace: parallax
+spec:
+  serviceName: parallax-minio
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: minio
+      app.kubernetes.io/name: parallax
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: minio
+        app.kubernetes.io/name: parallax
+    spec:
+      containers:
+        - name: minio
+          image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+          args: ["server", "/data", "--console-address", ":9001"]
+          ports:
+            - name: api
+              containerPort: 9000
+            - name: console
+              containerPort: 9001
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: parallax-secrets
+                  key: minio-root-user
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: parallax-secrets
+                  key: minio-root-password
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: api
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: api
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          volumeMounts:
+            - name: objects
+              mountPath: /data
+      volumes:
+        - name: objects
+          persistentVolumeClaim:
+            claimName: parallax-objects

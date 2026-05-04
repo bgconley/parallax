@@ -29,6 +29,11 @@
 		A8D00A000000000000000001 /* PendingSyncStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D00D000000000000000001 /* PendingSyncStateStore.swift */; };
 		A8D00B000000000000000001 /* PendingSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D00E000000000000000001 /* PendingSyncService.swift */; };
 		A8D00F000000000000000001 /* MutationSequenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D010000000000000000001 /* MutationSequenceStore.swift */; };
+		A8D011000000000000000001 /* TemporalHomeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D016000000000000000001 /* TemporalHomeModels.swift */; };
+		A8D012000000000000000001 /* TemporalHomeActionMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D017000000000000000001 /* TemporalHomeActionMap.swift */; };
+		A8D013000000000000000001 /* TemporalHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D018000000000000000001 /* TemporalHomeViewModel.swift */; };
+		A8D014000000000000000001 /* TemporalHomeDrawers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D019000000000000000001 /* TemporalHomeDrawers.swift */; };
+		A8D015000000000000000001 /* TemporalHomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D01A000000000000000001 /* TemporalHomeScreen.swift */; };
 		A3E33F46B1C0B5C4EEEBA854 /* ParallaxCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B105D37E4FF3EBA7659FE8B /* ParallaxCore.framework */; };
 		A91AE802F0E89B2DCA930B9C /* ParallaxDesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82B22A610DB13D4B4329CB5D /* ParallaxDesignTokens.swift */; };
 		B683ACB588170DE3B7017E4E /* ParallaxDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D4F34C027EF62594F199994 /* ParallaxDomain.swift */; };
@@ -127,6 +132,11 @@
 		A8D00D000000000000000001 /* PendingSyncStateStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PendingSyncStateStore.swift; sourceTree = "<group>"; };
 		A8D00E000000000000000001 /* PendingSyncService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PendingSyncService.swift; sourceTree = "<group>"; };
 		A8D010000000000000000001 /* MutationSequenceStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MutationSequenceStore.swift; sourceTree = "<group>"; };
+		A8D016000000000000000001 /* TemporalHomeModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemporalHomeModels.swift; sourceTree = "<group>"; };
+		A8D017000000000000000001 /* TemporalHomeActionMap.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemporalHomeActionMap.swift; sourceTree = "<group>"; };
+		A8D018000000000000000001 /* TemporalHomeViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemporalHomeViewModel.swift; sourceTree = "<group>"; };
+		A8D019000000000000000001 /* TemporalHomeDrawers.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemporalHomeDrawers.swift; sourceTree = "<group>"; };
+		A8D01A000000000000000001 /* TemporalHomeScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemporalHomeScreen.swift; sourceTree = "<group>"; };
 		B19F85673AFFBCF3F09394C7 /* ParallaxAPIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ParallaxAPIClient.swift; sourceTree = "<group>"; };
 		B1F297D1F7FCD26E5701ECAE /* ParallaxNativeApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ParallaxNativeApp.swift; sourceTree = "<group>"; };
 		DD6F62CFD68CA158AC1B4C28 /* TimingSessionScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimingSessionScreen.swift; sourceTree = "<group>"; };
@@ -291,6 +301,11 @@
 				A8D005000000000000000001 /* Phase8DrawerModels.swift */,
 				A8D006000000000000000001 /* Phase8DrawerViews.swift */,
 				EA12CB868D0ADB3DA7C4FD3E /* SupportingScreens.swift */,
+				A8D017000000000000000001 /* TemporalHomeActionMap.swift */,
+				A8D019000000000000000001 /* TemporalHomeDrawers.swift */,
+				A8D016000000000000000001 /* TemporalHomeModels.swift */,
+				A8D01A000000000000000001 /* TemporalHomeScreen.swift */,
+				A8D018000000000000000001 /* TemporalHomeViewModel.swift */,
 				563CD9712326800FF6377CEF /* TimingLauncherSheet.swift */,
 				181D802E4772CE8981DC9BF1 /* TimingReviewScreen.swift */,
 				DD6F62CFD68CA158AC1B4C28 /* TimingSessionScreen.swift */,
@@ -495,6 +510,11 @@
 				A8D002000000000000000001 /* Phase8DrawerModels.swift in Sources */,
 				A8D003000000000000000001 /* Phase8DrawerViews.swift in Sources */,
 				7BD1C52C38E07D4E54AB30C4 /* SupportingScreens.swift in Sources */,
+				A8D012000000000000000001 /* TemporalHomeActionMap.swift in Sources */,
+				A8D014000000000000000001 /* TemporalHomeDrawers.swift in Sources */,
+				A8D011000000000000000001 /* TemporalHomeModels.swift in Sources */,
+				A8D015000000000000000001 /* TemporalHomeScreen.swift in Sources */,
+				A8D013000000000000000001 /* TemporalHomeViewModel.swift in Sources */,
 				32DA40F4D51CA3BA4B63BDC1 /* TimingLauncherSheet.swift in Sources */,
 				F4B1580128C83D4CDEA24AC4 /* TimingReviewScreen.swift in Sources */,
 				1B333C083B2DC0FE0382A756 /* TimingSessionScreen.swift in Sources */,

@@ -1,0 +1,37 @@
+{
+  "status": "wired",
+  "figma_file_key": "OYOtLrgwZmqAqsURzYJBM9",
+  "page_id": "118:2",
+  "board_id": "118:3",
+  "drawer_page_id": "85:2",
+  "drawer_board_id": "85:3",
+  "wired_at": "2026-05-04",
+  "reaction_counts": {
+    "118:2": 54,
+    "85:2": 28,
+    "85:3": 28
+  },
+  "implementation_notes": [
+    "Figma rejected prototype destinations nested inside the allocation boards, so Phase 10 uses transparent hotspots inside the canonical frames and top-level prototype target frames/clones on the same page.",
+    "The source visual frames remain the canonical 118 and 85 boards; Phase 10 target frames are named with the Parallax / Phase 10 Target prefix and are placed off-board.",
+    "The 118:199 mutation sequence row is intentionally display-only and has no prototype reaction."
+  ],
+  "target_nodes": {
+    "expanded_timing_run": "155:3",
+    "grounded_answer": "155:55",
+    "step_detail": "155:150",
+    "friction_evidence": "155:184",
+    "forgotten_timer": "155:216",
+    "review_decision": "155:244",
+    "preflight_evidence": "155:274",
+    "checkpoint_setup": "155:310",
+    "temporal_navigation": "155:343",
+    "quick_capture": "155:351",
+    "sync_queue": "155:358",
+    "temporal_answer_evidence": "155:365",
+    "timing_launcher": "155:372"
+  },
+  "created_nodes": 95,
+  "mutated_nodes": 82,
+  "removed_nodes": 0
+}

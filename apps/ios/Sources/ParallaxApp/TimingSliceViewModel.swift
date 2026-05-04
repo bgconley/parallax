@@ -249,6 +249,115 @@ public final class TimingSliceViewModel: ObservableObject {
         )
     }
 
+    public func pauseCurrentStep() async {
+        guard status == .running else { return }
+        let timestamp = now()
+        updateDurations(at: timestamp)
+        status = .paused
+        openSpan = nil
+        await appendEvent(
+            .sessionPaused,
+            at: timestamp,
+            payload: [
+                "pause_reason": "user_paused_step",
+                "checkpoint_label": "Load dishwasher",
+            ]
+        )
+    }
+
+    public func skipCurrentCheckpoint() async {
+        guard status == .running || status == .paused else { return }
+        let timestamp = now()
+        updateDurations(at: timestamp)
+        await appendEvent(
+            .checkpointSkipped,
+            at: timestamp,
+            payload: [
+                "checkpoint_index": "2",
+                "checkpoint_label": "Load dishwasher",
+                "reason": "user_skipped_from_step_drawer",
+            ]
+        )
+    }
+
+    public func moveCurrentCheckpoint() async {
+        let timestamp = now()
+        await appendEvent(
+            .scopeChanged,
+            at: timestamp,
+            payload: [
+                "checkpoint_action": "move_current_step",
+                "checkpoint_label": "Load dishwasher",
+                "sequence_integrity": "preserve_order",
+            ]
+        )
+    }
+
+    public func captureStepNote() async {
+        await captureTemporalHomeNote("Note for Load dishwasher checkpoint.")
+    }
+
+    public func captureTemporalHomeNote(_ note: String) async {
+        let timestamp = now()
+        await appendEvent(
+            .annotationCaptured,
+            at: timestamp,
+            captureMethod: .quickChip,
+            notePreview: note,
+            payload: [
+                "input_mode": AnnotationInputMode.quickChip.rawValue,
+                "source": "temporal_home",
+            ]
+        )
+    }
+
+    public func correctFrictionEvidence() async {
+        let timestamp = now()
+        await appendEvent(
+            .userCorrectionApplied,
+            at: timestamp,
+            captureMethod: .quickChip,
+            notePreview: "Corrected sponge detour evidence.",
+            payload: [
+                "correction_type": "extracted_event_corrected",
+                "span_type": TemporalSpanType.resourceDetour.rawValue,
+                "friction_category": TemporalFrictionCategory.resource.rawValue,
+                "count_policy": CountPolicy.wallOnly.rawValue,
+                "suggested_preflight_text": "Check sponge or scrubber before starting.",
+            ]
+        )
+    }
+
+    public func ignoreFrictionEvidence() async {
+        let timestamp = now()
+        await appendEvent(
+            .userCorrectionApplied,
+            at: timestamp,
+            captureMethod: .quickChip,
+            notePreview: "Marked sponge detour evidence as not relevant.",
+            payload: [
+                "correction_type": "extracted_event_ignored",
+                "confirmation_state": ExtractedEventConfirmationState.ignored.rawValue,
+                "count_policy": CountPolicy.doNotCount.rawValue,
+            ]
+        )
+    }
+
+    public func keepFrictionNoteOnly() async {
+        let timestamp = now()
+        await appendEvent(
+            .annotationCaptured,
+            at: timestamp,
+            captureMethod: .reviewReconstruction,
+            notePreview: "Keep sponge note as context only.",
+            payload: [
+                "model_inclusion": ModelInclusion.queryEvidenceOnly.rawValue,
+                "count_policy": CountPolicy.doNotCount.rawValue,
+                "source": "friction_evidence_drawer",
+            ]
+        )
+    }
+
     public func updateCheckpointPlan() async {
         let timestamp = now()
         await appendEvent(
@@ -259,6 +368,34 @@ public final class TimingSliceViewModel: ObservableObject {
                 "checkpoint_action": "split_hand_wash_pans",
                 "checkpoint_label": "Hand-wash pans",
                 "sequence_integrity": "preserve_order",
+            ]
+        )
+    }
+
+    public func makeCheckpointOptional() async {
+        let timestamp = now()
+        await appendEvent(
+            .intentRecorded,
+            at: timestamp,
+            payload: [
+                "checkpoint_action": "make_optional",
+                "checkpoint_label": "Hand-wash pans",
+                "sequence_integrity": "skip_without_corrupting_sequence",
+            ]
+        )
+    }
+
+    public func startFromCurrentCheckpoint() async {
+        let timestamp = now()
+        status = .running
+        startedAt = startedAt ?? timestamp
+        await appendEvent(
+            .checkpointStarted,
+            at: timestamp,
+            payload: [
+                "checkpoint_index": "3",
+                "checkpoint_label": "Hand-wash pans",
+                "source": "checkpoint_setup_drawer",
             ]
         )
     }
@@ -366,6 +503,44 @@ public final class TimingSliceViewModel: ObservableObject {
                 "model_inclusion": ModelInclusion.notReviewed.rawValue,
             ]
         )
+    }
+
+    public func discardTimingKeepNote() async {
+        await saveReviewDecision(.discardTimingKeepNote)
+    }
+
+    public func deferForgottenTimerDecision() async {
+        guard status == .completedUnreviewed || status == .reviewed else { return }
+        let timestamp = now()
+        await appendEvent(
+            .reviewSaved,
+            at: timestamp,
+            payload: [
+                "decision": "forgotten_timer_not_sure",
+                "reason_code": "needs_later_review",
+                "model_inclusion": ModelInclusion.notReviewed.rawValue,
+            ]
+        )
+    }
+
+    public func recordTemporalQueryIntent(_ question: String) async {
+        let timestamp = now()
+        await appendEvent(
+            .intentRecorded,
+            at: timestamp,
+            captureMethod: .manualButton,
+            notePreview: question,
+            payload: [
+                "workflow": "answer_temporal_query",
+                "api_path": "/v1/temporal/query",
+                "include_raw_quotes": "false",
+            ]
+        )
+    }
+
+    public func retrySyncNow() async {
+        _ = await seedMutationFactoryIfNeeded()
+        await syncPendingIfConfigured()
     }
 
     private func appendEvent(

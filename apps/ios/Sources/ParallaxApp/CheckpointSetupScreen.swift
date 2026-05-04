@@ -22,9 +22,9 @@ struct CheckpointSetupScreen: View {
         }
         .overlay {
             if activeDrawer == .checkpointSetup {
-                CheckpointSetupDrawerView {
+                CheckpointSetupDrawerView { action in
                     Task {
-                        await viewModel.updateCheckpointPlan()
+                        await perform(action)
                         activeDrawer = nil
                     }
                 }
@@ -36,6 +36,24 @@ struct CheckpointSetupScreen: View {
             if let initialDrawer, Phase8DrawerWorkflow(rawDemoValue: initialDrawer) == .checkpointSetup {
                 activeDrawer = .checkpointSetup
             }
+        }
+    }
+
+    private func perform(_ action: Phase8DrawerAction) async {
+        switch action {
+        case .updateCheckpointPlan:
+            await viewModel.updateCheckpointPlan()
+        case .makeCheckpointOptional:
+            await viewModel.makeCheckpointOptional()
+        case .startFromCheckpoint:
+            await viewModel.startFromCurrentCheckpoint()
+        case .completeStep, .pauseStep, .skipStep, .moveStep, .addStepNote,
+             .confirmFrictionEvidence, .correctFrictionEvidence, .ignoreFrictionEvidence,
+             .keepFrictionNoteOnly, .trimForgottenTimer, .timerKeptRunning,
+             .forgottenTimerNotSure, .saveUsefulRun, .markUnusual, .activeTimeOnly,
+             .frictionEvidenceOnly, .discardTimingKeepNote, .keepPreflightActive,
+             .snoozePreflight, .hidePreflight, .retirePreflight, .viewPreflightRuns:
+            break
         }
     }
 

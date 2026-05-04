@@ -73,6 +73,31 @@ public enum CountPolicy: String, Codable, CaseIterable, Sendable {
     case reviewRequired = "review_required"
 }
 
+public enum TemporalFrictionCategory: String, Codable, CaseIterable, Sendable {
+    case none
+    case resource
+    case setup
+    case transition
+    case interruption
+    case waiting
+    case sideQuest = "side_quest"
+    case decision
+    case attention
+    case bodyEnergy = "body_energy"
+    case environment
+    case timerQuality = "timer_quality"
+    case scope
+    case unknown
+}
+
+public enum ExtractedEventConfirmationState: String, Codable, CaseIterable, Sendable {
+    case needsConfirmation = "needs_confirmation"
+    case confirmed
+    case corrected
+    case ignored
+    case deferredToReview = "deferred_to_review"
+}
+
 public enum ModelUpdateDecision: String, Codable, CaseIterable, Sendable {
     case saveUsefulRun = "save_useful_run"
     case markUnusual = "mark_unusual"
@@ -142,6 +167,13 @@ public enum PreflightCheckDecision: String, Codable, CaseIterable, Sendable {
     case hide
     case snooze
     case retire
+}
+
+public enum TimingReviewFlagStatus: String, Codable, CaseIterable, Sendable {
+    case open
+    case snoozed
+    case resolved
+    case dismissed
 }
 
 public enum UIProjectionState: String, Codable, CaseIterable, Sendable {

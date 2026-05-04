@@ -31,11 +31,19 @@ public enum Phase8DrawerWorkflow: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-public enum Phase8DrawerAction: String, Equatable, Sendable {
+public enum Phase8DrawerAction: String, CaseIterable, Equatable, Sendable {
     case completeStep = "complete_step"
+    case pauseStep = "pause_step"
+    case skipStep = "skip_step"
+    case moveStep = "move_step"
+    case addStepNote = "add_step_note"
     case confirmFrictionEvidence = "confirm_friction_evidence"
+    case correctFrictionEvidence = "correct_friction_evidence"
+    case ignoreFrictionEvidence = "ignore_friction_evidence"
+    case keepFrictionNoteOnly = "keep_friction_note_only"
     case trimForgottenTimer = "trim_forgotten_timer"
     case timerKeptRunning = "timer_kept_running"
+    case forgottenTimerNotSure = "forgotten_timer_not_sure"
     case saveUsefulRun = "save_useful_run"
     case markUnusual = "mark_unusual"
     case activeTimeOnly = "active_time_only"
@@ -45,7 +53,10 @@ public enum Phase8DrawerAction: String, Equatable, Sendable {
     case snoozePreflight = "snooze_preflight"
     case hidePreflight = "hide_preflight"
     case retirePreflight = "retire_preflight"
+    case viewPreflightRuns = "view_preflight_runs"
     case updateCheckpointPlan = "update_checkpoint_plan"
+    case makeCheckpointOptional = "make_checkpoint_optional"
+    case startFromCheckpoint = "start_from_checkpoint"
 }
 
 public struct ReviewDecisionDisplay: Equatable, Sendable {

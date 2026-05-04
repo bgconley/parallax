@@ -1,0 +1,45 @@
+{
+  "artifact": "Parallax Phase 10 Temporal Home Interactions",
+  "artifact_version": "1.0",
+  "canonical_action_map": "docs/phase10_temporal_home_interactions/action_map.json",
+  "figma_file_key": "OYOtLrgwZmqAqsURzYJBM9",
+  "figma_page_id": "118:2",
+  "figma_board_id": "118:3",
+  "drawer_board_id": "85:3",
+  "swift_entrypoint": "apps/ios/Sources/ParallaxApp/TemporalHomeScreen.swift",
+  "swift_action_enum": "apps/ios/Sources/ParallaxApp/TemporalHomeModels.swift",
+  "swift_action_map": "apps/ios/Sources/ParallaxApp/TemporalHomeActionMap.swift",
+  "new_drawers": [
+    "temporal_navigation",
+    "quick_capture",
+    "sync_queue",
+    "timing_run_evidence",
+    "temporal_answer_evidence"
+  ],
+  "existing_drawer_workflows": [
+    "step_detail",
+    "friction_evidence",
+    "forgotten_timer",
+    "review_decision",
+    "preflight_evidence",
+    "checkpoint_setup"
+  ],
+  "canonical_api_workflows": [
+    "POST /v1/temporal/query",
+    "GET /v1/timing/sessions/{session_id}/review-flags",
+    "PATCH /v1/timing/review-flags/{flag_id}",
+    "POST /v1/timing/extracted-events/{event_id}/confirm",
+    "POST /v1/timing/extracted-events/{event_id}/correct",
+    "POST /v1/timing/sessions/{session_id}/annotations",
+    "POST /v1/activities/{activity_id}/preflight-checks/{check_id}/decision",
+    "POST /v1/timing/sessions/{session_id}/review",
+    "POST /v1/timing/sessions/{session_id}/discard"
+  ],
+  "acceptance_gate": [
+    "Every action id in action_map.json appears in TemporalHomeAction raw values.",
+    "Every action id in action_map.json appears in TemporalHomeActionMap.",
+    "Every visible Phase 8 drawer action has an explicit Phase8DrawerAction.",
+    "No empty Button action remains in Phase 10 or Phase 8 drawer surfaces.",
+    "Figma reaction export meets or exceeds figma_reactions_expected.json."
+  ]
+}

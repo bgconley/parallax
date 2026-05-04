@@ -44,7 +44,7 @@ struct Phase8DrawerOverlay<Content: View>: View {
 }
 
 struct StepDetailDrawerView: View {
-    let completeStep: () -> Void
+    let perform: (Phase8DrawerAction) -> Void
 
     var body: some View {
         Phase8DrawerOverlay(figmaSheetHeight: 563, dismiss: {}) { scale in
@@ -59,11 +59,11 @@ struct StepDetailDrawerView: View {
             drawerChip("often sticky", x: 24, y: 286, w: 104, h: 32, role: .active, scale: scale)
             drawerChip("setup-heavy", x: 140, y: 286, w: 112, h: 32, role: .detour, scale: scale)
             drawerChip("moveable", x: 264, y: 286, w: 98, h: 32, role: .checkpoint, scale: scale)
-            drawerButton("Done with this step", x: 24, y: 330, w: 413, h: 50, primary: true, scale: scale, action: completeStep)
-            drawerButton("Pause", x: 24, y: 392, w: 92, h: 42, scale: scale)
-            drawerButton("Skip", x: 128, y: 392, w: 92, h: 42, scale: scale)
-            drawerButton("Move", x: 232, y: 392, w: 92, h: 42, scale: scale)
-            drawerButton("Note", x: 336, y: 392, w: 92, h: 42, scale: scale)
+            drawerButton("Done with this step", x: 24, y: 330, w: 413, h: 50, primary: true, scale: scale) { perform(.completeStep) }
+            drawerButton("Pause", x: 24, y: 392, w: 92, h: 42, scale: scale) { perform(.pauseStep) }
+            drawerButton("Skip", x: 128, y: 392, w: 92, h: 42, scale: scale) { perform(.skipStep) }
+            drawerButton("Move", x: 232, y: 392, w: 92, h: 42, scale: scale) { perform(.moveStep) }
+            drawerButton("Note", x: 336, y: 392, w: 92, h: 42, scale: scale) { perform(.addStepNote) }
             accentCard(
                 title: "Next: Hand-wash pans",
                 lines: ["Predicted 5-14 min · often expands when tools are missing"],
@@ -74,7 +74,7 @@ struct StepDetailDrawerView: View {
 }
 
 struct FrictionEvidenceDrawerView: View {
-    let confirmEvidence: () -> Void
+    let perform: (Phase8DrawerAction) -> Void
 
     var body: some View {
         Phase8DrawerOverlay(figmaSheetHeight: 573, dismiss: {}) { scale in
@@ -94,17 +94,16 @@ struct FrictionEvidenceDrawerView: View {
                 lines: ["Repeated confirmed detours can become a preflight check."],
                 x: 24, y: 326, w: 413, h: 76, accent: Color(parallax: .active), scale: scale
             )
-            drawerButton("Confirm evidence", x: 24, y: 420, w: 413, h: 50, primary: true, scale: scale, action: confirmEvidence)
-            drawerButton("Correct", x: 24, y: 482, w: 126, h: 42, scale: scale)
-            drawerButton("Not relevant", x: 162, y: 482, w: 126, h: 42, scale: scale)
-            drawerButton("Keep note only", x: 300, y: 482, w: 128, h: 42, scale: scale)
+            drawerButton("Confirm evidence", x: 24, y: 420, w: 413, h: 50, primary: true, scale: scale) { perform(.confirmFrictionEvidence) }
+            drawerButton("Correct", x: 24, y: 482, w: 126, h: 42, scale: scale) { perform(.correctFrictionEvidence) }
+            drawerButton("Not relevant", x: 162, y: 482, w: 126, h: 42, scale: scale) { perform(.ignoreFrictionEvidence) }
+            drawerButton("Keep note only", x: 300, y: 482, w: 128, h: 42, scale: scale) { perform(.keepFrictionNoteOnly) }
         }
     }
 }
 
 struct ForgottenTimerDrawerView: View {
-    let trimAtPlaceChange: () -> Void
-    let timerKeptRunning: () -> Void
+    let perform: (Phase8DrawerAction) -> Void
 
     var body: some View {
         Phase8DrawerOverlay(figmaSheetHeight: 539, dismiss: {}) { scale in
@@ -119,10 +118,10 @@ struct ForgottenTimerDrawerView: View {
             drawerChip("human explanation", x: 24, y: 284, w: 156, h: 32, role: .interruption, scale: scale)
             drawerChip("no raw location", x: 190, y: 284, w: 126, h: 32, role: .wall, scale: scale)
             drawerChip("needs choice", x: 326, y: 284, w: 108, h: 32, role: .checkpoint, scale: scale)
-            drawerButton("Trim at place change", x: 24, y: 330, w: 413, h: 48, primary: true, scale: scale, action: trimAtPlaceChange)
-            drawerButton("Timer kept running", x: 24, y: 390, w: 413, h: 42, scale: scale, action: timerKeptRunning)
-            drawerButton("Discard timing, keep note", x: 24, y: 444, w: 198, h: 42, scale: scale)
-            drawerButton("Not sure", x: 234, y: 444, w: 194, h: 42, scale: scale)
+            drawerButton("Trim at place change", x: 24, y: 330, w: 413, h: 48, primary: true, scale: scale) { perform(.trimForgottenTimer) }
+            drawerButton("Timer kept running", x: 24, y: 390, w: 413, h: 42, scale: scale) { perform(.timerKeptRunning) }
+            drawerButton("Discard timing, keep note", x: 24, y: 444, w: 198, h: 42, scale: scale) { perform(.discardTimingKeepNote) }
+            drawerButton("Not sure", x: 234, y: 444, w: 194, h: 42, scale: scale) { perform(.forgottenTimerNotSure) }
         }
     }
 }
@@ -156,7 +155,7 @@ struct ReviewDecisionDrawerView: View {
 }
 
 struct PreflightEvidenceDrawerView: View {
-    let decide: (PreflightCheckDecision) -> Void
+    let perform: (Phase8DrawerAction) -> Void
 
     var body: some View {
         Phase8DrawerOverlay(figmaSheetHeight: 593, dismiss: {}) { scale in
@@ -177,17 +176,17 @@ struct PreflightEvidenceDrawerView: View {
                 lines: ["“The sponge is gross... go downstairs and get a new one.”"],
                 x: 24, y: 348, w: 413, h: 74, accent: Color(parallax: .active), scale: scale
             )
-            drawerButton("Keep active", x: 24, y: 440, w: 198, h: 48, primary: true, scale: scale) { decide(.accept) }
-            drawerButton("Snooze", x: 234, y: 440, w: 194, h: 48, scale: scale) { decide(.snooze) }
-            drawerButton("Hide", x: 24, y: 500, w: 126, h: 42, scale: scale) { decide(.hide) }
-            drawerButton("Retire", x: 162, y: 500, w: 126, h: 42, scale: scale) { decide(.retire) }
-            drawerButton("View runs", x: 300, y: 500, w: 128, h: 42, scale: scale)
+            drawerButton("Keep active", x: 24, y: 440, w: 198, h: 48, primary: true, scale: scale) { perform(.keepPreflightActive) }
+            drawerButton("Snooze", x: 234, y: 440, w: 194, h: 48, scale: scale) { perform(.snoozePreflight) }
+            drawerButton("Hide", x: 24, y: 500, w: 126, h: 42, scale: scale) { perform(.hidePreflight) }
+            drawerButton("Retire", x: 162, y: 500, w: 126, h: 42, scale: scale) { perform(.retirePreflight) }
+            drawerButton("View runs", x: 300, y: 500, w: 128, h: 42, scale: scale) { perform(.viewPreflightRuns) }
         }
     }
 }
 
 struct CheckpointSetupDrawerView: View {
-    let updatePlan: () -> Void
+    let perform: (Phase8DrawerAction) -> Void
 
     var body: some View {
         Phase8DrawerOverlay(figmaSheetHeight: 589, dismiss: {}) { scale in
@@ -202,10 +201,10 @@ struct CheckpointSetupDrawerView: View {
             drawerChip("often expands", x: 24, y: 258, w: 112, h: 28, role: .checkpoint, scale: scale)
             drawerChip("resource-sensitive", x: 144, y: 258, w: 136, h: 28, role: .detour, scale: scale)
             drawerChip("optional label", x: 288, y: 258, w: 112, h: 28, role: .wall, scale: scale)
-            drawerOption(title: "Split into smaller steps", subtitle: "rinse · scrub · final rinse", selected: true, x: 24, y: 304, w: 413, h: 58, scale: scale, action: updatePlan)
-            drawerOption(title: "Make this checkpoint optional", subtitle: "skip without corrupting sequence", selected: false, x: 24, y: 370, w: 413, h: 58, scale: scale)
-            drawerOption(title: "Start from this step", subtitle: "begin timing at the selected phase", selected: false, x: 24, y: 436, w: 413, h: 58, scale: scale)
-            drawerButton("Update checkpoint plan", x: 24, y: 512, w: 413, h: 50, primary: true, scale: scale, action: updatePlan)
+            drawerOption(title: "Split into smaller steps", subtitle: "rinse · scrub · final rinse", selected: true, x: 24, y: 304, w: 413, h: 58, scale: scale) { perform(.updateCheckpointPlan) }
+            drawerOption(title: "Make this checkpoint optional", subtitle: "skip without corrupting sequence", selected: false, x: 24, y: 370, w: 413, h: 58, scale: scale) { perform(.makeCheckpointOptional) }
+            drawerOption(title: "Start from this step", subtitle: "begin timing at the selected phase", selected: false, x: 24, y: 436, w: 413, h: 58, scale: scale) { perform(.startFromCheckpoint) }
+            drawerButton("Update checkpoint plan", x: 24, y: 512, w: 413, h: 50, primary: true, scale: scale) { perform(.updateCheckpointPlan) }
         }
     }
 }
@@ -298,7 +297,7 @@ private func drawerButton(
     h: CGFloat,
     primary: Bool = false,
     scale: CGFloat,
-    action: @escaping () -> Void = {}
+    action: @escaping () -> Void
 ) -> some View {
     Button(action: action) {
         Text(title)
@@ -328,7 +327,7 @@ private func drawerOption(
     w: CGFloat,
     h: CGFloat,
     scale: CGFloat,
-    action: @escaping () -> Void = {}
+    action: @escaping () -> Void
 ) -> some View {
     Button(action: action) {
         ZStack(alignment: .topLeading) {

@@ -149,21 +149,49 @@ struct TimingSessionScreen: View {
     private func sessionDrawerOverlay(_ drawer: Phase8DrawerWorkflow) -> some View {
         switch drawer {
         case .stepDetail:
-            StepDetailDrawerView {
+            StepDetailDrawerView { action in
                 Task {
-                    await viewModel.completeCurrentCheckpoint()
+                    await perform(action)
                     activeDrawer = nil
                 }
             }
         case .frictionEvidence:
-            FrictionEvidenceDrawerView {
+            FrictionEvidenceDrawerView { action in
                 Task {
-                    await viewModel.confirmSpongeEvidence()
+                    await perform(action)
                     activeDrawer = nil
                 }
             }
         case .forgottenTimer, .reviewDecision, .preflightEvidence, .checkpointSetup:
             EmptyView()
+        }
+    }
+
+    private func perform(_ action: Phase8DrawerAction) async {
+        switch action {
+        case .completeStep:
+            await viewModel.completeCurrentCheckpoint()
+        case .pauseStep:
+            await viewModel.pauseCurrentStep()
+        case .skipStep:
+            await viewModel.skipCurrentCheckpoint()
+        case .moveStep:
+            await viewModel.moveCurrentCheckpoint()
+        case .addStepNote:
+            await viewModel.captureStepNote()
+        case .confirmFrictionEvidence:
+            await viewModel.confirmSpongeEvidence()
+        case .correctFrictionEvidence:
+            await viewModel.correctFrictionEvidence()
+        case .ignoreFrictionEvidence:
+            await viewModel.ignoreFrictionEvidence()
+        case .keepFrictionNoteOnly:
+            await viewModel.keepFrictionNoteOnly()
+        case .trimForgottenTimer, .timerKeptRunning, .forgottenTimerNotSure, .saveUsefulRun, .markUnusual,
+             .activeTimeOnly, .frictionEvidenceOnly, .discardTimingKeepNote, .keepPreflightActive,
+             .snoozePreflight, .hidePreflight, .retirePreflight, .viewPreflightRuns,
+             .updateCheckpointPlan, .makeCheckpointOptional, .startFromCheckpoint:
+            break
         }
     }
 }

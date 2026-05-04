@@ -242,3 +242,119 @@ import Testing
     #expect(json["snoozed_until"] as? String != nil)
     #expect(json["reason"] as? String == "not needed this week")
 }
+
+@Test func phase10TemporalQueryRequestUsesCanonicalEndpointAndPrivacyDefault() throws {
+    let client = ParallaxAPIClient(
+        baseURL: URL(string: "http://127.0.0.1:18000")!,
+        userId: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+    )
+    let mutation = MutationEnvelope(
+        idempotencyKey: "device-1:14",
+        clientMutationId: "mutation-14",
+        clientDeviceId: "device-1",
+        clientSequence: 14,
+        clientTimestamp: Date(timeIntervalSince1970: 1_775_000_000)
+    )
+    let activityId = UUID(uuidString: "22222222-2222-4222-8222-222222222222")!
+
+    let request = try client.createTemporalQueryRequest(
+        mutation: mutation,
+        question: "How long does clean pots and pans take?",
+        activityId: activityId,
+        timeWindow: "last_90_days"
+    )
+
+    #expect(request.httpMethod == "POST")
+    #expect(request.url?.path == "/v1/temporal/query")
+    let json = try #require(request.httpBody.flatMap { body in
+        try JSONSerialization.jsonObject(with: body) as? [String: Any]
+    })
+    #expect(json["question"] as? String == "How long does clean pots and pans take?")
+    #expect(json["activity_id"] as? String == activityId.uuidString)
+    #expect(json["time_window"] as? String == "last_90_days")
+    #expect(json["include_raw_quotes"] as? Bool == false)
+}
+
+@Test func phase10ReviewFlagRequestsUseCanonicalPromptEndpoints() throws {
+    let client = ParallaxAPIClient(
+        baseURL: URL(string: "http://127.0.0.1:18000")!,
+        userId: UUID(uuidString: "33333333-3333-4333-8333-333333333333")!
+    )
+    let sessionId = UUID(uuidString: "44444444-4444-4444-8444-444444444444")!
+    let flagId = UUID(uuidString: "55555555-5555-4555-8555-555555555555")!
+    let mutation = MutationEnvelope(
+        idempotencyKey: "device-1:15",
+        clientMutationId: "mutation-15",
+        clientDeviceId: "device-1",
+        clientSequence: 15,
+        clientTimestamp: Date(timeIntervalSince1970: 1_775_000_000)
+    )
+
+    let list = try client.listTimingReviewFlagsRequest(sessionId: sessionId, status: .open)
+    #expect(list.httpMethod == "GET")
+    #expect(list.url?.path == "/v1/timing/sessions/\(sessionId.uuidString)/review-flags")
+    #expect(list.url?.query == "status=open")
+
+    let update = try client.updateTimingReviewFlagRequest(
+        flagId: flagId,
+        mutation: mutation,
+        status: .dismissed,
+        resolutionNote: "Not relevant to this run."
+    )
+    #expect(update.httpMethod == "PATCH")
+    #expect(update.url?.path == "/v1/timing/review-flags/\(flagId.uuidString)")
+    let json = try #require(update.httpBody.flatMap { body in
+        try JSONSerialization.jsonObject(with: body) as? [String: Any]
+    })
+    #expect(json["status"] as? String == "dismissed")
+    #expect(json["resolution_note"] as? String == "Not relevant to this run.")
+}
+
+@Test func phase10ExtractedEventRequestsUseCanonicalConfirmAndCorrectEndpoints() throws {
+    let client = ParallaxAPIClient(
+        baseURL: URL(string: "http://127.0.0.1:18000")!,
+        userId: UUID(uuidString: "66666666-6666-4666-8666-666666666666")!
+    )
+    let eventId = UUID(uuidString: "77777777-7777-4777-8777-777777777777")!
+    let mutation = MutationEnvelope(
+        idempotencyKey: "device-1:16",
+        clientMutationId: "mutation-16",
+        clientDeviceId: "device-1",
+        clientSequence: 16,
+        clientTimestamp: Date(timeIntervalSince1970: 1_775_000_000)
+    )
+
+    let confirm = try client.confirmExtractedEventRequest(
+        eventId: eventId,
+        mutation: mutation,
+        confirmationState: .ignored
+    )
+    #expect(confirm.url?.path == "/v1/timing/extracted-events/\(eventId.uuidString)/confirm")
+    let confirmJson = try #require(confirm.httpBody.flatMap { body in
+        try JSONSerialization.jsonObject(with: body) as? [String: Any]
+    })
+    #expect(confirmJson["confirmation_state"] as? String == "ignored")
+
+    let correct = try client.correctExtractedEventRequest(
+        eventId: eventId,
+        mutation: mutation,
+        spanType: .resourceDetour,
+        frictionCategory: .resource,
+        durationSeconds: 600,
+        countPolicy: .wallOnly,
+        countInWallTime: true,
+        countInActiveTime: false,
+        suggestedPreflightText: "Check sponge or scrubber before starting.",
+        userNote: "Corrected from drawer."
+    )
+    #expect(correct.url?.path == "/v1/timing/extracted-events/\(eventId.uuidString)/correct")
+    let correctJson = try #require(correct.httpBody.flatMap { body in
+        try JSONSerialization.jsonObject(with: body) as? [String: Any]
+    })
+    #expect(correctJson["span_type"] as? String == "resource_detour")
+    #expect(correctJson["friction_category"] as? String == "resource")
+    #expect(correctJson["duration_seconds"] as? Int == 600)
+    #expect(correctJson["count_policy"] as? String == "wall_only")
+    #expect(correctJson["count_in_wall_time"] as? Bool == true)
+    #expect(correctJson["count_in_active_time"] as? Bool == false)
+}

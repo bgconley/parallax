@@ -1,0 +1,20 @@
+{
+  "figma_file_key": "OYOtLrgwZmqAqsURzYJBM9",
+  "page_id": "118:2",
+  "drawer_board_id": "85:3",
+  "minimum_reactions": {
+    "118:2": 54,
+    "85:3": 24
+  },
+  "targets": {
+    "expanded_timing_run": "118:294",
+    "grounded_answer": "118:346",
+    "step_detail": "86:3",
+    "friction_evidence": "86:38",
+    "forgotten_timer": "86:71",
+    "review_decision": "87:3",
+    "preflight_evidence": "87:34",
+    "checkpoint_setup": "87:71"
+  },
+  "status": "expected_until_figma_export_is_refreshed"
+}

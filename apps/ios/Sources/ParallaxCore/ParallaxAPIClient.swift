@@ -219,6 +219,50 @@ public struct ParallaxAPIClient: Sendable {
         )
     }
 
+    public func confirmExtractedEventRequest(
+        eventId: UUID,
+        mutation: MutationEnvelope,
+        confirmationState: ExtractedEventConfirmationState
+    ) throws -> URLRequest {
+        try jsonRequest(
+            path: "/v1/timing/extracted-events/\(eventId.uuidString)/confirm",
+            method: "POST",
+            body: ConfirmExtractedEventBody(
+                mutation: mutation,
+                confirmationState: confirmationState
+            )
+        )
+    }
+
+    public func correctExtractedEventRequest(
+        eventId: UUID,
+        mutation: MutationEnvelope,
+        spanType: TemporalSpanType,
+        frictionCategory: TemporalFrictionCategory,
+        durationSeconds: Int? = nil,
+        countPolicy: CountPolicy,
+        countInWallTime: Bool,
+        countInActiveTime: Bool,
+        suggestedPreflightText: String? = nil,
+        userNote: String? = nil
+    ) throws -> URLRequest {
+        try jsonRequest(
+            path: "/v1/timing/extracted-events/\(eventId.uuidString)/correct",
+            method: "POST",
+            body: CorrectExtractedEventBody(
+                mutation: mutation,
+                spanType: spanType,
+                frictionCategory: frictionCategory,
+                durationSeconds: durationSeconds,
+                countPolicy: countPolicy,
+                countInWallTime: countInWallTime,
+                countInActiveTime: countInActiveTime,
+                suggestedPreflightText: suggestedPreflightText,
+                userNote: userNote
+            )
+        )
+    }
+
     public func createPreflightCheckRequest(
         activityId: UUID,
         mutation: MutationEnvelope,
@@ -232,6 +276,54 @@ public struct ParallaxAPIClient: Sendable {
                 mutation: mutation,
                 checkText: checkText,
                 source: source
+            )
+        )
+    }
+
+    public func createTemporalQueryRequest(
+        mutation: MutationEnvelope,
+        question: String,
+        activityId: UUID? = nil,
+        timeWindow: String? = nil,
+        includeRawQuotes: Bool = false
+    ) throws -> URLRequest {
+        try jsonRequest(
+            path: "/v1/temporal/query",
+            method: "POST",
+            body: TemporalQueryBody(
+                mutation: mutation,
+                question: question,
+                activityId: activityId,
+                timeWindow: timeWindow,
+                includeRawQuotes: includeRawQuotes
+            )
+        )
+    }
+
+    public func listTimingReviewFlagsRequest(
+        sessionId: UUID,
+        status: TimingReviewFlagStatus? = nil
+    ) throws -> URLRequest {
+        try request(
+            path: "/v1/timing/sessions/\(sessionId.uuidString)/review-flags",
+            method: "GET",
+            queryItems: status.map { [URLQueryItem(name: "status", value: $0.rawValue)] } ?? []
+        )
+    }
+
+    public func updateTimingReviewFlagRequest(
+        flagId: UUID,
+        mutation: MutationEnvelope,
+        status: TimingReviewFlagStatus,
+        resolutionNote: String? = nil
+    ) throws -> URLRequest {
+        try jsonRequest(
+            path: "/v1/timing/review-flags/\(flagId.uuidString)",
+            method: "PATCH",
+            body: UpdateTimingReviewFlagBody(
+                mutation: mutation,
+                status: status,
+                resolutionNote: resolutionNote
             )
         )
     }
@@ -283,14 +375,30 @@ public struct ParallaxAPIClient: Sendable {
         return try decoder.decode(type, from: data)
     }
 
-    private func jsonRequest<T: Encodable>(path: String, method: String, body: T) throws -> URLRequest {
+    private func request(
+        path: String,
+        method: String,
+        queryItems: [URLQueryItem] = []
+    ) throws -> URLRequest {
         guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else {
             throw ParallaxAPIError.invalidURL
         }
-        var request = URLRequest(url: url)
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        if !queryItems.isEmpty {
+            components?.queryItems = queryItems
+        }
+        guard let resolvedURL = components?.url else {
+            throw ParallaxAPIError.invalidURL
+        }
+        var request = URLRequest(url: resolvedURL)
         request.httpMethod = method
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         try auth.apply(to: &request)
+        return request
+    }
+
+    private func jsonRequest<T: Encodable>(path: String, method: String, body: T) throws -> URLRequest {
+        var request = try request(path: path, method: method)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.keyEncodingStrategy = .convertToSnakeCase
@@ -354,10 +462,41 @@ private struct CreateAnnotationBody: Encodable {
     let metadata: [String: String]
 }
 
+private struct ConfirmExtractedEventBody: Encodable {
+    let mutation: MutationEnvelope
+    let confirmationState: ExtractedEventConfirmationState
+}
+
+private struct CorrectExtractedEventBody: Encodable {
+    let mutation: MutationEnvelope
+    let spanType: TemporalSpanType
+    let frictionCategory: TemporalFrictionCategory
+    let durationSeconds: Int?
+    let countPolicy: CountPolicy
+    let countInWallTime: Bool
+    let countInActiveTime: Bool
+    let suggestedPreflightText: String?
+    let userNote: String?
+}
+
 private struct CreatePreflightCheckBody: Encodable {
     let mutation: MutationEnvelope
     let checkText: String
     let source: String
+}
+
+private struct TemporalQueryBody: Encodable {
+    let mutation: MutationEnvelope
+    let question: String
+    let activityId: UUID?
+    let timeWindow: String?
+    let includeRawQuotes: Bool
+}
+
+private struct UpdateTimingReviewFlagBody: Encodable {
+    let mutation: MutationEnvelope
+    let status: TimingReviewFlagStatus
+    let resolutionNote: String?
 }
 
 private struct DecidePreflightCheckBody: Encodable {

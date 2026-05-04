@@ -42,6 +42,8 @@ You are working in an OpenWolf-managed project. These rules apply every turn.
 - Do not add broad task/project management, generic inbox/task-tracker flows, routine builders, broad weekly reviews, broad personalization/settings, or unrelated assistant/planning workflows just because they appear in the expansion pack or Figma reference material. Require a canonical artifact or explicit product decision first.
 - Active Figma work must be source-backed or canonical-derived from `parallax_v1_3_artifact_pack/examples/` and the current canonical Figma reference pages. Simplified vector drafts are not finished mockups.
 - Before declaring Figma/UI work complete, capture screenshots, scrutinize spacing/alignment/centering/clipping/overlap/text fit, and compare directly against the canonical mockups.
+- Current active Temporal Home Figma target is `10 Phase 8 Temporal Home Canonical Allocation` at `https://www.figma.com/design/OYOtLrgwZmqAqsURzYJBM9/Parallax---v1.3-Native-Screens?node-id=118-2`; the active implementation board is node `118:3`. The earlier `106:2` temporal scope draft was deleted after QA found unacceptable cramped text, lane collisions, and overlap risk.
+- Preserve the canonical Today schema and density for this target: header, current focus, intelligence card, timeline/list block, quick capture, and bottom action pair. Do not fix visual defects by reducing item count, removing canonical sections, or making oversized empty text boxes. Fix defects by reallocating lanes and positions so right-side badge/action lanes, left-side title/meta lanes, progress/caption lanes, and drawer content lanes do not overlap, clip, or crowd borders.
 
 ## After Actions
 

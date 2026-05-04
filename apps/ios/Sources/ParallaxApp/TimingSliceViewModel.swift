@@ -20,6 +20,9 @@ public final class TimingSliceViewModel: ObservableObject {
     public let deviceId: String
     private let eventStore: any PendingTimingEventStore
     private let preflightDecisionStore: any PendingPreflightDecisionStore
+    private let pendingSyncService: PendingSyncService?
+    private let pendingSyncContext: PendingSyncContext?
+    private let mutationSequenceStore: (any MutationSequenceStore)?
     private let now: () -> Date
     private var mutationFactory: MutationEnvelopeFactory
     private var seededMutationFactory = false
@@ -35,6 +38,9 @@ public final class TimingSliceViewModel: ObservableObject {
         deviceId: String,
         eventStore: any PendingTimingEventStore,
         preflightDecisionStore: any PendingPreflightDecisionStore = InMemoryPendingPreflightDecisionStore(),
+        pendingSyncService: PendingSyncService? = nil,
+        pendingSyncContext: PendingSyncContext? = nil,
+        mutationSequenceStore: (any MutationSequenceStore)? = nil,
         now: @escaping () -> Date = Date.init
     ) {
         self.activityId = activityId
@@ -52,6 +58,9 @@ public final class TimingSliceViewModel: ObservableObject {
         self.deviceId = deviceId
         self.eventStore = eventStore
         self.preflightDecisionStore = preflightDecisionStore
+        self.pendingSyncService = pendingSyncService
+        self.pendingSyncContext = pendingSyncContext
+        self.mutationSequenceStore = mutationSequenceStore
         self.now = now
         self.mutationFactory = MutationEnvelopeFactory(clientDeviceId: deviceId)
     }
@@ -72,6 +81,46 @@ public final class TimingSliceViewModel: ObservableObject {
                 fileURL: parallaxSupport
                     .appendingPathComponent("pending-preflight-decisions.json")
             )
+        )
+    }
+
+    public static func liveConnected(config: ParallaxRuntimeConfig) -> TimingSliceViewModel {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        let parallaxSupport = support.appendingPathComponent("Parallax", isDirectory: true)
+        let eventStore = FilePendingTimingEventStore(
+            fileURL: parallaxSupport.appendingPathComponent("pending-timing-events.json")
+        )
+        let preflightDecisionStore = FilePendingPreflightDecisionStore(
+            fileURL: parallaxSupport.appendingPathComponent("pending-preflight-decisions.json")
+        )
+        let syncStateStore = FilePendingSyncStateStore(
+            fileURL: parallaxSupport.appendingPathComponent("pending-sync-state.json")
+        )
+        let sequenceStore = FileMutationSequenceStore(
+            fileURL: parallaxSupport.appendingPathComponent("mutation-sequences.json")
+        )
+        let client = ParallaxAPIClient(baseURL: config.apiBaseURL, auth: config.auth)
+        let context = PendingSyncContext(
+            localActivityId: config.activityId,
+            activityDisplayName: config.activityName,
+            deviceId: config.deviceId,
+            preflightCheckText: config.preflightCheckText
+        )
+        return TimingSliceViewModel(
+            activityId: config.activityId,
+            activityName: config.activityName,
+            deviceId: config.deviceId,
+            eventStore: eventStore,
+            preflightDecisionStore: preflightDecisionStore,
+            pendingSyncService: PendingSyncService(
+                client: client,
+                eventStore: eventStore,
+                preflightDecisionStore: preflightDecisionStore,
+                syncStateStore: syncStateStore
+            ),
+            pendingSyncContext: context,
+            mutationSequenceStore: sequenceStore
         )
     }
 
@@ -127,6 +176,7 @@ public final class TimingSliceViewModel: ObservableObject {
 
     public func loadPendingEvents() async {
         _ = await seedMutationFactoryIfNeeded()
+        await syncPendingIfConfigured()
     }
 
     public func startRun() async {
@@ -281,20 +331,24 @@ public final class TimingSliceViewModel: ObservableObject {
     ) async {
         guard await seedMutationFactoryIfNeeded() else { return }
         let timestamp = now()
-        let mutation = mutationFactory.next(prefix: "decide_preflight_check", at: timestamp)
-        let pendingDecision = PendingPreflightDecision(
-            activityId: activityId,
-            checkId: checkId,
-            mutation: mutation,
-            decision: decision,
-            decidedAt: timestamp,
-            snoozedUntil: snoozedUntil,
-            reason: reason
-        )
+        let resolvedSnoozedUntil = decision == .snooze
+            ? snoozedUntil ?? timestamp.addingTimeInterval(86_400)
+            : snoozedUntil
         do {
+            let mutation = try await nextMutation(prefix: "decide_preflight_check", at: timestamp)
+            let pendingDecision = PendingPreflightDecision(
+                activityId: activityId,
+                checkId: checkId,
+                mutation: mutation,
+                decision: decision,
+                decidedAt: timestamp,
+                snoozedUntil: resolvedSnoozedUntil,
+                reason: reason
+            )
             try await preflightDecisionStore.append(pendingDecision)
             await refreshPendingCount()
             errorMessage = nil
+            await syncPendingIfConfigured()
         } catch {
             errorMessage = "Saved on screen, but local preflight queue persistence failed."
         }
@@ -322,22 +376,23 @@ public final class TimingSliceViewModel: ObservableObject {
         payload: [String: String] = [:]
     ) async {
         guard await seedMutationFactoryIfNeeded() else { return }
-        let mutation = mutationFactory.next(prefix: eventType.rawValue, at: timestamp)
-        let event = PendingTimingEvent(
-            sessionId: sessionId,
-            eventType: eventType,
-            mutation: mutation,
-            clientTime: timestamp,
-            timerElapsedSeconds: elapsedSeconds,
-            timerActiveSeconds: activeSeconds,
-            captureMethod: captureMethod,
-            notePreview: notePreview,
-            payload: payload
-        )
         do {
+            let mutation = try await nextMutation(prefix: eventType.rawValue, at: timestamp)
+            let event = PendingTimingEvent(
+                sessionId: sessionId,
+                eventType: eventType,
+                mutation: mutation,
+                clientTime: timestamp,
+                timerElapsedSeconds: elapsedSeconds,
+                timerActiveSeconds: activeSeconds,
+                captureMethod: captureMethod,
+                notePreview: notePreview,
+                payload: payload
+            )
             try await eventStore.append(event)
             await refreshPendingCount()
             errorMessage = nil
+            await syncPendingIfConfigured()
         } catch {
             errorMessage = "Saved on screen, but local queue persistence failed."
         }
@@ -365,13 +420,16 @@ public final class TimingSliceViewModel: ObservableObject {
         do {
             let timingEvents = try await eventStore.load()
             let preflightDecisions = try await preflightDecisionStore.load()
+            let persistedSequence = try await mutationSequenceStore?.loadSequence(
+                clientDeviceId: deviceId
+            ) ?? 0
             let maxSequence = maxPendingSequence(
                 timingEvents: timingEvents,
                 preflightDecisions: preflightDecisions
             )
             mutationFactory = MutationEnvelopeFactory(
                 clientDeviceId: deviceId,
-                initialSequence: maxSequence
+                initialSequence: max(maxSequence, persistedSequence)
             )
             pendingEventCount = timingEvents.count + preflightDecisions.count
             seededMutationFactory = true
@@ -383,6 +441,15 @@ public final class TimingSliceViewModel: ObservableObject {
         }
     }
 
+    private func nextMutation(prefix: String, at timestamp: Date) async throws -> MutationEnvelope {
+        let mutation = mutationFactory.next(prefix: prefix, at: timestamp)
+        try await mutationSequenceStore?.saveSequence(
+            mutation.clientSequence,
+            clientDeviceId: deviceId
+        )
+        return mutation
+    }
+
     private func refreshPendingCount() async {
         do {
             let timingEvents = try await eventStore.load()
@@ -390,6 +457,18 @@ public final class TimingSliceViewModel: ObservableObject {
             pendingEventCount = timingEvents.count + preflightDecisions.count
         } catch {
             errorMessage = "Unable to refresh local sync queue."
+        }
+    }
+
+    private func syncPendingIfConfigured() async {
+        guard let pendingSyncService, let pendingSyncContext else { return }
+        do {
+            _ = try await pendingSyncService.sync(context: pendingSyncContext)
+            await refreshPendingCount()
+            errorMessage = nil
+        } catch {
+            await refreshPendingCount()
+            errorMessage = "Saved locally. Sync will retry when the backend is reachable."
         }
     }
 

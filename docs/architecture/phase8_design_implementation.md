@@ -47,6 +47,19 @@ The core-flow board was then rebuilt from the canonical reference mockup images
 themselves. Those five source-backed components are now the finished visual
 targets; the earlier simplified vector drafts live on a superseded page.
 
+The broader expansion pack's task-oriented Today/Home framing is superseded for
+Parallax implementation by:
+
+```text
+https://www.figma.com/design/OYOtLrgwZmqAqsURzYJBM9/Parallax---v1.3-Native-Screens?node-id=118-3
+```
+
+That board preserves the canonical Today density and structure while
+re-centering Temporal Home on timing sessions, review queues, preflight
+evidence, pending sync, tap-to-expand timing-run evidence, and grounded temporal
+answer cards. Agenda rows, task priority, due dates, generic routines, and
+project-planning flows remain out of scope.
+
 The P0 and stress-state pages follow the same rule. They use canonical-derived
 state cards with the reference mockup preserved as the visual substrate and
 state-specific behavior documented in the card rail.
@@ -85,6 +98,13 @@ Final Figma QA evidence for this board is stored at:
 
 ```text
 .phase8_evidence/screenshots/figma-drawer-expansion-qa-final-board.png
+```
+
+Figma QA evidence for the Temporal Home canonical allocation rebuild is stored
+at:
+
+```text
+.phase8_evidence/screenshots/figma_canonical_allocation/board-118-3-final.png
 ```
 
 Simulator visual evidence for the implemented drawer workflows is stored at:

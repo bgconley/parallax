@@ -87,6 +87,28 @@ public protocol PendingTimingEventStore: Sendable {
     func remove(ids: Set<UUID>) async throws
 }
 
+public actor InMemoryPendingTimingEventStore: PendingTimingEventStore {
+    private var events: [PendingTimingEvent]
+
+    public init(events: [PendingTimingEvent] = []) {
+        self.events = events
+    }
+
+    public func append(_ event: PendingTimingEvent) async throws {
+        if !events.contains(where: { $0.mutation.idempotencyKey == event.mutation.idempotencyKey }) {
+            events.append(event)
+        }
+    }
+
+    public func load() async throws -> [PendingTimingEvent] {
+        events
+    }
+
+    public func remove(ids: Set<UUID>) async throws {
+        events.removeAll { ids.contains($0.id) }
+    }
+}
+
 public actor FilePendingTimingEventStore: PendingTimingEventStore {
     private let fileURL: URL
     private let encoder: JSONEncoder

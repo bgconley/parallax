@@ -23,7 +23,8 @@
       "06 Accessibility + Offline Stress",
       "07 Handoff Notes",
       "08 Superseded Vector Drafts",
-      "09 Phase 8 Drawer Expansion Workflows"
+      "09 Phase 8 Drawer Expansion Workflows",
+      "10 Phase 8 Temporal Home Canonical Allocation"
     ],
     "imported_reference_images": 20,
     "core_flow_frames": 5,
@@ -51,7 +52,13 @@
       "86:71",
       "87:3",
       "87:34",
-      "87:71"
+      "87:71",
+      "118:3",
+      "118:9",
+      "118:104",
+      "118:199",
+      "118:294",
+      "118:346"
     ],
     "canonical_reference_backed_nodes": {
       "Parallax / Temporal Home / Default / iPhone": {
@@ -90,8 +97,33 @@
         "accessibility and offline stress page rebuilt from canonical workflows",
         "state-card geometry audit returned zero issues for pages 10:6 and 10:7",
         "drawer expansion workflow board 85:3 created for second-level Phase 8 bottom sheets",
-        "drawer expansion geometry audit returned zero out-of-bounds and zero chip label issues"
+        "drawer expansion geometry audit returned zero out-of-bounds and zero chip label issues",
+        "failed temporal scope rebuild draft 106:3 was deleted after visual QA found unacceptable cramped text and lane collisions",
+        "temporal home canonical allocation board 118:3 preserves the canonical Today schema while reallocating lanes for temporal work tracking",
+        "temporal home canonical allocation geometry audit returned zero out-of-bounds and zero sibling-overlap issues"
       ]
+    },
+    "temporal_home_canonical_allocation": {
+      "page_id": "118:2",
+      "board_id": "118:3",
+      "source_status": "active implementation target for Temporal Home scope correction",
+      "screenshot_evidence": ".phase8_evidence/screenshots/figma_canonical_allocation/board-118-3-final.png",
+      "node_ids": [
+        "118:9",
+        "118:104",
+        "118:199",
+        "118:294",
+        "118:346"
+      ],
+      "surfaces": [
+        "temporal_home_default",
+        "temporal_home_needs_review",
+        "temporal_home_sync_pending",
+        "temporal_home_expanded_timing_run",
+        "temporal_analytics_grounded_answer"
+      ],
+      "schema_guard": "Preserve canonical Today density and structure: header, current focus, intelligence card, timeline/list block, quick capture, and bottom action pair.",
+      "scope_guard": "No agenda, due dates, task priority, generic routines, or project planning. Rows and expanded states represent timing sessions, review decisions, preflight evidence, pending sync, and grounded temporal answers."
     },
     "drawer_expansion_workflows": {
       "count": 6,

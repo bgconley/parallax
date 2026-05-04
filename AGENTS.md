@@ -61,6 +61,10 @@ Do not pull in broad task/project management, generic inbox/task-tracker flows, 
 
 Active Figma visual targets must be source-backed or canonical-derived from `parallax_v1_3_artifact_pack/examples/` and the current canonical Figma reference pages. Simplified vector drafts are not finished mockups. Before treating Figma work as complete, capture screenshots of the new work, inspect for alignment, spacing, centering, clipping, overlap, cramped boundaries, and text fit, then compare directly against the canonical mockups.
 
+Current active Temporal Home Figma target is `10 Phase 8 Temporal Home Canonical Allocation` at `https://www.figma.com/design/OYOtLrgwZmqAqsURzYJBM9/Parallax---v1.3-Native-Screens?node-id=118-2`; the active implementation board is node `118:3`. The earlier `106:2` temporal scope draft was deleted after QA found unacceptable cramped text, lane collisions, and overlap risk.
+
+For this target, preserve the canonical Today schema and density: header, current focus, intelligence card, timeline/list block, quick capture, and bottom action pair. Do not fix visual defects by reducing item count, removing canonical sections, or making oversized empty text boxes. Fix defects by reallocating lanes and positions: reserve right-side badge/action lanes, left-side title/meta lanes, progress/caption lanes, and drawer content lanes so objects do not overlap, clip, or crowd borders.
+
 ## Environment Routing
 
 Unit tests may run locally on the Mac. Run all functional tests, integration tests, end-of-phase verification/validation tests, and backend operations on the GPU node, because that is the deployment host. Keep frontend testing, Xcode and SwiftUI work, initial Figma work, and Playwright-based UI validation on the Mac.

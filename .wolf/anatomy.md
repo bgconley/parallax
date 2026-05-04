@@ -210,8 +210,14 @@
 - `apply_migrations.py` — repo-root runnable baseline migration CLI with optional schema smoke checks (~120 tok)
 - `phase2_smoke.py` — GPU-node Phase 2 review/profile acceptance smoke covering review, discard, spans, stats snapshots, and SQL proof (~560 tok)
 - `phase3_smoke.py` — GPU-node Phase 3 context capture acceptance smoke covering annotations, capture policy/snapshots, places, review flags, and SQL proof (~760 tok)
+- `phase8_ui_contract.py` — Phase 8 Figma/iOS handoff contract validator; requires the active Temporal Home Figma board `118:3`, handoff metadata, and screenshot evidence (~330 tok)
 - `phase9_smoke.py` — Docker-backed Phase 9 optional-extension smoke for pgvector HNSW, ParadeDB BM25, PostGIS ST_DWithin/GiST, Timescale continuous aggregates, backup/restore, and k3s static checks (~1500 tok)
 - `setup_gpu_node_storage.sh` — GPU-node ZFS dataset, repo checkout, venv directory, and permission bootstrap (~205 tok)
+
+## apps/ios/DesignHandoff/
+
+- `README.md` — Phase 8 Figma-to-iOS handoff notes, active board references, screenshot evidence, and implementation guardrails (~260 tok)
+- `phase8_figma_handoff.json` — machine-readable Phase 8 Figma handoff metadata and active board references for Temporal Home and native screens (~420 tok)
 
 ## infra/k3s/base/
 
@@ -223,6 +229,12 @@
 ## docs/architecture/
 
 - `phase9_optional_extension_hardening.md` — Phase 9 scope, Firecrawl-backed extension notes, re-embedding/dual-read plan, k3s boundary, and verification contract (~850 tok)
+- `phase8_design_implementation.md` — Phase 8 design implementation notes, active Figma source, iOS vertical-slice scope, screenshot evidence, and smoke/build verification (~900 tok)
+
+## .phase8_evidence/screenshots/
+
+- `figma_canonical_allocation/` — current QA screenshot evidence for active Figma page `118:2` / board `118:3`, including after-fix captures used for visual scrutiny (~80 tok)
+- `figma_scope_rebuild/` — superseded scratch screenshot evidence from the deleted `106:2` temporal scope draft; do not use as active implementation source (~60 tok)
 
 ## tests/
 

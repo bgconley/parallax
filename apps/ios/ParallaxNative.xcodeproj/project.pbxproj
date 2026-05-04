@@ -25,6 +25,10 @@
 		A8D002000000000000000001 /* Phase8DrawerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D005000000000000000001 /* Phase8DrawerModels.swift */; };
 		A8D003000000000000000001 /* Phase8DrawerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D006000000000000000001 /* Phase8DrawerViews.swift */; };
 		A8D007000000000000000001 /* PendingPreflightDecisionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D008000000000000000001 /* PendingPreflightDecisionStore.swift */; };
+		A8D009000000000000000001 /* ParallaxRuntimeConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D00C000000000000000001 /* ParallaxRuntimeConfig.swift */; };
+		A8D00A000000000000000001 /* PendingSyncStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D00D000000000000000001 /* PendingSyncStateStore.swift */; };
+		A8D00B000000000000000001 /* PendingSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D00E000000000000000001 /* PendingSyncService.swift */; };
+		A8D00F000000000000000001 /* MutationSequenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D010000000000000000001 /* MutationSequenceStore.swift */; };
 		A3E33F46B1C0B5C4EEEBA854 /* ParallaxCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B105D37E4FF3EBA7659FE8B /* ParallaxCore.framework */; };
 		A91AE802F0E89B2DCA930B9C /* ParallaxDesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82B22A610DB13D4B4329CB5D /* ParallaxDesignTokens.swift */; };
 		B683ACB588170DE3B7017E4E /* ParallaxDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D4F34C027EF62594F199994 /* ParallaxDomain.swift */; };
@@ -119,6 +123,10 @@
 		A8D005000000000000000001 /* Phase8DrawerModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Phase8DrawerModels.swift; sourceTree = "<group>"; };
 		A8D006000000000000000001 /* Phase8DrawerViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Phase8DrawerViews.swift; sourceTree = "<group>"; };
 		A8D008000000000000000001 /* PendingPreflightDecisionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PendingPreflightDecisionStore.swift; sourceTree = "<group>"; };
+		A8D00C000000000000000001 /* ParallaxRuntimeConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ParallaxRuntimeConfig.swift; sourceTree = "<group>"; };
+		A8D00D000000000000000001 /* PendingSyncStateStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PendingSyncStateStore.swift; sourceTree = "<group>"; };
+		A8D00E000000000000000001 /* PendingSyncService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PendingSyncService.swift; sourceTree = "<group>"; };
+		A8D010000000000000000001 /* MutationSequenceStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MutationSequenceStore.swift; sourceTree = "<group>"; };
 		B19F85673AFFBCF3F09394C7 /* ParallaxAPIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ParallaxAPIClient.swift; sourceTree = "<group>"; };
 		B1F297D1F7FCD26E5701ECAE /* ParallaxNativeApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ParallaxNativeApp.swift; sourceTree = "<group>"; };
 		DD6F62CFD68CA158AC1B4C28 /* TimingSessionScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimingSessionScreen.swift; sourceTree = "<group>"; };
@@ -209,9 +217,13 @@
 			isa = PBXGroup;
 			children = (
 				4C3DD75A30CB4BBD02DDDE38 /* OfflineEventStore.swift */,
+				A8D010000000000000000001 /* MutationSequenceStore.swift */,
 				A8D008000000000000000001 /* PendingPreflightDecisionStore.swift */,
+				A8D00D000000000000000001 /* PendingSyncStateStore.swift */,
+				A8D00E000000000000000001 /* PendingSyncService.swift */,
 				B19F85673AFFBCF3F09394C7 /* ParallaxAPIClient.swift */,
 				3D4F34C027EF62594F199994 /* ParallaxDomain.swift */,
+				A8D00C000000000000000001 /* ParallaxRuntimeConfig.swift */,
 			);
 			name = ParallaxCore;
 			path = Sources/ParallaxCore;
@@ -463,9 +475,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				987E2DF438EE0BC62BBE6484 /* OfflineEventStore.swift in Sources */,
+				A8D00F000000000000000001 /* MutationSequenceStore.swift in Sources */,
 				A8D007000000000000000001 /* PendingPreflightDecisionStore.swift in Sources */,
+				A8D00A000000000000000001 /* PendingSyncStateStore.swift in Sources */,
+				A8D00B000000000000000001 /* PendingSyncService.swift in Sources */,
 				D4E6B55CC5BB545297B8644B /* ParallaxAPIClient.swift in Sources */,
 				B683ACB588170DE3B7017E4E /* ParallaxDomain.swift in Sources */,
+				A8D009000000000000000001 /* ParallaxRuntimeConfig.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

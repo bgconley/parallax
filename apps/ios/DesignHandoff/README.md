@@ -35,6 +35,14 @@ components for all five canonical reference mockups. The earlier simplified
 vector drafts were moved to `08 Superseded Vector Drafts` so they are not used
 as finished visual targets.
 
+The task-oriented Today/Home framing from the broader expansion pack is now
+superseded for Parallax implementation. Use
+`10 Phase 8 Temporal Home Canonical Allocation` as the active Temporal Home
+source. That board preserves the canonical Today density and structure while
+replacing agenda/task-list concepts with timing sessions, review queues,
+preflight evidence, pending sync, tap-to-expand timing-run evidence, and
+grounded temporal answer cards.
+
 The `05 P0 Screens + States` and `06 Accessibility + Offline Stress` pages also
 use canonical-derived state cards. Each card keeps a canonical reference mockup
 as the visual substrate and records the state behavior in a handoff rail instead

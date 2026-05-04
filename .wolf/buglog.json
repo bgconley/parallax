@@ -276,6 +276,18 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-04T02:53:59Z"
+    },
+    {
+      "id": "bug-024",
+      "timestamp": "2026-05-04T06:07:35Z",
+      "error_message": "User reported the Phase 8 Figma Temporal Home pages had unacceptable text overruns, object overlaps, cramped objects against text/borders, and that creating a replacement page did not fix the linked page.",
+      "file": "https://www.figma.com/design/OYOtLrgwZmqAqsURzYJBM9/Parallax---v1.3-Native-Screens?node-id=118-2, apps/ios/DesignHandoff/phase8_figma_handoff.json, scripts/phase8_ui_contract.py",
+      "root_cause": "The first Figma cleanup reduced or reallocated content incorrectly, accepted the 106:2 draft too early, and then created a corrected 118:3 board without immediately deleting or superseding the stale linked draft. The correct fix was to preserve canonical Today density and repair lane allocation in-place.",
+      "fix": "Fixed the 118:2 page in place around active board 118:3, deleted the failed 106:2 draft, updated handoff/docs to point at 118:3, enforced the active board in the Phase 8 UI contract, and verified 0 bounds/overlap issues plus fresh screenshots.",
+      "tags": ["phase8", "figma", "ui-qa", "temporal-home", "handoff"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-04T06:07:35Z"
     }
   ]
 }

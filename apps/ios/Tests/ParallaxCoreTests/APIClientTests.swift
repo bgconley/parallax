@@ -40,6 +40,71 @@ import Testing
     #expect(mutationJson["client_created_at"] == nil)
 }
 
+@Test func bearerAuthRequestDoesNotSendDevelopmentHeader() throws {
+    let sessionId = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
+    let client = ParallaxAPIClient(
+        baseURL: URL(string: "http://127.0.0.1:18000")!,
+        auth: .bearer(token: "uat-token")
+    )
+    let mutation = MutationEnvelope(
+        idempotencyKey: "device-1:10",
+        clientMutationId: "mutation-10",
+        clientDeviceId: "device-1",
+        clientSequence: 10,
+        clientTimestamp: Date(timeIntervalSince1970: 1_775_000_000)
+    )
+    let event = PendingTimingEvent(
+        sessionId: sessionId,
+        eventType: .sessionStarted,
+        mutation: mutation,
+        clientTime: Date(timeIntervalSince1970: 1_775_000_001)
+    )
+
+    let request = try client.appendTimingEventRequest(event)
+
+    #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer uat-token")
+    #expect(request.value(forHTTPHeaderField: "X-Parallax-User-Id") == nil)
+}
+
+@Test func missingBearerTokenIsRejectedBeforeRequestLeavesClient() throws {
+    let client = ParallaxAPIClient(
+        baseURL: URL(string: "http://127.0.0.1:18000")!,
+        auth: .bearer(token: "   ")
+    )
+    let mutation = MutationEnvelope(
+        idempotencyKey: "device-1:10",
+        clientMutationId: "mutation-10",
+        clientDeviceId: "device-1",
+        clientSequence: 10,
+        clientTimestamp: Date(timeIntervalSince1970: 1_775_000_000)
+    )
+
+    #expect(throws: ParallaxAPIError.invalidAuthConfiguration) {
+        _ = try client.createActivityRequest(displayName: "Clean pots and pans", mutation: mutation)
+    }
+}
+
+@Test func runtimeConfigRequiresBearerTokenForExternalBearerMode() throws {
+    #expect(throws: ParallaxRuntimeConfigError.missingBearerToken) {
+        _ = try ParallaxRuntimeConfig.load(environment: [
+            "PARALLAX_API_BASE_URL": "http://127.0.0.1:18000",
+            "PARALLAX_AUTH_MODE": "external_bearer",
+        ])
+    }
+
+    let config = try #require(try ParallaxRuntimeConfig.load(environment: [
+        "PARALLAX_API_BASE_URL": "http://127.0.0.1:18000",
+        "PARALLAX_AUTH_MODE": "external_bearer",
+        "PARALLAX_BEARER_TOKEN": "uat-token",
+        "PARALLAX_ACTIVITY_NAME": "Clean the kitchen",
+        "PARALLAX_DEVICE_ID": "ios-uat-device",
+    ]))
+    #expect(config.apiBaseURL.absoluteString == "http://127.0.0.1:18000")
+    #expect(config.auth == .bearer(token: "uat-token"))
+    #expect(config.activityName == "Clean the kitchen")
+    #expect(config.deviceId == "ios-uat-device")
+}
+
 @Test func annotationRequestCarriesCaptureMethodInMetadata() throws {
     let userId = UUID(uuidString: "33333333-3333-3333-3333-333333333333")!
     let sessionId = UUID(uuidString: "44444444-4444-4444-4444-444444444444")!

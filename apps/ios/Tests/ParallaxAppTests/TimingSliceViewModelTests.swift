@@ -215,6 +215,30 @@ import Testing
 }
 
 @MainActor
+@Test func preflightSnoozeDefaultsToTomorrowWhenDrawerOmitsDate() async throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let preflightURL = directory.appendingPathComponent("pending-preflight-decisions.json")
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let now = Date(timeIntervalSince1970: 1_775_040_000)
+    let preflightStore = FilePendingPreflightDecisionStore(fileURL: preflightURL)
+    let viewModel = TimingSliceViewModel(
+        activityId: UUID(uuidString: "77777777-7777-4777-8777-777777777777")!,
+        activityName: "Clean pots and pans",
+        deviceId: "ios-preflight-snooze-device",
+        eventStore: InMemoryPendingTimingEventStore(),
+        preflightDecisionStore: preflightStore,
+        now: { now }
+    )
+
+    await viewModel.decidePreflightCheck(.snooze)
+
+    let decision = try #require(try await preflightStore.load().first)
+    #expect(decision.decision == .snooze)
+    #expect(decision.snoozedUntil == now.addingTimeInterval(86_400))
+}
+
+@MainActor
 @Test func mutationFactorySeedsFromPersistedEventsBeforeAppending() async throws {
     let fileURL = FileManager.default.temporaryDirectory
         .appendingPathComponent(UUID().uuidString)
@@ -257,4 +281,28 @@ import Testing
     #expect(events[1].mutation.idempotencyKey == "\(deviceId):8")
     #expect(events[1].captureMethod == .manualButton)
     #expect(viewModel.pendingEventCount == 2)
+}
+
+@MainActor
+@Test func mutationFactorySeedsFromDurableSequenceWhenQueuesAreEmpty() async throws {
+    let deviceId = "ios-persisted-sequence-device"
+    let sequenceStore = InMemoryMutationSequenceStore(sequences: [deviceId: 4])
+    let preflightStore = InMemoryPendingPreflightDecisionStore()
+    let timestamp = Date(timeIntervalSince1970: 1_775_060_000)
+    let viewModel = TimingSliceViewModel(
+        activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
+        activityName: "Clean pots and pans",
+        deviceId: deviceId,
+        eventStore: InMemoryPendingTimingEventStore(),
+        preflightDecisionStore: preflightStore,
+        mutationSequenceStore: sequenceStore,
+        now: { timestamp }
+    )
+
+    await viewModel.decidePreflightCheck(.hide)
+
+    let decision = try #require(try await preflightStore.load().first)
+    #expect(decision.mutation.clientSequence == 5)
+    #expect(decision.mutation.idempotencyKey == "\(deviceId):5")
+    #expect(try await sequenceStore.loadSequence(clientDeviceId: deviceId) == 5)
 }

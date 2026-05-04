@@ -2,17 +2,96 @@ import Foundation
 
 public enum ParallaxAPIError: Error, Equatable {
     case invalidURL
+    case invalidAuthConfiguration
+    case requestFailed(statusCode: Int, body: String?)
+    case invalidResponse
+}
+
+public enum ParallaxAPIAuth: Equatable, Sendable {
+    case devHeader(userId: UUID)
+    case bearer(token: String)
+
+    public func apply(to request: inout URLRequest) throws {
+        switch self {
+        case let .devHeader(userId):
+            request.setValue(userId.uuidString, forHTTPHeaderField: "X-Parallax-User-Id")
+        case let .bearer(token):
+            let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else {
+                throw ParallaxAPIError.invalidAuthConfiguration
+            }
+            request.setValue("Bearer \(trimmed)", forHTTPHeaderField: "Authorization")
+        }
+    }
+}
+
+public protocol ParallaxHTTPTransport: Sendable {
+    func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse)
+}
+
+public struct URLSessionHTTPTransport: ParallaxHTTPTransport {
+    private let urlSession: URLSession
+
+    public init(urlSession: URLSession = .shared) {
+        self.urlSession = urlSession
+    }
+
+    public func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let (data, response) = try await urlSession.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ParallaxAPIError.invalidResponse
+        }
+        return (data, httpResponse)
+    }
 }
 
 public struct ParallaxAPIClient: Sendable {
     public let baseURL: URL
-    public let userId: UUID
-    public let urlSession: URLSession
+    public let auth: ParallaxAPIAuth
+    private let transport: any ParallaxHTTPTransport
 
     public init(baseURL: URL, userId: UUID, urlSession: URLSession = .shared) {
         self.baseURL = baseURL
-        self.userId = userId
-        self.urlSession = urlSession
+        self.auth = .devHeader(userId: userId)
+        self.transport = URLSessionHTTPTransport(urlSession: urlSession)
+    }
+
+    public init(baseURL: URL, auth: ParallaxAPIAuth, urlSession: URLSession = .shared) {
+        self.baseURL = baseURL
+        self.auth = auth
+        self.transport = URLSessionHTTPTransport(urlSession: urlSession)
+    }
+
+    public init(baseURL: URL, auth: ParallaxAPIAuth, transport: any ParallaxHTTPTransport) {
+        self.baseURL = baseURL
+        self.auth = auth
+        self.transport = transport
+    }
+
+    public func resolveActivityRequest(query: String, limit: Int = 5) throws -> URLRequest {
+        try jsonRequest(
+            path: "/v1/activities/resolve",
+            method: "POST",
+            body: ResolveActivityBody(query: query, limit: limit)
+        )
+    }
+
+    public func createActivityRequest(
+        displayName: String,
+        mutation: MutationEnvelope,
+        defaultTimingMode: MeasurementMode = .wholeTask,
+        privacyClass: String = "normal"
+    ) throws -> URLRequest {
+        try jsonRequest(
+            path: "/v1/activities",
+            method: "POST",
+            body: CreateActivityBody(
+                mutation: mutation,
+                displayName: displayName,
+                defaultTimingMode: defaultTimingMode,
+                privacyClass: privacyClass
+            )
+        )
     }
 
     public func createTimingSessionRequest(
@@ -38,8 +117,15 @@ public struct ParallaxAPIClient: Sendable {
     }
 
     public func appendTimingEventRequest(_ event: PendingTimingEvent) throws -> URLRequest {
+        try appendTimingEventRequest(event, remoteSessionId: event.sessionId)
+    }
+
+    public func appendTimingEventRequest(
+        _ event: PendingTimingEvent,
+        remoteSessionId: UUID
+    ) throws -> URLRequest {
         try jsonRequest(
-            path: "/v1/timing/sessions/\(event.sessionId.uuidString)/events",
+            path: "/v1/timing/sessions/\(remoteSessionId.uuidString)/events",
             method: "POST",
             body: AppendTimingEventBody(
                 mutation: event.mutation,
@@ -133,6 +219,23 @@ public struct ParallaxAPIClient: Sendable {
         )
     }
 
+    public func createPreflightCheckRequest(
+        activityId: UUID,
+        mutation: MutationEnvelope,
+        checkText: String,
+        source: String = "user_created"
+    ) throws -> URLRequest {
+        try jsonRequest(
+            path: "/v1/activities/\(activityId.uuidString)/preflight-checks",
+            method: "POST",
+            body: CreatePreflightCheckBody(
+                mutation: mutation,
+                checkText: checkText,
+                source: source
+            )
+        )
+    }
+
     public func decidePreflightCheckRequest(
         activityId: UUID,
         checkId: UUID,
@@ -168,6 +271,18 @@ public struct ParallaxAPIClient: Sendable {
         }
     }
 
+    public func send<T: Decodable>(_ request: URLRequest, decode type: T.Type) async throws -> T {
+        let (data, response) = try await transport.data(for: request)
+        guard (200..<300).contains(response.statusCode) else {
+            let body = String(data: data, encoding: .utf8)
+            throw ParallaxAPIError.requestFailed(statusCode: response.statusCode, body: body)
+        }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(type, from: data)
+    }
+
     private func jsonRequest<T: Encodable>(path: String, method: String, body: T) throws -> URLRequest {
         guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else {
             throw ParallaxAPIError.invalidURL
@@ -175,13 +290,25 @@ public struct ParallaxAPIClient: Sendable {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(userId.uuidString, forHTTPHeaderField: "X-Parallax-User-Id")
+        try auth.apply(to: &request)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.keyEncodingStrategy = .convertToSnakeCase
         request.httpBody = try encoder.encode(body)
         return request
     }
+}
+
+private struct ResolveActivityBody: Encodable {
+    let query: String
+    let limit: Int
+}
+
+private struct CreateActivityBody: Encodable {
+    let mutation: MutationEnvelope
+    let displayName: String
+    let defaultTimingMode: MeasurementMode
+    let privacyClass: String
 }
 
 private struct CreateTimingSessionBody: Encodable {
@@ -225,6 +352,12 @@ private struct CreateAnnotationBody: Encodable {
     let occurredAt: Date
     let privacyClass: String
     let metadata: [String: String]
+}
+
+private struct CreatePreflightCheckBody: Encodable {
+    let mutation: MutationEnvelope
+    let checkText: String
+    let source: String
 }
 
 private struct DecidePreflightCheckBody: Encodable {

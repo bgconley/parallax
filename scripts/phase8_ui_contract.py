@@ -262,6 +262,25 @@ def main() -> int:
         ),
         "Figma drawer expansion QA must record zero-issue geometry/chip audit",
     )
+    temporal_home_allocation = build_summary.get("temporal_home_canonical_allocation", {})
+    _expect(
+        temporal_home_allocation.get("board_id") == "118:3",
+        "Temporal Home canonical allocation board must be the active implementation target",
+    )
+    _expect(
+        "canonical Today density and structure"
+        in temporal_home_allocation.get("schema_guard", ""),
+        "Temporal Home allocation must preserve the canonical Today schema",
+    )
+    _expect(
+        "timing sessions" in temporal_home_allocation.get("scope_guard", "")
+        and "task priority" in temporal_home_allocation.get("scope_guard", ""),
+        "Temporal Home allocation must record temporal scope guard",
+    )
+    _expect(
+        (ROOT / temporal_home_allocation.get("screenshot_evidence", "")).exists(),
+        "Temporal Home canonical allocation screenshot evidence missing",
+    )
     ios_implementation = handoff.get("ios_implementation", {})
     _expect(
         ios_implementation.get("xcode_project") == "apps/ios/ParallaxNative.xcodeproj",

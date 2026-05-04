@@ -1,0 +1,494 @@
+{
+  "artifact": "Parallax Phase 8 Figma Handoff",
+  "artifact_version": "1.0",
+  "canonical_token_source": "parallax_v1_3_artifact_pack/contracts/design/design_tokens.json",
+  "token_version": "1.3",
+  "figma_file_name": "Parallax - v1.3 Native Screens",
+  "figma_file_key": "OYOtLrgwZmqAqsURzYJBM9",
+  "figma_file_url": "https://www.figma.com/design/OYOtLrgwZmqAqsURzYJBM9",
+  "figma_status": "created",
+  "figma_source_inputs": [
+    "parallax_v1_3_artifact_pack/examples/reference_mockups",
+    "parallax_v1_3_artifact_pack/examples/payloads",
+    "figma_expansion_readiness_pack_v0_8_1"
+  ],
+  "figma_build_summary": {
+    "pages": [
+      "00 Cover - Phase 8 Thesis",
+      "01 Reference Mockups - Canonical + Expansion",
+      "02 Design Tokens - Parallax v1.3",
+      "03 Components - Temporal UI Kit",
+      "04 Core Flow Prototype - Timing Loop",
+      "05 P0 Screens + States",
+      "06 Accessibility + Offline Stress",
+      "07 Handoff Notes",
+      "08 Superseded Vector Drafts",
+      "09 Phase 8 Drawer Expansion Workflows"
+    ],
+    "imported_reference_images": 20,
+    "core_flow_frames": 5,
+    "canonical_reference_backed_frames": 26,
+    "p0_state_frames": 15,
+    "accessibility_stress_frames": 6,
+    "component_cards": 22,
+    "screenshot_verified_node": "75:9",
+    "screenshot_verified_nodes": [
+      "10:5",
+      "10:6",
+      "10:7",
+      "75:5",
+      "75:7",
+      "75:9",
+      "75:11",
+      "75:13",
+      "78:52",
+      "78:134",
+      "49:2",
+      "10:4",
+      "85:3",
+      "86:3",
+      "86:38",
+      "86:71",
+      "87:3",
+      "87:34",
+      "87:71"
+    ],
+    "canonical_reference_backed_nodes": {
+      "Parallax / Temporal Home / Default / iPhone": {
+        "node_id": "75:5",
+        "source": "parallax_v1_3_artifact_pack/examples/reference_mockups/01_today_reference.png"
+      },
+      "Parallax / Timing Launcher / Default / iPhone": {
+        "node_id": "75:7",
+        "source": "parallax_v1_3_artifact_pack/examples/reference_mockups/02_timing_launcher_reference.png"
+      },
+      "Parallax / Timing Session / Running / iPhone": {
+        "node_id": "75:9",
+        "source": "parallax_v1_3_artifact_pack/examples/reference_mockups/04_timing_session_reference.png"
+      },
+      "Parallax / Timing Review / Needs Event Confirmation / iPhone": {
+        "node_id": "75:11",
+        "source": "parallax_v1_3_artifact_pack/examples/reference_mockups/03_timing_review_reference.png"
+      },
+      "Parallax / Checkpoint Setup / Break It Down / iPhone": {
+        "node_id": "75:13",
+        "source": "parallax_v1_3_artifact_pack/examples/reference_mockups/05_break_it_down_reference.png"
+      }
+    },
+    "visual_refinement": {
+      "status": "completed",
+      "checks": [
+        "core flow page rebuilt from source-backed canonical reference images",
+        "bounded header title lanes across all screen components",
+        "core flow page reflowed into a scanable two-row board",
+        "context-capture and activity-profile text collisions corrected",
+        "timing-session elapsed timer centered inside the progress circle",
+        "dynamic type stress cards resized for safe wrapping",
+        "component kit visible labels rewritten for readable card titles",
+        "programmatic overlap audit returned zero issues across persisted Parallax components",
+        "P0 state page rebuilt as canonical-derived state matrix",
+        "accessibility and offline stress page rebuilt from canonical workflows",
+        "state-card geometry audit returned zero issues for pages 10:6 and 10:7",
+        "drawer expansion workflow board 85:3 created for second-level Phase 8 bottom sheets",
+        "drawer expansion geometry audit returned zero out-of-bounds and zero chip label issues"
+      ]
+    },
+    "drawer_expansion_workflows": {
+      "count": 6,
+      "page_id": "85:2",
+      "board_id": "85:3",
+      "node_ids": [
+        "86:3",
+        "86:38",
+        "86:71",
+        "87:3",
+        "87:34",
+        "87:71"
+      ],
+      "workflows": [
+        "step_detail",
+        "friction_evidence",
+        "forgotten_timer",
+        "review_decision",
+        "preflight_evidence",
+        "checkpoint_setup"
+      ]
+    },
+    "canonical_state_derivation_nodes": {
+      "p0": {
+        "count": 15,
+        "page_id": "10:6",
+        "node_ids": [
+          "78:4",
+          "78:12",
+          "78:20",
+          "78:28",
+          "78:36",
+          "78:44",
+          "78:52",
+          "78:60",
+          "78:68",
+          "78:76",
+          "78:84",
+          "78:92",
+          "78:100",
+          "78:108",
+          "78:116"
+        ]
+      },
+      "accessibility_offline_stress": {
+        "count": 6,
+        "page_id": "10:7",
+        "node_ids": [
+          "78:126",
+          "78:134",
+          "78:142",
+          "78:150",
+          "78:158",
+          "78:166"
+        ]
+      }
+    }
+  },
+  "naming_pattern": "Parallax / <Surface> / <State> / <Breakpoint or Device>",
+  "component_naming_pattern": "Parallax/<ComponentName>/<Variant>",
+  "required_states": [
+    "Default",
+    "Empty",
+    "Offline Cached",
+    "Sync Pending",
+    "AI Pending",
+    "Needs Review",
+    "High Contrast",
+    "Dynamic Type Stress",
+    "Reduced Motion"
+  ],
+  "timing_context_states": [
+    "Running",
+    "Paused",
+    "Waiting Active",
+    "Interruption Active",
+    "Detour Active",
+    "Side Quest Active",
+    "Abandoned Resumed",
+    "Forgot To Stop Correction",
+    "Unresolved Interpretation"
+  ],
+  "frames": [
+    {
+      "name": "Parallax / Temporal Home / Default / iPhone",
+      "surface": "Temporal Home",
+      "states": [
+        "Default"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/01_today_reference.png"
+    },
+    {
+      "name": "Parallax / Temporal Home / Offline Cached / iPhone",
+      "surface": "Temporal Home",
+      "states": [
+        "Offline Cached"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/01_today_reference.png"
+    },
+    {
+      "name": "Parallax / Temporal Home / Sync Pending / iPhone",
+      "surface": "Temporal Home",
+      "states": [
+        "Sync Pending"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/01_today_reference.png"
+    },
+    {
+      "name": "Parallax / Temporal Home / Needs Review / iPhone",
+      "surface": "Temporal Home",
+      "states": [
+        "Needs Review"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/01_today_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Launcher / Default / iPhone",
+      "surface": "Timing Launcher",
+      "states": [
+        "Default"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/02_timing_launcher_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Launcher / AI Pending / iPhone",
+      "surface": "Timing Launcher",
+      "states": [
+        "AI Pending"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/02_timing_launcher_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Session / Running / iPhone",
+      "surface": "Timing Session",
+      "states": [
+        "Running"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/04_timing_session_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Session / Paused / iPhone",
+      "surface": "Timing Session",
+      "states": [
+        "Paused"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/04_timing_session_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Session / Detour Active / iPhone",
+      "surface": "Timing Session",
+      "states": [
+        "Detour Active"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/04_timing_session_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Session / Side Quest Active / iPhone",
+      "surface": "Timing Session",
+      "states": [
+        "Side Quest Active"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/04_timing_session_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Review / Needs Event Confirmation / iPhone",
+      "surface": "Timing Review",
+      "states": [
+        "Needs Review"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/03_timing_review_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Review / Forgot To Stop Correction / iPhone",
+      "surface": "Timing Review",
+      "states": [
+        "Forgot To Stop Correction"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/03_timing_review_reference.png"
+    },
+    {
+      "name": "Parallax / Checkpoint Setup / Default / iPhone",
+      "surface": "Checkpoint Setup",
+      "states": [
+        "Default"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/05_break_it_down_reference.png"
+    },
+    {
+      "name": "Parallax / Checkpoint Setup / Context Added / iPhone",
+      "surface": "Checkpoint Setup",
+      "states": [
+        "Default"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/05_break_it_down_reference.png"
+    },
+    {
+      "name": "Parallax / Checkpoint Setup / Start Latency Capture / iPhone",
+      "surface": "Checkpoint Setup",
+      "states": [
+        "Start Latency Capture"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/05_break_it_down_reference.png"
+    },
+    {
+      "name": "Parallax / Temporal Home / High Contrast / iPhone",
+      "surface": "Temporal Home",
+      "states": [
+        "High Contrast"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/01_today_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Session / Dynamic Type Stress / iPhone",
+      "surface": "Timing Session",
+      "states": [
+        "Dynamic Type Stress"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/04_timing_session_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Session / Reduced Motion / iPhone",
+      "surface": "Timing Session",
+      "states": [
+        "Reduced Motion"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/04_timing_session_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Launcher / Offline Ready / iPhone",
+      "surface": "Timing Launcher",
+      "states": [
+        "Offline Cached"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/02_timing_launcher_reference.png"
+    },
+    {
+      "name": "Parallax / Timing Review / Screen Reader Priority / iPhone",
+      "surface": "Timing Review",
+      "states": [
+        "High Contrast"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/03_timing_review_reference.png"
+    },
+    {
+      "name": "Parallax / Temporal Home / AI Pending / iPhone",
+      "surface": "Temporal Home",
+      "states": [
+        "AI Pending"
+      ],
+      "primary_components": [
+        "CanonicalReferenceImage",
+        "StateRail"
+      ],
+      "canonical_source": "parallax_v1_3_artifact_pack/examples/reference_mockups/01_today_reference.png"
+    }
+  ],
+  "components": [
+    "ActivityRow",
+    "ActivityProfileHero",
+    "PersonalRangeChip",
+    "TimingLauncherCard",
+    "TimingInstrument",
+    "CurrentCheckpointCard",
+    "SayWhatHappenedButton",
+    "ContextCaptureSheet",
+    "ContextInterpretationCard",
+    "RunTimeline",
+    "RunTimelineItem",
+    "ReviewSummaryCard",
+    "CountTreatmentCard",
+    "InclusionDecisionControl",
+    "EvidenceBackedAnswerCard",
+    "QueryEvidenceCard",
+    "PreflightCheckCard",
+    "StartLatencyCard",
+    "WorkModeSelector",
+    "PrivacySettingCard",
+    "SyncStatusPill",
+    "CorrectionActionSheet"
+  ],
+  "ios_implementation": {
+    "xcode_project": "apps/ios/ParallaxNative.xcodeproj",
+    "xcode_scheme": "ParallaxNative",
+    "module_boundaries": [
+      "ParallaxDesignSystem",
+      "ParallaxCore",
+      "ParallaxApp"
+    ],
+    "drawer_implementation": "custom SwiftUI bottom overlays scaled from the Figma 461-point drawer frames",
+    "simulator": {
+      "validated_device": "iPhone 17 Pro",
+      "validated_runtime": "iOS 26.2",
+      "app_bundle_id": "com.bgc.parallax.native",
+      "screenshot_evidence": {
+        "step_detail": ".phase8_evidence/screenshots/simulator/phase8-ios-step-detail.jpg",
+        "friction_evidence": ".phase8_evidence/screenshots/simulator/phase8-ios-friction-evidence.jpg",
+        "forgotten_timer": ".phase8_evidence/screenshots/simulator/phase8-ios-forgotten-timer.jpg",
+        "review_decision": ".phase8_evidence/screenshots/simulator/phase8-ios-review-decision.jpg",
+        "preflight_evidence": ".phase8_evidence/screenshots/simulator/phase8-ios-preflight-evidence.jpg",
+        "checkpoint_setup": ".phase8_evidence/screenshots/simulator/phase8-ios-checkpoint-setup.jpg"
+      },
+      "figma_reference_evidence": {
+        "step_detail": ".phase8_evidence/screenshots/figma/figma-step-detail.png",
+        "friction_evidence": ".phase8_evidence/screenshots/figma/figma-friction-evidence.png",
+        "forgotten_timer": ".phase8_evidence/screenshots/figma/figma-forgotten-timer.png",
+        "review_decision": ".phase8_evidence/screenshots/figma/figma-review-decision.png",
+        "preflight_evidence": ".phase8_evidence/screenshots/figma/figma-preflight-evidence.png",
+        "checkpoint_setup": ".phase8_evidence/screenshots/figma/figma-checkpoint-setup.png"
+      }
+    }
+  },
+  "figma_acceptance_gate_coverage": {
+    "start_run_no_permissions": "Parallax / Timing Launcher / Default / iPhone plus Parallax / Timing Session / Running / iPhone",
+    "start_run_approximate_place_context": "Parallax / Place Confirmation / Approximate Place / iPhone",
+    "capture_voice_detour_hands_busy": "Parallax / Watch Capture / Voice Detour / Watch",
+    "review_possible_forgotten_timer": "Parallax / Run Timeline / Correction Needed / iPhone",
+    "confirm_or_ignore_inferred_place": "Parallax / Place Confirmation / Approximate Place / iPhone",
+    "disable_context_capture_for_run": "Parallax / Privacy Settings / Raw Context / iPhone"
+  }
+}

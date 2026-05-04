@@ -1,0 +1,13 @@
+Page,Frame,Purpose,Priority,States
+Home Lists,Home / Default / Light,Entryway and lists,P0,"default, empty, offline"
+Capture Inbox,Quick Capture / Typing,Raw intent capture,P0,"blank, typing, inferred, saved"
+Today,Today / Realistic Day,Daily plan surface,P0,"normal, overfull, low energy"
+List View,List / House,Contextual list work,P0,"default, completed collapsed"
+Task Detail Plan,Task Detail / Index Card,Object depth,P0,"simple, plan attached, timing history"
+Task Detail Plan,Plan Builder / Review,AI-generated task graph review,P0,"pending, ready, edited"
+Now Stuck,Now Card / Ready,Immediate execution,P0,"ready, active, stuck, complete"
+Now Stuck,Stuck / Recovery,Unblock path,P0,"friction choice, repair suggestion"
+Timing Review,Timing / Active,Temporal intelligence data capture,P1,"active, paused, checkpointed"
+Timing Review,Review / Learn,Outcome calibration,P1,"post-task, end-of-day"
+Settings Privacy,Settings / AI Privacy,Control and consent,P0,default
+States Accessibility,Large Text Stress,Accessibility validation,P0,"home, task row, now card"

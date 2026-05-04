@@ -38,6 +38,7 @@ Run implementation commands from the repository root unless noted.
 - `make phase5-smoke`: runs the Phase 5 checkpoints/latency/feature-vector API/Postgres acceptance smoke against the configured API and host database URL.
 - `make phase6-smoke`: runs the Phase 6 activity-identity/preflight API/Postgres acceptance smoke against the configured API and host database URL.
 - `make phase7-smoke`: runs the Phase 7 grounded Ask About Time API/Postgres acceptance smoke against the configured API and host database URL.
+- `make phase8-smoke`: validates the Phase 8 repo-side design handoff and SwiftUI view-model contract tests on the Mac.
 - `make release-status`: prints the current full-release gate blockers without failing.
 - `make release-gate`: fails while full-release/private-alpha blockers in `docs/release/release_gate_status.md` remain open.
 

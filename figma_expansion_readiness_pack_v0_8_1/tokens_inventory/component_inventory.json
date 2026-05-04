@@ -1,0 +1,138 @@
+{
+  "version": "0.8",
+  "app_name_token": "[APP_NAME]",
+  "components": [
+    {
+      "name": "CaptureField",
+      "variants": [
+        "global",
+        "contextual",
+        "voice",
+        "share",
+        "offline"
+      ],
+      "required_states": [
+        "blank",
+        "typing",
+        "inferring",
+        "saved",
+        "ai_pending"
+      ]
+    },
+    {
+      "name": "InferenceChip",
+      "variants": [
+        "date",
+        "estimate",
+        "route",
+        "reminder",
+        "person",
+        "list"
+      ],
+      "required_states": [
+        "suggested",
+        "accepted",
+        "edited",
+        "dismissed",
+        "low_confidence"
+      ]
+    },
+    {
+      "name": "TaskRow",
+      "variants": [
+        "simple",
+        "today",
+        "start_by",
+        "waiting_for",
+        "routine",
+        "offline_pending"
+      ],
+      "required_states": [
+        "active",
+        "completed",
+        "deferred",
+        "overdue",
+        "blocked"
+      ]
+    },
+    {
+      "name": "ListCard",
+      "variants": [
+        "default",
+        "pinned",
+        "shared",
+        "smart",
+        "empty"
+      ],
+      "required_states": [
+        "normal",
+        "selected",
+        "offline_pending"
+      ]
+    },
+    {
+      "name": "NowCard",
+      "variants": [
+        "ready",
+        "active",
+        "timer_active",
+        "stuck",
+        "blocked",
+        "complete",
+        "offline_cached"
+      ],
+      "required_states": [
+        "source_state",
+        "derived_state",
+        "sync_state"
+      ]
+    },
+    {
+      "name": "TimingInstrument",
+      "variants": [
+        "not_started",
+        "active",
+        "paused",
+        "interrupted",
+        "completed",
+        "reviewing"
+      ],
+      "required_states": [
+        "elapsed",
+        "phase",
+        "checkpoints"
+      ]
+    },
+    {
+      "name": "StuckOptionButton",
+      "variants": [
+        "too_big",
+        "too_vague",
+        "low_energy",
+        "not_enough_time",
+        "missing_something",
+        "waiting",
+        "dreading"
+      ],
+      "required_states": [
+        "default",
+        "selected"
+      ]
+    },
+    {
+      "name": "SyncIndicator",
+      "variants": [
+        "local_only",
+        "syncing",
+        "synced",
+        "conflict",
+        "failed",
+        "ai_pending"
+      ],
+      "required_states": [
+        "subtle",
+        "needs_attention"
+      ]
+    }
+  ]
+}

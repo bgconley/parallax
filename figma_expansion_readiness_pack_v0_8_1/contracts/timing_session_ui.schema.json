@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TimingSessionUIViewModel",
+  "type": "object",
+  "required": [
+    "session_id",
+    "task_title",
+    "elapsed_seconds",
+    "state"
+  ],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "task_title": {
+      "type": "string"
+    },
+    "current_phase": {
+      "type": "string"
+    },
+    "elapsed_seconds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "active",
+        "paused",
+        "interrupted",
+        "completed",
+        "reviewing"
+      ]
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "label",
+          "elapsed_seconds",
+          "split_seconds"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "elapsed_seconds": {
+            "type": "integer"
+          },
+          "split_seconds": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "estimate_context": {
+      "type": "string"
+    },
+    "sync_state": {
+      "type": "string",
+      "enum": [
+        "local_only",
+        "syncing",
+        "synced",
+        "conflict",
+        "failed"
+      ]
+    }
+  }
+}

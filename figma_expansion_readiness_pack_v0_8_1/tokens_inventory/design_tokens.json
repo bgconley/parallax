@@ -1,0 +1,149 @@
+{
+  "meta": {
+    "version": "0.8",
+    "app_name_token": "[APP_NAME]",
+    "codename_note": "Prior codename was LumenTask; final production name TBD."
+  },
+  "color": {
+    "surface": {
+      "canvas_light": "#F7F4EE",
+      "canvas_dark": "#171613",
+      "card_light": "#FFFDF8",
+      "card_dark": "#23211D",
+      "elevated_light": "#FFFFFF",
+      "elevated_dark": "#2B2924",
+      "separator_light": "#E7E0D5",
+      "separator_dark": "#3A362F"
+    },
+    "text": {
+      "primary_light": "#171717",
+      "secondary_light": "#5F5A51",
+      "tertiary_light": "#8C8478",
+      "primary_dark": "#F4F0E8",
+      "secondary_dark": "#C9C1B4",
+      "tertiary_dark": "#928A7E"
+    },
+    "accent": {
+      "primary": "#315E8A",
+      "primary_soft": "#DDEAF5",
+      "secondary": "#6A6D9E",
+      "sage": "#6E8B75",
+      "amber": "#B58134",
+      "rose": "#B26868",
+      "teal": "#4C8583"
+    },
+    "semantic": {
+      "success": "#4F7D5A",
+      "warning": "#B58134",
+      "danger": "#B26868",
+      "info": "#315E8A",
+      "pending": "#8C8478"
+    }
+  },
+  "typography": {
+    "font_family": "SF Pro / system",
+    "large_title": {
+      "size": 34,
+      "weight": "700",
+      "line_height": 41
+    },
+    "title1": {
+      "size": 28,
+      "weight": "700",
+      "line_height": 34
+    },
+    "title2": {
+      "size": 22,
+      "weight": "700",
+      "line_height": 28
+    },
+    "title3": {
+      "size": 20,
+      "weight": "600",
+      "line_height": 25
+    },
+    "body": {
+      "size": 17,
+      "weight": "400",
+      "line_height": 22
+    },
+    "body_emphasis": {
+      "size": 17,
+      "weight": "600",
+      "line_height": 22
+    },
+    "callout": {
+      "size": 16,
+      "weight": "400",
+      "line_height": 21
+    },
+    "subheadline": {
+      "size": 15,
+      "weight": "400",
+      "line_height": 20
+    },
+    "footnote": {
+      "size": 13,
+      "weight": "400",
+      "line_height": 18
+    },
+    "caption": {
+      "size": 12,
+      "weight": "400",
+      "line_height": 16
+    }
+  },
+  "spacing": {
+    "xxs": 4,
+    "xs": 8,
+    "sm": 12,
+    "md": 16,
+    "lg": 20,
+    "xl": 24,
+    "xxl": 32,
+    "screen_horizontal": 20,
+    "card_inner": 16
+  },
+  "radius": {
+    "chip": 14,
+    "button": 16,
+    "card_medium": 20,
+    "card_large": 26,
+    "sheet": 28,
+    "icon_container": 14
+  },
+  "shadow": {
+    "card_light": {
+      "x": 0,
+      "y": 6,
+      "blur": 22,
+      "opacity": 0.08
+    },
+    "card_dark": {
+      "x": 0,
+      "y": 8,
+      "blur": 24,
+      "opacity": 0.28
+    }
+  },
+  "motion": {
+    "fast_ms": 150,
+    "standard_ms": 240,
+    "slow_ms": 360,
+    "spring_response": 0.34,
+    "spring_damping": 0.86
+  },
+  "haptics": {
+    "capture_saved": "light",
+    "task_done": "medium",
+    "checkpoint": "medium",
+    "plan_accepted": "success",
+    "overrun_warning": "warning_optional"
+  },
+  "accessibility": {
+    "minimum_touch_target_pt": 44,
+    "preferred_touch_target_pt": 48,
+    "dynamic_type_required": true,
+    "color_only_states_allowed": false
+  }
+}

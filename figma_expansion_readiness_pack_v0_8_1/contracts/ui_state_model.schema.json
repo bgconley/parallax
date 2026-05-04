@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/ui_state_model.schema.json",
+  "title": "UIStateModel",
+  "type": "object",
+  "required": [
+    "entity_id",
+    "source_state",
+    "sync_state",
+    "derived_state"
+  ],
+  "properties": {
+    "entity_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "source_state": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "completed",
+        "deferred",
+        "archived",
+        "deleted"
+      ]
+    },
+    "sync_state": {
+      "type": "string",
+      "enum": [
+        "local_only",
+        "syncing",
+        "synced",
+        "conflict",
+        "failed"
+      ]
+    },
+    "derived_state": {
+      "type": "string",
+      "enum": [
+        "none",
+        "ai_pending",
+        "ai_ready",
+        "ai_stale",
+        "ai_failed"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "visible_badges": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "last_updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

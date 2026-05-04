@@ -1,0 +1,107 @@
+You’re describing a very specific class of iOS design: **calm on entry, fast at capture, forgiving during input, and progressively powerful only when the user asks for depth**. That is why Things 3, Reminders, Voice Memos, and Health all feel related even though they solve different problems. They all avoid making the first screen feel like a database, but they still give the user somewhere deeper to go.
+
+The core design question is not “Which app has the most features?” It is: **Which app lets the user express intent before it demands structure?** The best iOS apps tend to answer three questions instantly: *Where am I? What can I do? Where can I go from here?* Apple’s own design guidance frames clarity this way: users should not have to infer their location, available actions, or next steps from a confusing screen. ([Apple Developer][1])
+
+For your exact “Things cleanliness plus Todoist power” question: **there is no perfect app that fully gives you both.** Things is unusually refined because it is opinionated and bounded. Todoist is powerful because it accepts complexity: labels, filters, teams, sections, priorities, natural-language input, integrations, and cross-platform availability. The closest compromises are **Superlist**, **GoodTask**, **Todoist configured minimally**, and possibly **Apple Reminders as the native foundation**.
+
+## The closest answer: Things-like calm with Todoist-like power
+
+**Superlist** is probably the closest modern attempt at the middle ground. It has a more polished, contemporary, “designed” feel than most power task managers, and it combines tasks, notes, nested subtasks, recurring tasks, widgets, collaboration, offline support, integrations, and quick add by typing or voice. Its official feature set explicitly emphasizes “tasks + notes in one,” nested lists/subtasks, quick add from anywhere, widgets, collaboration, reminders, and AI-powered workflow. ([superlist.com][2])
+
+That said, I would not call Superlist a total Todoist replacement for power users yet. Todoist’s maturity is in its query system, labels, filters, recurring syntax, collaboration details, integrations, and muscle-memory capture. Todoist Quick Add can parse date/time, deadline, labels, priority, reminders, collaborator, project, section, and attachments from the task field, which is exactly the kind of “sentence-as-form” interaction that makes required user input feel lower-friction. ([Todoist][3]) Todoist filters are also more database-like: they can build custom views by task name, date, project, label, priority, creation date, and query operators. ([Todoist][4])
+
+**GoodTask** is the sleeper pick if you like where Apple Reminders has gone. It is built on Apple Reminders and Calendars, but adds smart lists, calendar views, quick actions, text snippets, and more customization. In other words, it is less “Things replacement” and more “Reminders power layer.” If you already trust iCloud Reminders as the data layer, GoodTask may be the most pragmatic bridge between Apple-native capture and a serious workflow. ([GoodTask][5])
+
+**Apple Reminders** itself has become much more credible. It now supports grocery lists, templates, tags, Smart Lists, sections, subtasks, column views, batch editing, sorting, and automatic categorization in some contexts. ([Apple Support][6]) Its strength is not that it is the best power-user task manager; it is that capture is native, Siri-friendly, location-aware, shared-list friendly, and deeply integrated into the OS. Its weakness is that once you want “show me all high-priority work tasks tagged follow-up that are undated but not in waiting,” Todoist and OmniFocus are still better.
+
+**Todoist, configured with restraint**, may honestly be the best answer if you truly need Todoist power. Hide what you do not use, pin only a few views, keep projects sparse, use labels intentionally, and treat filters as saved dashboards rather than as a giant sidebar of cleverness. Todoist’s newer iOS controls also help reduce friction because you can add task/open-view controls to Control Center, Lock Screen, and supported Action Button workflows. ([Todoist][7])
+
+**OmniFocus** is the “serious cockpit” answer. It has quick entry, inbox capture, projects, folders, multiple tags, defer dates, repeat schedules, Forecast, Review, Nearby, custom perspectives, batch editing, and automation. ([The Omni Group][8]) It is extremely powerful, especially for GTD-style systems, but it is not the app I would choose if the dominant design requirement is low-friction input and calm first-use comprehension.
+
+**TickTick** is the “features everywhere” answer. It has tasks, calendar, habits, Pomodoro, filters, tags, and many platform features. It is genuinely useful, but in my view it does not have the same aesthetic discipline as Things, Superlist, or the better Apple-native apps. It is powerful, but the UI tends to feel more feature-forward.
+
+So my practical ranking for your stated taste would be:
+
+1. **Superlist** — best “clean + more powerful than Things” candidate.
+2. **Todoist, aggressively simplified** — best if power matters more than aesthetic purity.
+3. **Apple Reminders + GoodTask** — best Apple-native power stack.
+4. **Things 3 + Reminders/Todoist for edge cases** — best if you want Things to remain the calm personal layer.
+5. **OmniFocus** — best if your actual problem is complex GTD/project control.
+6. **TickTick** — best if you want one app to do almost everything and can tolerate a less refined surface.
+
+## Why Things feels so good
+
+Things is one of the best examples of **progressive disclosure** in a productivity app. A to-do opens like a clean piece of paper; tags, checklist, start date, and deadline are available, but tucked away until needed. Cultured Code describes the design as having clearer concepts, smoother interactions, and structured content, with advanced fields hidden until the user needs them. ([culturedcode.com][9])
+
+That is the key: **Things does not ask the user to become a project manager before writing down a thought.** It lets the user capture first, then clarify later. Its Inbox → Today → Upcoming → Anytime → Someday structure is also a very legible mental model: every item has a place, but not every item needs a full metadata profile. Cultured Code’s own guide emphasizes gathering everything into the Inbox first, then later deciding when to start, whether something belongs in Today, Upcoming, Anytime, or Someday. ([culturedcode.com][10])
+
+The tradeoff is that Things avoids certain kinds of power. It is not trying to be a team system, a query database, an automation platform, or a cross-company workflow tool. That restraint is the reason it feels so clean.
+
+## Apps I’d consider exemplary from a UI/UX perspective
+
+**Apple Health** is an excellent model for data-heavy apps. Its Summary tab lets users pin the health data most important to them, shows daily category status, and then lets users drill into more detail. It also has Highlights for longer-term trends and deeper privacy/data-source controls below the main surface. ([Apple Support][11]) The lesson: **the home screen should not show all data; it should show the right data, with clear paths downward.**
+
+**Apple Voice Memos** is a model of low-friction capture. The default interaction is brutally simple: tap Record, tap Stop, and the recording is saved automatically. But advanced controls exist: swipe up on the waveform to reveal more details, pause/resume, review, and adjust playback position. ([Apple Support][12]) The app also uses lightweight organization—favorites and folders—without making recording feel like filing. ([Apple Support][13]) The lesson: **never put organization before capture when the user’s intent is fleeting.**
+
+**Flighty** is one of the best status-dashboard apps on iOS. Apple gave it a Design Award for Interaction in 2023, noting its detailed flight maps, airport navigation, delay forecasting, intuitive interface, Live Activities, Apple Maps, Siri Shortcuts, and key information placed where needed. ([Apple][14]) Apple’s “Behind the Design” piece says Flighty puts key information front and center, especially through Live Activities and Dynamic Island. ([Apple Developer][15]) The lesson: **when the user is anxious, the UI should become more obvious, not more expressive.**
+
+**iA Writer** remains a benchmark for writing UI. Apple highlighted it as a 2025 Interaction finalist for distraction-free writing, customizable keyboard, selective highlighting, iCloud sync, and simple swipe interactions for library and preview. ([Apple Developer][16]) The lesson: **reduce the number of visible controls until the content becomes the interface.**
+
+**Drafts** is one of the lowest-friction capture apps ever made for text. Its whole philosophy is “where text starts”: capture now, route later. It can send text to other apps, use actions, and capture from the share sheet or quick capture extension with fewer taps. ([App Store][17]) The lesson: **input should not require knowing the final destination.**
+
+**Fantastical** is the classic example of natural-language input done well. Its value is not merely that it is a calendar; it is that “Lunch with Sam tomorrow at 12:30” becomes structured calendar data without the user manually touching date wheels, time pickers, and invite fields. Flexibits still describes Fantastical around quickly creating events and reminders with natural-language input. ([Flexibits][18]) The lesson: **a good parser is better than a beautiful form.**
+
+**Bear** is a strong example of beautiful simplicity with enough power beneath it. It emphasizes a polished minimal interface, themes, Markdown, note linking, tags, export, and fast native apps. ([Bear Markdown Notes][19]) It is less of a workflow engine than Drafts or Craft, but it is one of the better examples of “open and write naturally.”
+
+**Craft** is good inspiration for turning rough input into polished output. Its stated model is capture ideas across devices, then refine them into documents, templates, whiteboards, shared pages, or AI-assisted writing. ([Craft Docs][20]) The lesson: **capture and presentation can be separate modes.**
+
+**Halide** is an excellent example of power controls without ruining the camera surface. It markets itself as a pro iPhone camera with elegant, simple design, and more recent versions emphasize tools like Process Zero, lessons, Lock Screen access, and pro photography controls. ([App Store][21]) The lesson: **expert tools can exist behind direct manipulation rather than permanent chrome.**
+
+**Crouton** and **Mela** are unusually good examples of context-specific UX. Crouton won Apple’s 2024 Interaction award because it keeps recipe steps, ingredients, grocery lists, and kitchen instructions easy to find while the user’s attention is on cooking, not on the screen. ([Apple Developer][22]) Mela was a 2025 Interaction finalist; Apple praised its cooking mode, subtle dimming/highlighting of recipe steps, Dynamic Island timers, recipe scanning, and Reminders integration. ([Apple Developer][16]) The lesson: **a good app changes its interaction density based on the physical context of use.**
+
+**Tiimo** and **Structured** are worth studying if the app involves routines, planning, or neurodivergent-friendly visual structure. Tiimo won Apple’s 2025 iPhone App of the Year; Apple described it as turning chaotic calendars into a soothing color timeline for to-dos. ([Apple Developer][23]) Structured’s App Store positioning is similar: a visual timeline for tasks, routines, habits, and calendars. ([App Store][24]) The lesson: **some users do not want a task database; they want a visible day.**
+
+## The design pattern you’re circling around
+
+The best version of the app you are describing would probably combine five models:
+
+**Voice Memos for capture.** One obvious primary action. No setup tax. No taxonomy before the thing exists.
+
+**Todoist or Fantastical for input parsing.** Let users type or speak naturally, then infer structure: date, time, project, priority, tags, people, location, recurrence, category.
+
+**Things for object detail.** Once an item exists, let it open into a calm, focused object view. Optional fields should be available but not screaming for completion.
+
+**Apple Health for dashboards.** The home screen should show customizable priority items and trend/highlight cards, then allow deep drill-down.
+
+**Flighty for ambient status.** If something becomes time-sensitive, surface it through widgets, notifications, Live Activities, Dynamic Island, Lock Screen controls, or a compact state card—without forcing the user to open the app and hunt.
+
+For an app that requires user inputs, the most elegant model is usually **not a form**. It is this sequence:
+
+The user captures intent in plain language or with one tap. The app infers what it can. The app shows a compact confirmation. The user can accept, correct, or enrich. Deeper metadata is available later. Defaults are remembered. Repeated inputs become templates. The home screen shows what matters now. The detail screen shows what matters about this object. The settings screen is not where core workflow lives.
+
+That is why Things feels elegant, Todoist feels powerful, Reminders feels increasingly viable, Voice Memos feels frictionless, and Health feels surprisingly good despite handling enormous data complexity. They each solve a different layer of the same problem: **do not make the user pay complexity cost until the complexity is actually useful.**
+
+[1]: https://developer.apple.com/videos/play/wwdc2025/359/ "Design foundations from idea to interface - WWDC25 - Videos - Apple Developer"
+[2]: https://www.superlist.com/ "Superlist — Task Management & To-Do List App for Work and Life"
+[3]: https://www.todoist.com/help/articles/use-task-quick-add-in-todoist-va4Lhpzz "Use Task Quick Add in Todoist"
+[4]: https://www.todoist.com/help/articles/introduction-to-filters-V98wIH "Introduction to filters"
+[5]: https://goodtaskapp.com/ "To Do List, Task Manager & Planner app based on Apple's Reminders and Calendars | GoodTask"
+[6]: https://support.apple.com/en-us/119953 "Organize reminders on your iPhone or iPad - Apple Support"
+[7]: https://www.todoist.com/help/articles/use-todoist-controls-on-ios-XZDxdz9y4 "Use Todoist Controls on iOS"
+[8]: https://www.omnigroup.com/omnifocus/features "Task Management Software Built For Pros - OmniFocus Features - The Omni Group"
+[9]: https://culturedcode.com/things/features/ "What’s New in the all-new Things. Your to-do list for Mac & iOS"
+[10]: https://culturedcode.com/things/guide/ "Getting Productive with Things - Things Support"
+[11]: https://support.apple.com/en-us/104997 "Use the Health app on your iPhone or iPad - Apple Support"
+[12]: https://support.apple.com/guide/iphone/make-a-recording-iph4d2a39a3b/ios "Make a recording in Voice Memos on iPhone - Apple Support"
+[13]: https://support.apple.com/guide/iphone/organize-recordings-iph73bfaba07/ios "Organize recordings in Voice Memos on iPhone - Apple Support"
+[14]: https://www.apple.com/newsroom/2023/06/apple-announces-winners-of-the-2023-apple-design-awards/ "Apple announces winners of the 2023 Apple Design Awards - Apple"
+[15]: https://developer.apple.com/news/?id=970ncww4 "Behind the Design: Flighty - Discover - Apple Developer"
+[16]: https://developer.apple.com/design/awards/ "Apple Design Awards - 2025 winners and finalists - Apple Developer"
+[17]: https://apps.apple.com/us/app/drafts/id1236254471?utm_source=chatgpt.com "Drafts - App Store - Apple"
+[18]: https://flexibits.com/fantastical?utm_source=chatgpt.com "Fantastical — The calendar and tasks app you won't be ..."
+[19]: https://bear.app/?utm_source=chatgpt.com "Bear - Markdown Notes"
+[20]: https://www.craft.do/?utm_source=chatgpt.com "Craft — Docs and Notes Editor"
+[21]: https://apps.apple.com/us/app/halide-mark-ii-pro-camera/id885697368?utm_source=chatgpt.com "Halide Mark II - Pro Camera - App Store"
+[22]: https://developer.apple.com/design/awards/2024/ "2024 winners and finalists - Apple Design Awards - Apple Developer"
+[23]: https://developer.apple.com/app-store/app-store-awards-2025/?utm_source=chatgpt.com "App Store Awards 2025"
+[24]: https://apps.apple.com/us/app/structured-daily-planner-todo/id1499198946?utm_source=chatgpt.com "Structured: Daily Planner Todo - App Store"

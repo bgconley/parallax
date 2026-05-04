@@ -1,0 +1,227 @@
+Yes. **Wunderlist is the better north star.** Not OmniFocus, not even really Things. Things is exquisite, but it is more “personal productivity as a refined system.” Wunderlist was different: **lists as a natural human object**. Groceries, movies, house projects, trip planning, errands, shared tasks, random reminders — it felt like a digital version of how people already think, not like a methodology you had to adopt.
+
+And yes: **Superlist is directly in that lineage.** Superlist’s own site describes it as “from the creators of Wunderlist,” and its Wunderlist-alternative page says it is built by the same team, including Christian Reber and original Wunderlist creators. Superlist is therefore not just aesthetically adjacent; it is consciously trying to carry forward that design tradition, though with a broader tasks-plus-notes-plus-team-workspace model than Wunderlist had. ([Superlist][1])
+
+Wunderlist was acquired by Microsoft in 2015 and eventually shut down in May 2020, with Microsoft steering users toward Microsoft To Do. ([Zapier][2]) But Microsoft To Do, while structurally related, never quite recreated the emotional texture of Wunderlist. It has due dates, reminders, steps, notes, list sharing, My Day, and Microsoft 365 integration, but it feels more like a competent Microsoft productivity utility than a beloved personal environment. ([Microsoft][3])
+
+What you are describing is not just “clean UI.” It is a very specific design philosophy:
+
+**Make the app feel like a place where thoughts can land.**
+
+That was Wunderlist’s magic.
+
+## The Wunderlist design DNA
+
+Wunderlist’s genius was that it did not begin with “project management.” It began with **a list**.
+
+That seems obvious, but it is a profound product decision. A list is one of the simplest cognitive containers humans use. A list can be groceries, a renovation plan, a packing checklist, a software launch, books to read, people to call, gift ideas, or bugs to fix. The user does not need to know whether something is a project, task, reminder, area, goal, context, someday item, sprint, initiative, or database row. They just make a list.
+
+That is why Wunderlist felt like flow state. It had a shallow mental model:
+
+**Lists contain items. Items can optionally have detail.**
+
+That is it.
+
+The detail could become useful: due dates, reminders, notes, subtasks, comments, assignments, files, sharing. But the item did not have to start that way. You could type something, hit return, and move on. The app respected the fragility of capture.
+
+This is also where OmniFocus is the exact wrong conceptual reference. OmniFocus assumes the user either already has or is willing to develop a rigorous productivity ontology. It is powerful, but its emotional posture is: “Let’s classify this correctly.” Wunderlist’s posture was: “Got it. We’ll keep it here.”
+
+That difference matters enormously.
+
+## The key distinction: Things is elegant; Wunderlist was natural
+
+Things is almost architecturally perfect. It has polish, rhythm, restraint, and an unusually strong sense of hierarchy. But Things still has a conceptual worldview: Inbox, Today, Upcoming, Anytime, Someday, Areas, Projects, Headings. It is elegant, but it is still a system.
+
+Wunderlist was less precious and more immediate. It did not feel like a productivity philosophy. It felt like a friendly utility that happened to scale.
+
+That may be exactly what you want for your own app concept: **not “minimal,” not “power user,” but “instantly habitable.”**
+
+A Wunderlist-like app should feel as if the user can move in within thirty seconds.
+
+## What Superlist gets right, and where to be careful
+
+Superlist is probably the closest modern app to study seriously because it inherits the Wunderlist sensibility while trying to modernize the surface. Its current positioning is broader: tasks, notes, projects, AI-powered capture, real-time collaboration, integrations, and a unified workspace. ([Superlist][4]) That makes it more capable than old Wunderlist, but also more dangerous as a design reference if your app needs to remain emotionally simple.
+
+The Verge’s early read on Superlist was basically the right framing: it is not exactly the same straightforward to-do app Wunderlist was, but it carries much of the same sensibility and is visually more modern. ([The Verge][5])
+
+So I would use Superlist as a **modern reference**, but Wunderlist as the **spiritual reference**.
+
+Superlist teaches you how the Wunderlist idea might evolve into 2026: collaboration, notes, AI capture, multi-platform continuity, richer documents. But Wunderlist teaches you the thing not to lose: **a list should still feel like a list, not a workspace disguised as one.**
+
+## The actual style you’re looking for
+
+I would describe your desired UI/UX style this way:
+
+**Warm minimalism with progressive power.**
+
+Not sterile minimalism. Not enterprise power. Not “blank white screen with tasteful typography.” Not dashboard maximalism. Instead:
+
+A simple object appears first.
+
+A useful action is immediately available.
+
+Metadata is optional.
+
+Depth is one gesture away.
+
+Nothing feels like configuration.
+
+The interface has enough warmth to be memorable.
+
+The user never feels punished for being imprecise.
+
+That is the Wunderlist pattern.
+
+## What I would steal from Wunderlist directly
+
+First, **make lists the primary spatial object**. The user should feel that they are moving among lists, not managing a productivity graph. A list should be allowed to be casual or serious. “Groceries” and “Q2 Launch Plan” should use the same underlying object model, but the UI should not force the user to declare which one it is.
+
+Second, **make the add field permanently contextual**. Wunderlist was good because adding an item felt local. You were inside a list, and the list had an obvious place to type. That is better than a floating global button that launches a generic modal every time. Global capture is useful, but contextual capture is warmer and faster when the user already knows where they are.
+
+Third, **treat the task title as the only required input**. Everything else should be enrichment. Due date, reminder, tag, person, file, subtask, note, repeat rule — all optional. If your app requires structured input, the trick is to let the user create the object first and structure it afterward, unless structure is absolutely necessary.
+
+Fourth, **use detail panes or bottom sheets, not form pages**. Wunderlist-style task detail should feel like opening the back of an index card. The list remains conceptually present. You are not transported into an admin screen.
+
+Fifth, **keep hierarchy shallow**. Lists, maybe folders, maybe smart views. Be very cautious with workspaces, projects, areas, sub-projects, nested sections, multi-tag filtering, perspectives, statuses, priorities, and custom fields. Each one may be useful individually; together they create the feeling of work before work.
+
+Sixth, **make completion emotionally satisfying**. The checkbox matters. The strikethrough matters. The motion matters. The sound or haptic can matter. Done should feel done. A surprising amount of productivity UX lives in that tiny feedback loop.
+
+Seventh, **use warmth without clutter**. Wunderlist’s old backgrounds and cards gave it a sense of place. Modern Apple-style design often loses this and becomes glassy, sterile, or generic. The lesson is not to bring back wood textures literally. The lesson is to give the app a recognizable emotional temperature.
+
+## The input model I think you want
+
+For an app that requires user input, I would avoid a traditional form-first model.
+
+The ideal flow is:
+
+The user types or speaks something naturally.
+
+The app captures it immediately.
+
+The app infers structure.
+
+The app shows inferred structure as editable chips.
+
+The user can ignore, accept, or correct.
+
+The item exists either way.
+
+For example, if the user types:
+
+“Call Alex Friday at 2 about the network quote”
+
+The app could create the item immediately as:
+
+Title: “Call Alex about the network quote”
+Date chip: Friday
+Time chip: 2:00 PM
+Person/contact chip: Alex, if confidently matched
+Category/list chip: maybe “Work,” if context suggests it
+
+But the user should not have to fill those fields manually. The structured data should appear as a quiet assist, not as a gate.
+
+This is where the “Things aesthetics plus Todoist power” phrase becomes clearer. Todoist’s real power is not just filters and labels. It is that natural-language task entry lets a sentence become a structured object. But Todoist often feels more like a command parser wrapped in a task manager. Wunderlist felt like a home for lists. Your concept wants both:
+
+**Wunderlist as the home. Todoist-like parsing as the engine. Things-like restraint in the detail view. Apple-like native polish in the controls.**
+
+That is a very strong direction.
+
+## The homepage should not be a dashboard first
+
+Apple Health works because it is dealing with data, trends, and status. A Wunderlist-style app should be careful with dashboards. A dashboard can easily make the app feel like a report about your life instead of a place to put your life.
+
+For this style of app, the home screen should probably be closer to:
+
+Inbox
+Today
+Starred or Important
+Recent lists
+Shared with me
+Pinned lists
+Maybe one small “up next” surface
+
+Not a wall of metrics. Not charts. Not productivity scores. Not seven panels of insight.
+
+The homepage should answer: **Where do I want to put or find something?**
+
+The deeper analytics or priority views can exist, but they should not dominate the front door unless the app’s core purpose is tracking.
+
+## A modern Wunderlist-style architecture
+
+The cleanest architecture would be:
+
+**Home**: a calm list of lists, smart views, and pinned spaces.
+
+**List view**: the primary working surface. Add field at top or bottom, visible items, completed items tucked away, lightweight sorting, sharing visible but not dominant.
+
+**Item detail**: a sheet with title, notes, checklist, due/reminder, repeat, attachments, comments/activity, assignment, tags. Nothing should look required unless it truly is.
+
+**Capture layer**: global quick add, share sheet, Siri/Shortcuts, Lock Screen widget, Action Button support, voice input, desktop menu bar quick capture.
+
+**Review layer**: Today, Upcoming, Assigned, Starred, Maybe Later, Recently Captured.
+
+**Power layer**: smart lists, saved searches, automations, integrations, templates — but visually separated from everyday use.
+
+That last separation is crucial. Power should be available, but not ambient. OmniFocus makes power ambient. Wunderlist made power occasional.
+
+## Existing apps I would study through this lens
+
+**Superlist** is the obvious one. It is the direct descendant in spirit and partially in personnel. Study how it modernizes the Wunderlist idea, but also study where it becomes more workspace-like than list-like.
+
+**Microsoft To Do** is worth studying almost as a “what changed when Wunderlist became institutional.” It preserved a lot of the task/list structure: My Day, lists, reminders, steps, notes, sharing, and Microsoft account sync. ([Microsoft][3]) But it lost some of the charm, density, and independent product soul. That contrast is instructive.
+
+**Things 3** is still worth studying, but specifically for restraint, typography, spacing, and object detail — not for the overall information architecture.
+
+**Todoist** is worth studying for natural-language input, filters, integrations, and cross-platform power — not for visual warmth.
+
+**Apple Reminders** is worth studying for OS-native capture, shared lists, Siri integration, widgets, and the way Apple has gradually made it more powerful without turning it into OmniFocus.
+
+**Drafts** is worth studying for capture philosophy: open, type, route later. That is very Wunderlist-compatible as a principle.
+
+**Fantastical** is worth studying for parsing. The lesson is that a beautiful form is often inferior to a great text field.
+
+## The anti-patterns to avoid
+
+For your app conceptualization, I would explicitly reject:
+
+A project-management sidebar full of abstract containers.
+
+A mandatory setup wizard asking how the user wants to organize their life.
+
+Priority matrices, unless hidden or optional.
+
+Status taxonomies like Backlog / In Progress / Blocked / Done as the default model.
+
+A task detail screen that looks like Jira-lite.
+
+Custom fields as a core part of the first-run experience.
+
+“Workspace” language unless collaboration is truly central.
+
+Overuse of badges, counts, urgency colors, and productivity pressure.
+
+A command-center dashboard on launch.
+
+Anything that makes adding a simple item feel like opening a ticket.
+
+That is the line. The moment a user feels like they are filing a request with their own app, the Wunderlist spell is broken.
+
+## The phrase I’d use as the design thesis
+
+For this app style, the thesis could be:
+
+**Capture like Voice Memos. Organize like Wunderlist. Clarify like Things. Parse like Todoist. Surface priority like Apple Health.**
+
+But if you need one primary conceptual ancestor, I would make it:
+
+**Wunderlist, rebuilt with modern iOS-native interaction patterns and intelligent input.**
+
+Not OmniFocus. Not Notion. Not Jira. Not a database. Not a GTD cathedral.
+
+A place for lists that can become powerful without ceasing to feel like lists.
+
+[1]: https://www.superlist.com/wunderlist-alternative?utm_source=chatgpt.com "The Official Wunderlist Successor — Built by the Same Team"
+[2]: https://zapier.com/blog/wunderlist-shutting-down-how-to-migrate-tasks/?utm_source=chatgpt.com "Wunderlist is shutting down. Here's what to do."
+[3]: https://www.microsoft.com/en-us/microsoft-365/microsoft-to-do-list-app?utm_source=chatgpt.com "To Do List and Task Management App | Microsoft To Do"
+[4]: https://www.superlist.com/?utm_source=chatgpt.com "Superlist — Task Management & To-Do List App for Work and ..."
+[5]: https://www.theverge.com/2024/2/13/24071136/superlist-tasks-app-wunderlist-productivity-tool?utm_source=chatgpt.com "Wunderlist's creators are back with a nifty new to-do app"

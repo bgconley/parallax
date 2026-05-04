@@ -216,6 +216,18 @@
       "related_bugs": ["bug-013"],
       "occurrences": 1,
       "last_seen": "2026-04-29T04:52:18Z"
+    },
+    {
+      "id": "bug-019",
+      "timestamp": "2026-05-03T20:46:07Z",
+      "error_message": "swift test --package-path apps/ios failed with expected expression path in Swift key path for events.map(\\\\.eventType)",
+      "file": "apps/ios/Tests/ParallaxAppTests/TimingSliceViewModelTests.swift",
+      "root_cause": "The new Phase 8 app test accidentally escaped the Swift key-path backslash twice while being added through a patch.",
+      "fix": "Changed events.map(\\\\.eventType) to events.map(\\.eventType) and reran swift test successfully.",
+      "tags": ["phase8", "swift", "tests", "keypath"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-03T20:46:07Z"
     }
   ]
 }

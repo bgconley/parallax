@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NowCardViewModel",
+  "type": "object",
+  "required": [
+    "id",
+    "action_title",
+    "done_enough",
+    "state",
+    "primary_action"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "parent_context": {
+      "type": "string"
+    },
+    "action_title": {
+      "type": "string"
+    },
+    "done_enough": {
+      "type": "string"
+    },
+    "estimate_text": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "ready",
+        "active",
+        "timer_active",
+        "stuck",
+        "blocked",
+        "complete",
+        "offline_cached"
+      ]
+    },
+    "primary_action": {
+      "type": "string",
+      "enum": [
+        "start",
+        "done",
+        "resume",
+        "review"
+      ]
+    },
+    "support_actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "smaller",
+          "timer",
+          "stuck",
+          "defer",
+          "why",
+          "swap"
+        ]
+      }
+    },
+    "sync_state": {
+      "type": "string",
+      "enum": [
+        "local_only",
+        "syncing",
+        "synced",
+        "conflict",
+        "failed"
+      ]
+    }
+  }
+}

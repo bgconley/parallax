@@ -19,7 +19,7 @@ import Testing
     let store = FilePendingTimingEventStore(fileURL: fileURL)
     let viewModel = TimingSliceViewModel(
         activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
-        activityName: "Clean pots and pans",
+        activityName: "Dynamic test activity",
         sessionId: UUID(uuidString: "22222222-2222-4222-8222-222222222222")!,
         deviceId: "ios-test-device",
         eventStore: store,
@@ -27,7 +27,7 @@ import Testing
     )
 
     await viewModel.startRun()
-    await viewModel.recordSpongeDetour()
+    await viewModel.recordResourceDetour(resourceName: "missing resource", note: "Had to find a missing resource.")
     await viewModel.finishRun()
     await viewModel.saveUsefulReview()
 
@@ -59,7 +59,7 @@ import Testing
     let store = FilePendingTimingEventStore(fileURL: fileURL)
     let viewModel = TimingSliceViewModel(
         activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
-        activityName: "Clean pots and pans",
+        activityName: "Dynamic test activity",
         sessionId: UUID(uuidString: "33333333-3333-4333-8333-333333333333")!,
         deviceId: "ios-drawer-test-device",
         eventStore: store,
@@ -68,7 +68,7 @@ import Testing
 
     await viewModel.startRun()
     await viewModel.completeCurrentCheckpoint()
-    await viewModel.confirmSpongeEvidence()
+    await viewModel.confirmFrictionEvidence(resourceName: "missing resource", note: "Had to fetch a missing resource.", suggestedPreflightText: "Check the dynamic resource before starting.")
     await viewModel.finishRun()
     await viewModel.trimForgottenTimerAtPlaceChange()
     await viewModel.saveReviewDecision(.frictionOnly)
@@ -83,7 +83,7 @@ import Testing
         .reviewSaved,
     ])
     #expect(events[2].payload["confirmation_state"] == "user_confirmed")
-    #expect(events[2].payload["suggested_preflight_text"] == "Check sponge or scrubber before starting.")
+    #expect(events[2].payload["suggested_preflight_text"] == "Check the dynamic resource before starting.")
     #expect(events[4].payload["privacy_display"] == "human_explanation_only")
     #expect(events[5].payload["decision"] == ModelUpdateDecision.frictionOnly.rawValue)
     #expect(events[5].payload["model_inclusion"] == ModelInclusion.frictionPatternsOnly.rawValue)
@@ -122,7 +122,7 @@ import Testing
     let store = FilePendingTimingEventStore(fileURL: fileURL)
     let viewModel = TimingSliceViewModel(
         activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
-        activityName: "Clean pots and pans",
+        activityName: "Dynamic test activity",
         sessionId: UUID(uuidString: "55555555-5555-4555-8555-555555555555")!,
         deviceId: "ios-trim-test-device",
         eventStore: store,
@@ -161,7 +161,7 @@ import Testing
     let sessionId = UUID(uuidString: "66666666-6666-4666-8666-666666666666")!
     let viewModel = TimingSliceViewModel(
         activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
-        activityName: "Clean pots and pans",
+        activityName: "Dynamic test activity",
         sessionId: sessionId,
         deviceId: "ios-discard-test-device",
         eventStore: store,
@@ -195,7 +195,7 @@ import Testing
     let checkId = UUID(uuidString: "88888888-8888-4888-8888-888888888888")!
     let viewModel = TimingSliceViewModel(
         activityId: activityId,
-        activityName: "Clean pots and pans",
+        activityName: "Dynamic test activity",
         deviceId: "ios-preflight-test-device",
         eventStore: FilePendingTimingEventStore(fileURL: timingURL),
         preflightDecisionStore: preflightStore,
@@ -224,14 +224,17 @@ import Testing
     let preflightStore = FilePendingPreflightDecisionStore(fileURL: preflightURL)
     let viewModel = TimingSliceViewModel(
         activityId: UUID(uuidString: "77777777-7777-4777-8777-777777777777")!,
-        activityName: "Clean pots and pans",
+        activityName: "Dynamic test activity",
         deviceId: "ios-preflight-snooze-device",
         eventStore: InMemoryPendingTimingEventStore(),
         preflightDecisionStore: preflightStore,
         now: { now }
     )
 
-    await viewModel.decidePreflightCheck(.snooze)
+    await viewModel.decidePreflightCheck(
+        .snooze,
+        checkId: UUID(uuidString: "88888888-8888-4888-8888-888888888888")!
+    )
 
     let decision = try #require(try await preflightStore.load().first)
     #expect(decision.decision == .snooze)
@@ -267,7 +270,7 @@ import Testing
     var timestamps = [Date(timeIntervalSince1970: 1_775_050_000)]
     let viewModel = TimingSliceViewModel(
         activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
-        activityName: "Clean pots and pans",
+        activityName: "Dynamic test activity",
         deviceId: deviceId,
         eventStore: store,
         now: { timestamps.removeFirst() }
@@ -291,7 +294,7 @@ import Testing
     let timestamp = Date(timeIntervalSince1970: 1_775_060_000)
     let viewModel = TimingSliceViewModel(
         activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
-        activityName: "Clean pots and pans",
+        activityName: "Dynamic test activity",
         deviceId: deviceId,
         eventStore: InMemoryPendingTimingEventStore(),
         preflightDecisionStore: preflightStore,
@@ -299,7 +302,10 @@ import Testing
         now: { timestamp }
     )
 
-    await viewModel.decidePreflightCheck(.hide)
+    await viewModel.decidePreflightCheck(
+        .hide,
+        checkId: UUID(uuidString: "88888888-8888-4888-8888-888888888888")!
+    )
 
     let decision = try #require(try await preflightStore.load().first)
     #expect(decision.mutation.clientSequence == 5)

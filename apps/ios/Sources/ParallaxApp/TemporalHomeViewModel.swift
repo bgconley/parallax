@@ -58,7 +58,11 @@ public final class TemporalHomeViewModel: ObservableObject {
         case .addStepNote:
             await timingViewModel.captureStepNote()
         case .confirmFrictionEvidence:
-            await timingViewModel.confirmSpongeEvidence()
+            await timingViewModel.confirmFrictionEvidence(
+                resourceName: "missing resource",
+                note: timingViewModel.detourNote ?? "Confirmed friction evidence.",
+                suggestedPreflightText: nil
+            )
         case .correctFrictionEvidence:
             await timingViewModel.correctFrictionEvidence()
         case .ignoreFrictionEvidence:
@@ -82,13 +86,13 @@ public final class TemporalHomeViewModel: ObservableObject {
         case .discardTimingKeepNote:
             await timingViewModel.discardTimingKeepNote()
         case .keepPreflightActive:
-            await timingViewModel.decidePreflightCheck(.accept)
+            await timingViewModel.decidePreflightCheck(.accept, checkId: nil)
         case .snoozePreflight:
-            await timingViewModel.decidePreflightCheck(.snooze)
+            await timingViewModel.decidePreflightCheck(.snooze, checkId: nil)
         case .hidePreflight:
-            await timingViewModel.decidePreflightCheck(.hide)
+            await timingViewModel.decidePreflightCheck(.hide, checkId: nil)
         case .retirePreflight:
-            await timingViewModel.decidePreflightCheck(.retire)
+            await timingViewModel.decidePreflightCheck(.retire, checkId: nil)
         case .viewPreflightRuns:
             surfaceState = .expandedTimingRun
         case .updateCheckpointPlan:
@@ -101,8 +105,8 @@ public final class TemporalHomeViewModel: ObservableObject {
         activeDrawer = nil
     }
 
-    public func saveQuickCapture() async {
-        await timingViewModel.captureTemporalHomeNote("Captured timing evidence from Temporal Home.")
+    public func saveQuickCapture(_ note: String) async {
+        await timingViewModel.captureTemporalHomeNote(note)
         activeDrawer = nil
     }
 
@@ -115,7 +119,7 @@ public final class TemporalHomeViewModel: ObservableObject {
         case .bearerRetryRowSyncPending, .retrySyncPending:
             await retrySync()
         case .quickCaptureDefault, .quickCaptureNeedsReview, .quickCaptureSyncPending:
-            await timingViewModel.captureTemporalHomeNote("Captured timing evidence from Temporal Home.")
+            await timingViewModel.captureTemporalHomeNote("Captured timing evidence from the home screen.")
         default:
             break
         }
@@ -142,17 +146,17 @@ public final class TemporalHomeViewModel: ObservableObject {
     private func question(for action: TemporalHomeAction) -> String {
         switch action {
         case .baselineRowDefault:
-            return "What is the usual baseline for pack lunch?"
+            return "What is the usual baseline for \(timingViewModel.activityName)?"
         case .learningImpactNeedsReview, .askImpactNeedsReview:
             return "What changes if I approve these timing runs?"
-        case .pansSampleRowNeedsReview:
-            return "How many samples support hand-wash pans?"
+        case .sampleSupportRowNeedsReview:
+            return "How many samples support \(timingViewModel.activityName)?"
         case .askSimilarTimeExpandedRun:
-            return "How long do similar kitchen cleanup runs take?"
+            return "How long do similar \(timingViewModel.activityName) runs take?"
         case .askAnotherGroundedAnswer:
             return "Ask another grounded time question."
         default:
-            return "How long does clean pots and pans usually take?"
+            return "How long does \(timingViewModel.activityName) usually take?"
         }
     }
 

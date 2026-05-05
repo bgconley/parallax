@@ -189,7 +189,8 @@ def _expect(condition: bool, message: str) -> None:
 
 def _extract_enum_body(source: str, enum_name: str) -> str:
     match = re.search(rf"enum\s+{re.escape(enum_name)}\b[^\{{]*\{{", source)
-    _expect(match is not None, f"missing Swift enum {enum_name}")
+    if match is None:
+        raise SystemExit(f"VALIDATION FAILED: missing Swift enum {enum_name}")
     depth = 0
     body_start = match.end()
     for index in range(match.end() - 1, len(source)):

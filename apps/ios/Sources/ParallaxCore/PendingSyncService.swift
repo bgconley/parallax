@@ -4,13 +4,13 @@ public struct PendingSyncContext: Equatable, Sendable {
     public let localActivityId: UUID
     public let activityDisplayName: String
     public let deviceId: String
-    public let preflightCheckText: String
+    public let preflightCheckText: String?
 
     public init(
         localActivityId: UUID,
         activityDisplayName: String,
         deviceId: String,
-        preflightCheckText: String = "Check sponge or scrubber before starting."
+        preflightCheckText: String? = nil
     ) {
         self.localActivityId = localActivityId
         self.activityDisplayName = activityDisplayName
@@ -270,7 +270,7 @@ public actor PendingSyncService {
                 deviceId: context.deviceId,
                 label: "create_preflight_check_\(decision.checkId.uuidString.lowercased())"
             ),
-            checkText: context.preflightCheckText
+            checkText: context.preflightCheckText ?? decision.reason ?? "Review this preflight check"
         )
         let response = try await client.send(request, decode: RemoteIDResponse.self)
         let mapping = PreflightCheckSyncMapping(

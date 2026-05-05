@@ -72,12 +72,39 @@ struct TemporalHomeScreen: View {
         temporalViewModel.surfaceState == .groundedAnswer ? "Ask Time" : "Today"
     }
 
+    private var focusDetail: String {
+        switch timingViewModel.status {
+        case .running:
+            return "Running \(formatDuration(timingViewModel.elapsedSeconds)) · active \(formatDuration(timingViewModel.activeSeconds))"
+        case .paused:
+            return "Paused · \(formatDuration(timingViewModel.elapsedSeconds)) elapsed"
+        case .completedUnreviewed:
+            return "Finished · review decides what this teaches"
+        case .reviewed:
+            return "Reviewed · \(timingViewModel.reviewDecision?.rawValue ?? "decision saved")"
+        default:
+            return "Ready to time this activity"
+        }
+    }
+
+    private var runStatusDetail: String {
+        timingViewModel.status == .running
+            ? "\(formatDuration(timingViewModel.elapsedSeconds)) elapsed"
+            : "open launcher"
+    }
+
+    private var evidenceDetail: String {
+        timingViewModel.pendingEventCount > 0
+            ? "\(timingViewModel.pendingEventCount) local mutation\(timingViewModel.pendingEventCount == 1 ? "" : "s")"
+            : "no local queue"
+    }
+
     private var subtitle: String {
         switch temporalViewModel.surfaceState {
         case .defaultHome:
             return "Temporal focus"
         case .needsReview:
-            return "2 runs need review"
+            return "\(timingViewModel.pendingEventCount) local mutation\(timingViewModel.pendingEventCount == 1 ? "" : "s") pending"
         case .syncPending:
             return "4 local mutations pending"
         case .expandedTimingRun:
@@ -87,27 +114,33 @@ struct TemporalHomeScreen: View {
         }
     }
 
+    private func formatDuration(_ seconds: Int) -> String {
+        let minutes = seconds / 60
+        let remainder = seconds % 60
+        return "\(minutes):\(String(format: "%02d", remainder))"
+    }
+
     private var defaultHome: some View {
         VStack(spacing: 8) {
             temporalFocusCard(
                 eyebrow: "CURRENT TIMING FOCUS",
-                title: "Clean pots and pans",
-                detail: "Running 12:14 · active 9:48 · sponge detour noted",
+                title: timingViewModel.activityName,
+                detail: focusDetail,
                 role: .active,
                 action: .currentFocusDefault
             )
             temporalInsightCard(
-                title: "Sponge/scrubber preflight",
-                detail: "3 confirmed resource detours across 6 reviewed runs.",
+                title: "Timing intelligence",
+                detail: timingViewModel.detourNote ?? "No reviewed runs yet. Start a run to build a personal range.",
                 action: .preflightInsightDefault
             )
             timelineCard(rows: [
-                .button("Clean pots & pans running", "12:14 elapsed", .active, .runningRowDefault),
-                .button("Sponge detour preflight", "check before starting", .detour, .preflightRowDefault),
-                .button("Laundry cycle waiting", "wall time only", .waiting, .waitingRowDefault),
-                .button("Pack lunch baseline", "ask for range", .checkpoint, .baselineRowDefault),
-                .button("Hand-wash pans grounded", "evidence-backed", .wall, .groundedRowDefault),
-                .button("All evidence current", "6 reviewed runs", .active, .evidenceCurrentRowDefault),
+                .button(timingViewModel.activityName, runStatusDetail, .active, .runningRowDefault),
+                .button("Preflight check", "only after real evidence", .detour, .preflightRowDefault),
+                .button("Waiting or pause", "wall time stays separate", .waiting, .waitingRowDefault),
+                .button("Personal range", "ask when evidence exists", .checkpoint, .baselineRowDefault),
+                .button("Grounded answer", "evidence-backed only", .wall, .groundedRowDefault),
+                .button("Evidence state", evidenceDetail, .active, .evidenceCurrentRowDefault),
             ])
             quickCapture(action: .quickCaptureDefault, label: "Capture timing evidence")
             bottomActions(left: ("Review run", "approve learning", .reviewRunDefault), right: ("Ask time", "grounded answer", .askTimeDefault))
@@ -118,7 +151,7 @@ struct TemporalHomeScreen: View {
         VStack(spacing: 8) {
             temporalFocusCard(
                 eyebrow: "NEEDS REVIEW",
-                title: "2 runs need review",
+                title: "Run needs review",
                 detail: "Choose what updates timing baselines and friction checks.",
                 role: .checkpoint,
                 action: .reviewFocusNeedsReview
@@ -129,11 +162,11 @@ struct TemporalHomeScreen: View {
                 action: .learningImpactNeedsReview
             )
             timelineCard(rows: [
-                .button("Kitchen cleanup review", "choose scopes", .checkpoint, .kitchenReviewRowNeedsReview),
+                .button("Run review", "choose scopes", .checkpoint, .runReviewRowNeedsReview),
                 .button("Evening reset correct", "possible forgotten timer", .interruption, .eveningCorrectRowNeedsReview),
-                .button("Pack lunch approve", "baseline sample", .active, .packLunchRowNeedsReview),
-                .button("Sponge check decide", "preflight candidate", .detour, .spongeCheckRowNeedsReview),
-                .button("Pans estimate sample", "ask impact", .wall, .pansSampleRowNeedsReview),
+                .button("Baseline sample", "review before learning", .active, .baselineSampleRowNeedsReview),
+                .button("Preflight check", "candidate needs evidence", .detour, .preflightCheckRowNeedsReview),
+                .button("Sample support", "ask impact", .wall, .sampleSupportRowNeedsReview),
                 .button("Queue ready", "local mutations safe", .waiting, .queueReadyRowNeedsReview),
             ])
             quickCapture(action: .quickCaptureNeedsReview, label: "Add review context")
@@ -172,15 +205,15 @@ struct TemporalHomeScreen: View {
         VStack(spacing: 8) {
             temporalFocusCard(
                 eyebrow: "TIMING RUN EVIDENCE",
-                title: "Clean pots and pans",
-                detail: "42 min wall · 31 min active · 1 resource detour",
+                title: timingViewModel.activityName,
+                detail: "\(formatDuration(timingViewModel.elapsedSeconds)) wall · \(formatDuration(timingViewModel.activeSeconds)) active",
                 role: .active,
                 action: .currentFocusDefault
             )
             timelineCard(rows: [
                 .display("Started", "manual timer", .active),
-                .display("Sponge detour", "wall only", .detour),
-                .display("Hand-wash pans", "expanded step", .checkpoint),
+                .display("Friction", timingViewModel.detourNote ?? "none captured", .detour),
+                .display("Checkpoint", timingViewModel.currentCheckpointLabel, .checkpoint),
                 .display("Review ready", "model inclusion pending", .waiting),
             ])
             bottomActions(left: ("Open review", "choose scopes", .openReviewExpandedRun), right: ("Ask similar time", "grounded", .askSimilarTimeExpandedRun))
@@ -192,23 +225,23 @@ struct TemporalHomeScreen: View {
         VStack(spacing: 8) {
             temporalFocusCard(
                 eyebrow: "QUESTION",
-                title: "How long does clean pots and pans take?",
+                title: "How long does \(timingViewModel.activityName) take?",
                 detail: "Answered from reviewed runs and confirmed detours.",
                 role: .detour,
                 action: .questionFocusGroundedAnswer
             )
             temporalInsightCard(
-                title: "36-44 min wall time",
-                detail: "Median 39 min · slow-case envelope includes resource detours.",
+                title: "Answer pending evidence",
+                detail: "Parallax will use reviewed runs, sample size, confidence, and limitations.",
                 action: .answerSummaryGroundedAnswer
             )
             timelineCard(rows: [
-                .button("Reviewed runs", "6 samples", .active, .reviewedRunsRowGroundedAnswer),
-                .button("Resource detours", "3 sponge issues", .detour, .resourceDetoursRowGroundedAnswer),
+                .button("Reviewed runs", "sample count required", .active, .reviewedRunsRowGroundedAnswer),
+                .button("Resource detours", "from confirmed evidence", .detour, .resourceDetoursRowGroundedAnswer),
                 .button("Raw notes shown", "off by default", .privacy, .rawNotesRowGroundedAnswer),
-                .button("Median wall time", "39 min", .wall, .medianRowGroundedAnswer),
-                .button("Slow-case envelope", "44 min", .waiting, .slowCaseRowGroundedAnswer),
-                .button("Before starting", "check sponge", .checkpoint, .beforeStartingRowGroundedAnswer),
+                .button("Median wall time", "computed from runs", .wall, .medianRowGroundedAnswer),
+                .button("Slow-case envelope", "computed from runs", .waiting, .slowCaseRowGroundedAnswer),
+                .button("Before starting", "preflight from evidence", .checkpoint, .beforeStartingRowGroundedAnswer),
             ])
             quickCapture(action: .askAnotherGroundedAnswer, label: "Ask another time question")
             bottomActions(left: ("Start timer", "begin run", .startTimerGroundedAnswer), right: ("Use check", "preflight", .useCheckGroundedAnswer))
@@ -417,8 +450,8 @@ struct TemporalHomeScreen: View {
                 temporalViewModel.dismissDrawer()
             }
         case .quickCapture:
-            QuickCaptureDrawerView {
-                Task { await temporalViewModel.saveQuickCapture() }
+            QuickCaptureDrawerView { note in
+                Task { await temporalViewModel.saveQuickCapture(note) }
             } dismiss: {
                 temporalViewModel.dismissDrawer()
             }

@@ -10,23 +10,20 @@ struct ParallaxNativeApp: App {
             let connectedConfig = try? ParallaxRuntimeConfig.load()
             switch ProcessInfo.processInfo.environment["PARALLAX_DEMO_STATE"] {
             case "launcher":
-                ParallaxRootView(viewModel: viewModel(config: connectedConfig), initialScreen: .launcher, demoDrawer: drawer)
+                ParallaxRootView(appStore: appStore(config: connectedConfig), initialScreen: .launcher, demoDrawer: drawer)
             case "session":
-                ParallaxRootView(viewModel: .runningDemo(), initialScreen: .timingSession, demoDrawer: drawer)
+                ParallaxRootView(appStore: appStore(config: connectedConfig), initialScreen: .timingSession, demoDrawer: drawer)
             case "reviewed":
-                ParallaxRootView(viewModel: .reviewedDemo(), initialScreen: .timingReview, demoDrawer: drawer)
+                ParallaxRootView(appStore: appStore(config: connectedConfig), initialScreen: .timingReview, demoDrawer: drawer)
             case "checkpoint_setup":
-                ParallaxRootView(viewModel: viewModel(config: connectedConfig), initialScreen: .checkpointSetup, demoDrawer: drawer)
+                ParallaxRootView(appStore: appStore(config: connectedConfig), initialScreen: .checkpointSetup, demoDrawer: drawer)
             default:
-                ParallaxRootView(viewModel: viewModel(config: connectedConfig), demoDrawer: drawer)
+                ParallaxRootView(appStore: appStore(config: connectedConfig), demoDrawer: drawer)
             }
         }
     }
 
-    private func viewModel(config: ParallaxRuntimeConfig?) -> TimingSliceViewModel {
-        guard let config else {
-            return .liveDemo()
-        }
-        return .liveConnected(config: config)
+    private func appStore(config: ParallaxRuntimeConfig?) -> ParallaxAppStore {
+        ParallaxAppStore.live(config: config)
     }
 }

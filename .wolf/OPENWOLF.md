@@ -8,6 +8,7 @@ You are working in an OpenWolf-managed project. These rules apply every turn.
 2. If the description in anatomy.md is sufficient for your task, do NOT read the full file.
 3. If a file is not in anatomy.md, search with Grep/Glob, then update anatomy.md with the new entry.
 4. For Parallax implementation or infrastructure decisions, read the relevant canonical artifact files before inferring from the GPU node or another app's layout.
+5. After any context compaction, resume, or session transition, re-read the canonical Parallax source-of-truth docs before code or infrastructure decisions. For Phase 9 app remediation or broad app behavior work, read `AGENT_START_HERE.md`, `docs/01_app_system_spec.md`, `docs/02_temporal_domain_model.md`, relevant `docs/03_phased_implementation_plan.md` sections, `database/README.md`, affected OpenAPI/event/job contracts, `docs/23_agentic_implementation_guardrails.md`, and `docs/12_testing_qa_release_rollback.md`.
 
 ## Code Generation
 
@@ -30,6 +31,7 @@ You are working in an OpenWolf-managed project. These rules apply every turn.
 - Current runtime permission policy: `/srv/parallax` `root:root 0755`; `postgres` and `postgres_wal` numeric `999:999 0700`; `objects`, `exports`, `models`, `hf_cache`, and `logs` numeric `10001:bgconley 0770`; `config` and `observability` `bgconley:bgconley 0755`; `backups` `root:bgconley 0750`.
 - Host passwd/group names for numeric UID/GID `999` may display as unrelated local accounts. Treat the numeric IDs as the source of truth until the pinned Postgres image is verified.
 - Do not begin any later phase without explicit user instruction. Phase 0 through Phase 9 are complete. Do not start Phase 10 or broaden later work without explicit user instruction. Phase gates must be proven with repo validation, Compose render/start, health readiness, baseline migrations, and GPU-node validation.
+- Current Phase 9 remediation work is a corrective app-quality slice: make the native app dynamic and canonical-contract-backed instead of hardcoded to Figma/example scenarios. It does not authorize Phase 10 or non-temporal product expansion.
 - Phase 0 Compose uses Parallax-specific localhost ports to avoid conflicts with other GPU-node stacks: API `18000`, Postgres `15432`, Redis `16379`, Temporal `17233`, Temporal UI `18088`, MinIO `19000/19001`, and Caddy `18080/18443`.
 - Baseline migrations are run with `scripts/apply_migrations.py`; the runner reads `migrations/` only and excludes optional profiles unless explicitly enabled later.
 - Temporal auto-setup `1.24` requires `DB=postgres12`, not `DB=postgresql`.

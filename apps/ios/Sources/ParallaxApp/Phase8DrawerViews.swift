@@ -48,15 +48,15 @@ struct StepDetailDrawerView: View {
 
     var body: some View {
         Phase8DrawerOverlay(figmaSheetHeight: 563, dismiss: {}) { scale in
-            drawerText("Step 2 of 6 · running 12:14", x: 24, y: 36, w: 413, h: 18, size: 12, weight: .semibold, color: Color(parallax: .active), scale: scale)
-            drawerText("Load dishwasher", x: 24, y: 58, w: 413, h: 34, size: 25, weight: .bold, color: Color(parallax: .textPrimaryLight), scale: scale)
-            drawerText("Usually 6-12 min. Checkpoint labels stay optional; this step can still teach timing.", x: 24, y: 94, w: 413, h: 42, size: 14, weight: .regular, color: Color(parallax: .textSecondaryLight), scale: scale)
+            drawerText("Current checkpoint · running", x: 24, y: 36, w: 413, h: 18, size: 12, weight: .semibold, color: Color(parallax: .active), scale: scale)
+            drawerText("Current step", x: 24, y: 58, w: 413, h: 34, size: 25, weight: .bold, color: Color(parallax: .textPrimaryLight), scale: scale)
+            drawerText("Checkpoint labels stay optional; this step can still teach timing.", x: 24, y: 94, w: 413, h: 42, size: 14, weight: .regular, color: Color(parallax: .textSecondaryLight), scale: scale)
             accentCard(
                 title: "What this step is showing",
-                lines: ["Active work 9:48 · elapsed 12:14", "Setup time 0:56 · 1 interruption", "Count policy: active + wall are separate"],
+                lines: ["Active work and elapsed time stay separate", "Setup, pause, and friction can be reviewed", "Count policy remains explicit"],
                 x: 24, y: 148, w: 413, h: 116, accent: Color(parallax: .active), scale: scale
             )
-            drawerChip("often sticky", x: 24, y: 286, w: 104, h: 32, role: .active, scale: scale)
+            drawerChip("active step", x: 24, y: 286, w: 104, h: 32, role: .active, scale: scale)
             drawerChip("setup-heavy", x: 140, y: 286, w: 112, h: 32, role: .detour, scale: scale)
             drawerChip("moveable", x: 264, y: 286, w: 98, h: 32, role: .checkpoint, scale: scale)
             drawerButton("Done with this step", x: 24, y: 330, w: 413, h: 50, primary: true, scale: scale) { perform(.completeStep) }
@@ -65,8 +65,8 @@ struct StepDetailDrawerView: View {
             drawerButton("Move", x: 232, y: 392, w: 92, h: 42, scale: scale) { perform(.moveStep) }
             drawerButton("Note", x: 336, y: 392, w: 92, h: 42, scale: scale) { perform(.addStepNote) }
             accentCard(
-                title: "Next: Hand-wash pans",
-                lines: ["Predicted 5-14 min · often expands when tools are missing"],
+                title: "Next checkpoint",
+                lines: ["Predictions appear after reviewed evidence exists"],
                 x: 24, y: 448, w: 413, h: 74, accent: Color(parallax: .checkpoint), scale: scale
             )
         }
@@ -80,10 +80,10 @@ struct FrictionEvidenceDrawerView: View {
         Phase8DrawerOverlay(figmaSheetHeight: 573, dismiss: {}) { scale in
             drawerText("Needs confirmation · confidence 0.82", x: 24, y: 36, w: 413, h: 18, size: 12, weight: .semibold, color: Color(parallax: .detourText), scale: scale)
             drawerText("Couldn’t find something", x: 24, y: 58, w: 413, h: 34, size: 24, weight: .bold, color: Color(parallax: .textPrimaryLight), scale: scale)
-            drawerText("“The sponge is gross. I need to go downstairs and get a new one.”", x: 24, y: 94, w: 413, h: 42, size: 14, weight: .regular, color: Color(parallax: .textSecondaryLight), scale: scale)
+            drawerText("Review the captured note and decide whether it explains wall time.", x: 24, y: 94, w: 413, h: 42, size: 14, weight: .regular, color: Color(parallax: .textSecondaryLight), scale: scale)
             accentCard(
                 title: "Extracted as resource detour",
-                lines: ["Resource: sponge · location: downstairs", "Counts as wall time only, not active work", "Suggested check: sponge or scrubber before starting"],
+                lines: ["Resource or blocker comes from user evidence", "Counts as wall time only, not active work", "Preflight checks require repeated confirmed evidence"],
                 x: 24, y: 148, w: 413, h: 118, accent: Color(parallax: .detour), scale: scale
             )
             drawerChip("resource", x: 24, y: 283, w: 88, h: 32, role: .detour, scale: scale)
@@ -112,7 +112,7 @@ struct ForgottenTimerDrawerView: View {
             drawerText("This run may have continued after you left the place where it started. No raw coordinates are shown here.", x: 24, y: 94, w: 413, h: 48, size: 14, weight: .regular, color: Color(parallax: .textSecondaryLight), scale: scale)
             accentCard(
                 title: "What changed",
-                lines: ["Idle gap: 45 min", "Started near kitchen · finished near store", "Context quality 0.76 · confidence 0.82"],
+                lines: ["Idle gap was detected", "Start and later context differ", "Context quality and confidence are shown"],
                 x: 24, y: 154, w: 413, h: 116, accent: Color(parallax: .interruption), scale: scale
             )
             drawerChip("human explanation", x: 24, y: 284, w: 156, h: 32, role: .interruption, scale: scale)
@@ -160,8 +160,8 @@ struct PreflightEvidenceDrawerView: View {
     var body: some View {
         Phase8DrawerOverlay(figmaSheetHeight: 593, dismiss: {}) { scale in
             drawerText("Activity profile · resource dependency", x: 24, y: 36, w: 413, h: 18, size: 12, weight: .semibold, color: Color(parallax: .detourText), scale: scale)
-            drawerText("Check sponge or scrubber before starting.", x: 24, y: 58, w: 413, h: 60, size: 23, weight: .bold, color: Color(parallax: .textPrimaryLight), scale: scale)
-            drawerText("Suggested after 3 confirmed sponge detours across 6 reviewed runs.", x: 24, y: 126, w: 413, h: 38, size: 14, weight: .regular, color: Color(parallax: .textSecondaryLight), scale: scale)
+            drawerText("Review this preflight check.", x: 24, y: 58, w: 413, h: 60, size: 23, weight: .bold, color: Color(parallax: .textPrimaryLight), scale: scale)
+            drawerText("Suggested only after confirmed friction appears across reviewed runs.", x: 24, y: 126, w: 413, h: 38, size: 14, weight: .regular, color: Color(parallax: .textSecondaryLight), scale: scale)
             accentCard(
                 title: "Why I am suggesting this",
                 lines: ["Source: resource dependency", "Failure count 3 · confidence 0.81", "Most recent evidence counted as wall-only detour"],
@@ -173,7 +173,7 @@ struct PreflightEvidenceDrawerView: View {
             drawerChip("retire later", x: 308, y: 302, w: 104, h: 28, role: .checkpoint, scale: scale)
             accentCard(
                 title: "Last matching note",
-                lines: ["“The sponge is gross... go downstairs and get a new one.”"],
+                lines: ["Most recent matching note is shown when evidence exists."],
                 x: 24, y: 348, w: 413, h: 74, accent: Color(parallax: .active), scale: scale
             )
             drawerButton("Keep active", x: 24, y: 440, w: 198, h: 48, primary: true, scale: scale) { perform(.keepPreflightActive) }
@@ -191,14 +191,14 @@ struct CheckpointSetupDrawerView: View {
     var body: some View {
         Phase8DrawerOverlay(figmaSheetHeight: 589, dismiss: {}) { scale in
             drawerText("Checkpoint setup · Break It Down pattern", x: 24, y: 36, w: 413, h: 18, size: 12, weight: .semibold, color: Color(parallax: .checkpointText), scale: scale)
-            drawerText("Hand-wash pans", x: 24, y: 58, w: 413, h: 34, size: 24, weight: .bold, color: Color(parallax: .textPrimaryLight), scale: scale)
-            drawerText("Often expands. Keep it as one checkpoint, split it, or make it optional before the run starts.", x: 24, y: 94, w: 413, h: 42, size: 14, weight: .regular, color: Color(parallax: .textSecondaryLight), scale: scale)
+            drawerText("Selected checkpoint", x: 24, y: 58, w: 413, h: 34, size: 24, weight: .bold, color: Color(parallax: .textPrimaryLight), scale: scale)
+            drawerText("Keep it as one checkpoint, split it, or make it optional before the run starts.", x: 24, y: 94, w: 413, h: 42, size: 14, weight: .regular, color: Color(parallax: .textSecondaryLight), scale: scale)
             accentCard(
                 title: "Current setup",
-                lines: ["Predicted 5-14 min · step 3 of 6", "Context: sponge/scrubber issues change this step"],
+                lines: ["Prediction appears after reviewed samples exist", "Context can explain why this step changes"],
                 x: 24, y: 148, w: 413, h: 96, accent: Color(parallax: .checkpoint), scale: scale
             )
-            drawerChip("often expands", x: 24, y: 258, w: 112, h: 28, role: .checkpoint, scale: scale)
+            drawerChip("can expand", x: 24, y: 258, w: 112, h: 28, role: .checkpoint, scale: scale)
             drawerChip("resource-sensitive", x: 144, y: 258, w: 136, h: 28, role: .detour, scale: scale)
             drawerChip("optional label", x: 288, y: 258, w: 112, h: 28, role: .wall, scale: scale)
             drawerOption(title: "Split into smaller steps", subtitle: "rinse · scrub · final rinse", selected: true, x: 24, y: 304, w: 413, h: 58, scale: scale) { perform(.updateCheckpointPlan) }

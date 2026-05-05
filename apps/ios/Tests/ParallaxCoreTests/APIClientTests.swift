@@ -80,7 +80,7 @@ import Testing
     )
 
     #expect(throws: ParallaxAPIError.invalidAuthConfiguration) {
-        _ = try client.createActivityRequest(displayName: "Clean pots and pans", mutation: mutation)
+        _ = try client.createActivityRequest(displayName: "Dynamic test activity", mutation: mutation)
     }
 }
 
@@ -96,12 +96,12 @@ import Testing
         "PARALLAX_API_BASE_URL": "http://127.0.0.1:18000",
         "PARALLAX_AUTH_MODE": "external_bearer",
         "PARALLAX_BEARER_TOKEN": "uat-token",
-        "PARALLAX_ACTIVITY_NAME": "Clean the kitchen",
+        "PARALLAX_ACTIVITY_NAME": "Dynamic configured activity",
         "PARALLAX_DEVICE_ID": "ios-uat-device",
     ]))
     #expect(config.apiBaseURL.absoluteString == "http://127.0.0.1:18000")
     #expect(config.auth == .bearer(token: "uat-token"))
-    #expect(config.activityName == "Clean the kitchen")
+    #expect(config.activityName == "Dynamic configured activity")
     #expect(config.deviceId == "ios-uat-device")
 }
 
@@ -120,7 +120,7 @@ import Testing
     let request = try client.createAnnotationRequest(
         sessionId: sessionId,
         mutation: mutation,
-        rawText: "I had to find the sponge.",
+        rawText: "I had to find a missing resource.",
         occurredAt: Date(timeIntervalSince1970: 1_775_000_002),
         captureMethod: .voice
     )
@@ -131,7 +131,7 @@ import Testing
 
     #expect(request.url?.path == "/v1/timing/sessions/\(sessionId.uuidString)/annotations")
     #expect(json["input_mode"] as? String == "voice")
-    #expect(json["raw_text"] as? String == "I had to find the sponge.")
+    #expect(json["raw_text"] as? String == "I had to find a missing resource.")
     #expect(metadata["capture_method"] as? String == "voice")
 
     let manualRequest = try client.createAnnotationRequest(
@@ -243,6 +243,41 @@ import Testing
     #expect(json["reason"] as? String == "not needed this week")
 }
 
+@Test func readHelpersUseCanonicalPathsWithoutMutationBodies() throws {
+    let activityId = UUID(uuidString: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")!
+    let sessionId = UUID(uuidString: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")!
+    let answerId = UUID(uuidString: "cccccccc-cccc-4ccc-8ccc-cccccccccccc")!
+    let client = ParallaxAPIClient(
+        baseURL: URL(string: "http://127.0.0.1:18000")!,
+        userId: UUID(uuidString: "dddddddd-dddd-4ddd-8ddd-dddddddddddd")!
+    )
+
+    let requests = try [
+        client.listActivitiesRequest(q: "mail", limit: 10),
+        client.getActivityRequest(activityId: activityId),
+        client.getActivityProfileRequest(activityId: activityId),
+        client.listCheckpointsRequest(activityId: activityId),
+        client.listPreflightChecksRequest(activityId: activityId),
+        client.listResourceDependenciesRequest(activityId: activityId),
+        client.getTimingSessionRequest(sessionId: sessionId),
+        client.getTemporalQueryAnswerRequest(answerId: answerId),
+    ]
+
+    #expect(requests.map(\.httpMethod) == Array(repeating: "GET", count: requests.count))
+    #expect(requests.map { $0.httpBody == nil }.allSatisfy { $0 })
+    #expect(requests.map { $0.url?.path } == [
+        "/v1/activities",
+        "/v1/activities/\(activityId.uuidString)",
+        "/v1/activities/\(activityId.uuidString)/profile",
+        "/v1/activities/\(activityId.uuidString)/checkpoints",
+        "/v1/activities/\(activityId.uuidString)/preflight-checks",
+        "/v1/activities/\(activityId.uuidString)/resource-dependencies",
+        "/v1/timing/sessions/\(sessionId.uuidString)",
+        "/v1/temporal/query/\(answerId.uuidString)",
+    ])
+    #expect(requests[0].url?.query == "limit=10&q=mail")
+}
+
 @Test func phase10TemporalQueryRequestUsesCanonicalEndpointAndPrivacyDefault() throws {
     let client = ParallaxAPIClient(
         baseURL: URL(string: "http://127.0.0.1:18000")!,
@@ -259,7 +294,7 @@ import Testing
 
     let request = try client.createTemporalQueryRequest(
         mutation: mutation,
-        question: "How long does clean pots and pans take?",
+        question: "How long does Dynamic test activity take?",
         activityId: activityId,
         timeWindow: "last_90_days"
     )
@@ -269,7 +304,7 @@ import Testing
     let json = try #require(request.httpBody.flatMap { body in
         try JSONSerialization.jsonObject(with: body) as? [String: Any]
     })
-    #expect(json["question"] as? String == "How long does clean pots and pans take?")
+    #expect(json["question"] as? String == "How long does Dynamic test activity take?")
     #expect(json["activity_id"] as? String == activityId.uuidString)
     #expect(json["time_window"] as? String == "last_90_days")
     #expect(json["include_raw_quotes"] as? Bool == false)
@@ -344,7 +379,7 @@ import Testing
         countPolicy: .wallOnly,
         countInWallTime: true,
         countInActiveTime: false,
-        suggestedPreflightText: "Check sponge or scrubber before starting.",
+        suggestedPreflightText: "Check the dynamic resource before starting.",
         userNote: "Corrected from drawer."
     )
     #expect(correct.url?.path == "/v1/timing/extracted-events/\(eventId.uuidString)/correct")

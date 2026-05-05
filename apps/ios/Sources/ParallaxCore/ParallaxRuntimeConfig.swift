@@ -11,18 +11,18 @@ public enum ParallaxRuntimeConfigError: Error, Equatable {
 public struct ParallaxRuntimeConfig: Equatable, Sendable {
     public let apiBaseURL: URL
     public let auth: ParallaxAPIAuth
-    public let activityId: UUID
-    public let activityName: String
+    public let activityId: UUID?
+    public let activityName: String?
     public let deviceId: String
-    public let preflightCheckText: String
+    public let preflightCheckText: String?
 
     public init(
         apiBaseURL: URL,
         auth: ParallaxAPIAuth,
-        activityId: UUID,
-        activityName: String,
+        activityId: UUID? = nil,
+        activityName: String? = nil,
         deviceId: String,
-        preflightCheckText: String = "Check sponge or scrubber before starting."
+        preflightCheckText: String? = nil
     ) {
         self.apiBaseURL = apiBaseURL
         self.auth = auth
@@ -63,10 +63,19 @@ public struct ParallaxRuntimeConfig: Equatable, Sendable {
         return ParallaxRuntimeConfig(
             apiBaseURL: baseURL,
             auth: auth,
-            activityId: UUID(uuidString: environment["PARALLAX_ACTIVITY_ID"] ?? "") ?? UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
-            activityName: environment["PARALLAX_ACTIVITY_NAME"] ?? "Clean pots and pans",
+            activityId: environment["PARALLAX_ACTIVITY_ID"].flatMap(UUID.init(uuidString:)),
+            activityName: Self.nonEmpty(environment["PARALLAX_ACTIVITY_NAME"]),
             deviceId: environment["PARALLAX_DEVICE_ID"] ?? "ios-uat-device",
-            preflightCheckText: environment["PARALLAX_PREFLIGHT_CHECK_TEXT"] ?? "Check sponge or scrubber before starting."
+            preflightCheckText: Self.nonEmpty(environment["PARALLAX_PREFLIGHT_CHECK_TEXT"])
         )
+    }
+
+    private static func nonEmpty(_ value: String?) -> String? {
+        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty
+        else {
+            return nil
+        }
+        return trimmed
     }
 }

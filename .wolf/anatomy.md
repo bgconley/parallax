@@ -7,11 +7,18 @@
 
 - `.dockerignore` — Docker build exclusions for local metadata, caches, and artifact zip (~30 tok)
 - `.env.example` — Phase 0 runtime environment, ZFS bind paths, and Parallax-specific host ports (~180 tok)
-- `AGENTS.md` — Repository Guidelines (~833 tok)
+- `AGENTS.md` — Repository Guidelines, canonical-doc reread rule, phase/environment routing, UI scope guard, and commit guidance (~930 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `Makefile` — validation, lint/test, migration, phase smoke, security, release, and Compose lifecycle targets (~170 tok)
 - `docker-compose.yml` — root Compose include for Phase 0 runtime (~20 tok)
 - `pyproject.toml` — Python 3.12 dependency and lint/test configuration (~160 tok)
+
+## .wolf/
+
+- `OPENWOLF.md` — OpenWolf operating protocol with canonical reread, GPU routing, UI scope, memory, cerebrum, and buglog rules (~3300 tok)
+- `cerebrum.md` — durable Parallax preferences, project learnings, do-not-repeat corrections, and decision log (~4200 tok)
+- `memory.md` — chronological OpenWolf session/action log (~varies)
+- `buglog.json` — structured historical bug/error/fix log for Parallax work (~4700 tok)
 
 ## .github/workflows/
 
@@ -212,12 +219,50 @@
 - `phase3_smoke.py` — GPU-node Phase 3 context capture acceptance smoke covering annotations, capture policy/snapshots, places, review flags, and SQL proof (~760 tok)
 - `phase8_ui_contract.py` — Phase 8 Figma/iOS handoff contract validator; requires the active Temporal Home Figma board `118:3`, handoff metadata, and screenshot evidence (~330 tok)
 - `phase9_smoke.py` — Docker-backed Phase 9 optional-extension smoke for pgvector HNSW, ParadeDB BM25, PostGIS ST_DWithin/GiST, Timescale continuous aggregates, backup/restore, and k3s static checks (~1500 tok)
+- `phase10_temporal_home_contract.py` — static Temporal Home interaction/action-map validator covering Figma reactions, Swift enum/action IDs, API client method presence, and smoke wiring (~650 tok)
 - `setup_gpu_node_storage.sh` — GPU-node ZFS dataset, repo checkout, venv directory, and permission bootstrap (~205 tok)
 
 ## apps/ios/DesignHandoff/
 
 - `README.md` — Phase 8 Figma-to-iOS handoff notes, active board references, screenshot evidence, and implementation guardrails (~260 tok)
 - `phase8_figma_handoff.json` — machine-readable Phase 8 Figma handoff metadata and active board references for Temporal Home and native screens (~420 tok)
+
+## apps/ios/App/
+
+- `ParallaxNativeApp.swift` — iOS app entrypoint that loads runtime config, creates the dynamic app store, and avoids demo-data bootstrapping unless explicitly seeded (~180 tok)
+
+## apps/ios/ParallaxNative.xcodeproj/
+
+- `project.pbxproj` — manual Xcode project membership/build-phase metadata for ParallaxDesignSystem, ParallaxCore, ParallaxApp, and ParallaxNative targets (~varies)
+
+## apps/ios/Sources/ParallaxCore/
+
+- `ParallaxDTOs.swift` — Codable DTOs for canonical activity, timing session/event/span, profile, preflight, checkpoint, resource dependency, and temporal-query read helpers (~600 tok)
+- `ParallaxAPIClient.swift` — canonical v1.3 API request builder for mutation-envelope writes, read helpers, auth headers, sync, preflight, review flags, extraction, and temporal query paths (~1400 tok)
+- `ParallaxRuntimeConfig.swift` — runtime/API/auth configuration loader; optional UAT seed fields no longer synthesize example activity data by default (~300 tok)
+- `PendingSyncService.swift` — local-to-API sync coordinator for queued timing events, reviews, annotations, preflight decisions, and dynamic fallback context (~950 tok)
+
+## apps/ios/Sources/ParallaxApp/
+
+- `ActivitySetupScreen.swift` — clean empty-state/create/select activity surface for launching the app without hardcoded example scenarios (~350 tok)
+- `ParallaxAppStore.swift` — root app-state owner for dynamic activities, selection, bootstrapping, and TimingSliceViewModel creation from user/API/local state (~850 tok)
+- `ParallaxRootView.swift` — root SwiftUI shell that shows setup when no activity is selected and routes selected dynamic timing models into app tabs (~400 tok)
+- `TemporalHome*.swift` — Temporal Home models, action map, drawers, view model, and screen projections backed by selected activity/run state rather than example scenario strings (~varies)
+- `Timing*.swift` — timing launcher/session/review screens and view model for dynamic activity names, canonical events, annotations, reviews, and non-empty button actions (~varies)
+- `Phase8DrawerViews.swift` — Phase 8 drawer UI actions wired to dynamic/generic canonical workflows, avoiding fixture scenario copy in runtime text (~900 tok)
+
+## apps/ios/Tests/ParallaxCoreTests/
+
+- `Phase9RemediationTests.swift` — source-leak and runtime-config regression tests preventing hardcoded example activity/default UI data and empty button actions (~500 tok)
+- `APIClientTests.swift` — request-builder contract tests for canonical paths, mutation envelopes, auth, profile/query/read helpers, and privacy defaults (~650 tok)
+- `PendingSyncServiceTests.swift` — sync replay tests for dynamic activity names, event queues, preflight decisions, and bearer failure retention (~500 tok)
+
+## apps/ios/Tests/ParallaxAppTests/
+
+- `ParallaxAppStoreTests.swift` — dynamic app store tests for no-seed empty launch, arbitrary activity create/select, and explicit UAT seed preservation (~350 tok)
+- `TimingSliceViewModelTests.swift` — app view-model tests for canonical timing events, review/discard, forgotten timer correction, and drawer actions (~700 tok)
+- `TemporalHomeActionMapTests.swift` — action-map coverage and dynamic Temporal Home routing tests tied to the canonical interaction contract (~350 tok)
+- `Phase8DrawerActionTests.swift` — drawer workflow/action inventory and nested action regression tests (~450 tok)
 
 ## infra/k3s/base/
 
@@ -230,6 +275,14 @@
 
 - `phase9_optional_extension_hardening.md` — Phase 9 scope, Firecrawl-backed extension notes, re-embedding/dual-read plan, k3s boundary, and verification contract (~850 tok)
 - `phase8_design_implementation.md` — Phase 8 design implementation notes, active Figma source, iOS vertical-slice scope, screenshot evidence, and smoke/build verification (~900 tok)
+
+## docs/phase9_app_remediation/
+
+- `README.md` — canonical Phase 9 app-wide remediation scope, source-of-truth list, runtime rules, and acceptance gate for replacing hardcoded examples with dynamic app behavior (~1600 tok)
+- `implementation_spec.md` — Phase 9 dynamic app architecture, DTO/API needs, store/navigation plan, implementation slices, and runtime/UAT rules (~2700 tok)
+- `workflow_action_contract.md` — required workflows for app launch, activity create/select, Temporal Home, timing, drawers, review, profile, Ask, privacy, and sync actions (~1700 tok)
+- `testing_uat_plan.md` — local Swift/Xcode/repo gates, GPU-node validation, simulator UAT scenario, backend evidence checks, and done criteria (~1500 tok)
+- `agent_execution_checklist.md` — ordered coding-agent checklist for context restore, failing tests, DTO/API, store, flows, local gates, GPU UAT, and completion reporting (~750 tok)
 
 ## .phase8_evidence/screenshots/
 
@@ -280,6 +333,7 @@
 ## services/api/tests/
 
 - `test_health.py` — API health/version tests with injected health checkers (~120 tok)
+- `test_mutations.py` — mutation replay/idempotency service tests, including conflict details and sync-change cursor behavior (~260 tok)
 - `test_phase2_review_profile.py` — Phase 2 API acceptance tests for review/discard decisions, span counts, replay, and Activity Profile stats (~530 tok)
 - `test_phase3_context_capture.py` — Phase 3 API acceptance tests for annotations, policy filtering, snapshots, places, review flags, and sync replay (~720 tok)
 

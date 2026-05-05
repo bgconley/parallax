@@ -6,6 +6,8 @@ This checkout contains the Parallax v1.3 artifact pack plus the Phase 0-9 implem
 
 Before making implementation or infrastructure decisions, read the relevant canonical artifact files first. Do not infer Parallax layout, storage, runtime, or service policy from existing GPU-node directories or other apps when a Parallax artifact covers the topic.
 
+After any context compaction, resume, or session transition, re-read the canonical project docs before making code or infrastructure changes. For Phase 9 app remediation or any broad app behavior work, re-read this minimum set in order: `parallax_v1_3_artifact_pack/AGENT_START_HERE.md`, `parallax_v1_3_artifact_pack/docs/01_app_system_spec.md`, `parallax_v1_3_artifact_pack/docs/02_temporal_domain_model.md`, the relevant section of `parallax_v1_3_artifact_pack/docs/03_phased_implementation_plan.md`, `parallax_v1_3_artifact_pack/database/README.md`, directly affected OpenAPI/event/job contracts, `parallax_v1_3_artifact_pack/docs/23_agentic_implementation_guardrails.md`, and `parallax_v1_3_artifact_pack/docs/12_testing_qa_release_rollback.md`.
+
 Key directories:
 
 - `services/api/`: FastAPI shell, routes, schemas, repositories, services, and API unit tests.

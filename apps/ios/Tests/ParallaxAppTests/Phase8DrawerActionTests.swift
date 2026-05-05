@@ -45,7 +45,7 @@ import Testing
     ]
     let timing = TimingSliceViewModel(
         activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
-        activityName: "Clean pots and pans",
+        activityName: "Dynamic test activity",
         sessionId: UUID(uuidString: "33333333-3333-4333-8333-333333333333")!,
         deviceId: "phase10-drawer-test",
         eventStore: store,

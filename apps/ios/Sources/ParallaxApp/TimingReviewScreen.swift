@@ -39,11 +39,11 @@ struct TimingReviewScreen: View {
             HStack(spacing: 11) {
                 CircleIcon(systemName: "sparkles", tint: Color(parallax: .detourText), fill: Color(parallax: .detourSoft), size: 44, symbolSize: 20)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Clean the kitchen")
+                    Text(viewModel.activityName)
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
-                    Text("Estimated range: 24-38 min")
+                    Text("Review decides what this run teaches")
                         .font(.system(size: 10.5, weight: .medium, design: .rounded))
                         .foregroundStyle(Color(parallax: .textSecondaryLight))
                 }
@@ -52,11 +52,11 @@ struct TimingReviewScreen: View {
                     .foregroundStyle(Color(parallax: .textTertiaryLight))
             }
             HStack(spacing: 0) {
-                SummaryMetric(icon: "clock", title: "Actual elapsed", value: "42 min", role: .active)
+                SummaryMetric(icon: "clock", title: "Actual elapsed", value: minutes(viewModel.elapsedSeconds), role: .active)
                 Divider()
-                SummaryMetric(icon: "leaf", title: "Active time", value: "31 min", role: .detour)
+                SummaryMetric(icon: "leaf", title: "Active time", value: minutes(viewModel.activeSeconds), role: .detour)
                 Divider()
-                SummaryMetric(icon: "pause.circle", title: "Paused / interruption", value: "8 min", role: .checkpoint)
+                SummaryMetric(icon: "pause.circle", title: "Friction", value: minutes(viewModel.detourSeconds), role: .checkpoint)
                 Divider()
                 SummaryMetric(icon: "shield", title: "Confidence", value: "Useful run", role: .interruption)
             }
@@ -70,24 +70,24 @@ struct TimingReviewScreen: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading) {
                     Text("Expected range")
-                    Text("24-38 min")
+                    Text("Needs data")
                         .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(parallax: .active))
                 }
                 Spacer()
                 VStack {
                     Text("Actual")
-                    Text("42 min")
+                    Text(minutes(viewModel.elapsedSeconds))
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(parallax: .checkpointText))
                 }
                 Spacer()
                 VStack(alignment: .leading) {
                     Text("Difference")
-                    Text("+4 min")
+                    Text("Review")
                         .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(parallax: .checkpointText))
-                    Text("outside usual range")
+                    Text("range updates after review")
                         .font(.caption)
                 }
             }
@@ -140,11 +140,23 @@ struct TimingReviewScreen: View {
                             .frame(maxWidth: .infinity, minHeight: 38)
                     }
                     .buttonStyle(.borderedProminent)
-                    Button("Mark unusual") {}
+                    Button {
+                        Task { await viewModel.saveReviewDecision(.markUnusual) }
+                    } label: {
+                        Text("Mark unusual")
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .frame(maxWidth: .infinity, minHeight: 38)
+                    }
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .buttonStyle(.bordered)
                         .frame(maxWidth: .infinity, minHeight: 38)
-                    Button("Discard") {}
+                    Button {
+                        Task { await viewModel.discardTimingKeepNote() }
+                    } label: {
+                        Text("Discard")
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .frame(maxWidth: .infinity, minHeight: 38)
+                    }
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .buttonStyle(.bordered)
                         .frame(maxWidth: .infinity, minHeight: 38)
@@ -199,6 +211,10 @@ struct TimingReviewScreen: View {
              .makeCheckpointOptional, .startFromCheckpoint:
             break
         }
+    }
+
+    private func minutes(_ seconds: Int) -> String {
+        "\(max(0, seconds / 60)) min"
     }
 }
 

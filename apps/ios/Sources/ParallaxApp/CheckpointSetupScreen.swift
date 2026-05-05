@@ -59,10 +59,10 @@ struct CheckpointSetupScreen: View {
 
     private var taskHeader: some View {
         ActivitySummaryRow(
-            title: "Send NC2 follow-up email",
-            subtitle: "Estimated 20 min  ·  Feels hard to start",
-            detail: "Basis: recent similar writing tasks",
-            icon: "envelope"
+            title: viewModel.activityName,
+            subtitle: "Optional checkpoints",
+            detail: "Timing remains valid without a saved step plan",
+            icon: "timer"
         )
     }
 
@@ -86,7 +86,7 @@ struct CheckpointSetupScreen: View {
                 Spacer()
                 SoftBadge(text: "Add context", systemName: "plus", role: .checkpoint)
             }
-            Text("Need to mention the architecture update, ask Alex for feedback, and include the revised timeline.")
+            Text("Add only the context that should be attached to this run.")
                 .font(.system(size: 13.5, weight: .regular, design: .rounded))
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -120,15 +120,15 @@ struct CheckpointSetupScreen: View {
                 Text("Steps in order")
                     .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                 Spacer()
-                Text("Estimated 20 min total")
+                Text("Editable before timing")
                     .font(.system(size: 10.5, weight: .medium, design: .rounded))
                     .foregroundStyle(Color(parallax: .textSecondaryLight))
             }
-            StepRow(index: 1, title: "Open email draft", estimate: "2 min", tag: "Easiest first", status: .running)
+            StepRow(index: 1, title: "Start activity", estimate: "timed now", tag: "source event", status: .running)
             Divider()
-            StepRow(index: 2, title: "Find Alex’s last message", estimate: "2 min", tag: "Low effort", status: .pending)
+            StepRow(index: 2, title: viewModel.currentCheckpointLabel, estimate: "optional", tag: "current", status: .pending)
             Divider()
-            StepRow(index: 3, title: "Hand-wash pans", estimate: "5-14 min", tag: "often expands", status: .pending)
+            StepRow(index: 3, title: viewModel.nextCheckpointLabel, estimate: "optional", tag: "next", status: .pending)
             Divider()
             StepRow(index: 4, title: "Write a short opening", estimate: "4 min", tag: "Core step", status: .pending)
             Button {
@@ -147,7 +147,13 @@ struct CheckpointSetupScreen: View {
             PrimaryButton(title: "Start first step", systemName: nil) {
                 activeDrawer = .checkpointSetup
             }
-            Button("Back to today") {}
+            Button {
+                activeDrawer = nil
+            } label: {
+                Text("Back to today")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .frame(maxWidth: .infinity, minHeight: 40)
+            }
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .buttonStyle(.bordered)
                 .frame(maxWidth: .infinity, minHeight: 40)

@@ -125,8 +125,10 @@ def test_mutation_replay_rejects_idempotency_key_reused_for_different_mutation()
         )
 
     assert exc_info.value.status_code == 409
-    assert exc_info.value.detail["error_code"] == "idempotency_key_conflict"
-    assert exc_info.value.detail["details"] == {
+    detail = exc_info.value.detail
+    assert isinstance(detail, dict)
+    assert detail["error_code"] == "idempotency_key_conflict"
+    assert detail["details"] == {
         "expected_mutation_type": "decide_preflight_check",
         "expected_entity_type": "preflight_check",
         "existing_mutation_type": "append_timing_event",

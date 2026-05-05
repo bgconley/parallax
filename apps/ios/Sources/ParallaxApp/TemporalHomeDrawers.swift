@@ -26,20 +26,23 @@ struct TemporalNavigationDrawerView: View {
 }
 
 struct QuickCaptureDrawerView: View {
-    let save: () -> Void
+    let save: (String) -> Void
     let dismiss: () -> Void
+    @State private var note = ""
 
     var body: some View {
         temporalDrawerShell(title: "Capture timing evidence", subtitle: "Saved locally first; sync can retry later.") {
             Card(background: Color(parallax: .elevatedLight)) {
-                Text("I had to stop and find the sponge.")
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Color(parallax: .textPrimaryLight))
+                TextField("What happened?", text: $note, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    .lineLimit(3, reservesSpace: true)
                 Text("Queued as a quick timing annotation.")
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundStyle(Color(parallax: .textSecondaryLight))
             }
-            temporalDrawerButton("Save timing note", systemName: "tray.and.arrow.down", role: .active, action: save)
+            temporalDrawerButton("Save timing note", systemName: "tray.and.arrow.down", role: .active) {
+                save(note.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
             temporalDrawerButton("Cancel", systemName: "xmark", role: .wall, action: dismiss)
         }
     }
@@ -68,9 +71,9 @@ struct TimingRunEvidenceDrawerView: View {
     let startAgain: () -> Void
 
     var body: some View {
-        temporalDrawerShell(title: "Timing run evidence", subtitle: "Kitchen cleanup ran 42 min wall, 31 min active.") {
-            temporalQueueRow("Reviewed evidence", detail: "6 runs", role: .active)
-            temporalQueueRow("Resource detours", detail: "3 sponge issues", role: .detour)
+        temporalDrawerShell(title: "Timing run evidence", subtitle: "Run evidence is shown only after timing data exists.") {
+            temporalQueueRow("Reviewed evidence", detail: "from runs", role: .active)
+            temporalQueueRow("Resource detours", detail: "from notes", role: .detour)
             temporalQueueRow("Model inclusion", detail: "review decides", role: .checkpoint)
             temporalDrawerButton("Open review", systemName: "checkmark.seal", role: .checkpoint, action: openReview)
             temporalDrawerButton("Ask similar time", systemName: "quote.bubble", role: .detour, action: askSimilarTime)
@@ -85,10 +88,10 @@ struct TemporalAnswerEvidenceDrawerView: View {
 
     var body: some View {
         temporalDrawerShell(title: "Grounded answer evidence", subtitle: "Evidence is summarized; raw notes stay hidden by default.") {
-            temporalQueueRow("Reviewed runs", detail: "6", role: .active)
-            temporalQueueRow("Median wall time", detail: "39 min", role: .wall)
-            temporalQueueRow("Slow-case envelope", detail: "44 min", role: .waiting)
-            temporalQueueRow("Before starting", detail: "check sponge", role: .detour)
+            temporalQueueRow("Reviewed runs", detail: "required", role: .active)
+            temporalQueueRow("Median wall time", detail: "computed", role: .wall)
+            temporalQueueRow("Slow-case envelope", detail: "computed", role: .waiting)
+            temporalQueueRow("Before starting", detail: "from evidence", role: .detour)
             temporalDrawerButton("Use check", systemName: "sparkles", role: .detour, action: useCheck)
             temporalDrawerButton("Close", systemName: "xmark", role: .wall, action: dismiss)
         }

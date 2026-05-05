@@ -27,9 +27,9 @@ struct TimingLauncherSheet: View {
                         .minimumScaleFactor(0.72)
                 }
                 ActivitySummaryRow(
-                    title: "Clean the kitchen",
-                    subtitle: "Personal range: 24-38 min  ·  Basis: 6 previous runs",
-                    detail: "Confidence: still calibrating",
+                    title: activityName,
+                    subtitle: "No reviewed range yet",
+                    detail: "Start a run to build evidence",
                     icon: "sparkles"
                 )
                 VStack(alignment: .leading, spacing: 0) {

@@ -76,6 +76,18 @@ public struct ParallaxAPIClient: Sendable {
         )
     }
 
+    public func listActivitiesRequest(q: String? = nil, limit: Int = 25) throws -> URLRequest {
+        var queryItems = [URLQueryItem(name: "limit", value: "\(limit)")]
+        if let q, !q.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            queryItems.append(URLQueryItem(name: "q", value: q))
+        }
+        return try request(path: "/v1/activities", method: "GET", queryItems: queryItems)
+    }
+
+    public func getActivityRequest(activityId: UUID) throws -> URLRequest {
+        try request(path: "/v1/activities/\(activityId.uuidString)", method: "GET")
+    }
+
     public func createActivityRequest(
         displayName: String,
         mutation: MutationEnvelope,
@@ -114,6 +126,10 @@ public struct ParallaxAPIClient: Sendable {
                 userPreEstimateSeconds: userPreEstimateSeconds
             )
         )
+    }
+
+    public func getTimingSessionRequest(sessionId: UUID) throws -> URLRequest {
+        try request(path: "/v1/timing/sessions/\(sessionId.uuidString)", method: "GET")
     }
 
     public func appendTimingEventRequest(_ event: PendingTimingEvent) throws -> URLRequest {
@@ -280,6 +296,34 @@ public struct ParallaxAPIClient: Sendable {
         )
     }
 
+    public func getActivityProfileRequest(activityId: UUID) throws -> URLRequest {
+        try request(path: "/v1/activities/\(activityId.uuidString)/profile", method: "GET")
+    }
+
+    public func listCheckpointsRequest(activityId: UUID) throws -> URLRequest {
+        try request(path: "/v1/activities/\(activityId.uuidString)/checkpoints", method: "GET")
+    }
+
+    public func putCheckpointsRequest(
+        activityId: UUID,
+        mutation: MutationEnvelope,
+        checkpoints: [CheckpointTemplateDTO]
+    ) throws -> URLRequest {
+        try jsonRequest(
+            path: "/v1/activities/\(activityId.uuidString)/checkpoints",
+            method: "PUT",
+            body: PutCheckpointsBody(mutation: mutation, checkpoints: checkpoints)
+        )
+    }
+
+    public func listPreflightChecksRequest(activityId: UUID) throws -> URLRequest {
+        try request(path: "/v1/activities/\(activityId.uuidString)/preflight-checks", method: "GET")
+    }
+
+    public func listResourceDependenciesRequest(activityId: UUID) throws -> URLRequest {
+        try request(path: "/v1/activities/\(activityId.uuidString)/resource-dependencies", method: "GET")
+    }
+
     public func createTemporalQueryRequest(
         mutation: MutationEnvelope,
         question: String,
@@ -298,6 +342,10 @@ public struct ParallaxAPIClient: Sendable {
                 includeRawQuotes: includeRawQuotes
             )
         )
+    }
+
+    public func getTemporalQueryAnswerRequest(answerId: UUID) throws -> URLRequest {
+        try request(path: "/v1/temporal/query/\(answerId.uuidString)", method: "GET")
     }
 
     public func listTimingReviewFlagsRequest(
@@ -483,6 +531,11 @@ private struct CreatePreflightCheckBody: Encodable {
     let mutation: MutationEnvelope
     let checkText: String
     let source: String
+}
+
+private struct PutCheckpointsBody: Encodable {
+    let mutation: MutationEnvelope
+    let checkpoints: [CheckpointTemplateDTO]
 }
 
 private struct TemporalQueryBody: Encodable {

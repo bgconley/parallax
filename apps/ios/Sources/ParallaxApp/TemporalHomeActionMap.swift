@@ -12,11 +12,11 @@ public enum TemporalHomeActionMap {
             return action.spec(label: "Temporal action", classification: .drawer, route: .drawer(.quickCapture), workflow: "open_quick_capture")
         case .currentFocusDefault, .runningRowDefault:
             return action.spec(label: "Current timing run", classification: .navigation, route: .surface(.expandedTimingRun), workflow: "open_timing_run_evidence")
-        case .preflightInsightDefault, .preflightRowDefault, .spongeCheckRowNeedsReview, .beforeStartingRowGroundedAnswer, .useCheckGroundedAnswer:
+        case .preflightInsightDefault, .preflightRowDefault, .preflightCheckRowNeedsReview, .beforeStartingRowGroundedAnswer, .useCheckGroundedAnswer:
             return action.spec(label: "Preflight evidence", classification: .drawer, route: .drawer(.phase8(.preflightEvidence)), workflow: "preflight_evidence")
         case .waitingRowDefault:
             return action.spec(label: "Waiting step detail", classification: .drawer, route: .drawer(.phase8(.stepDetail)), workflow: "step_detail")
-        case .baselineRowDefault, .learningImpactNeedsReview, .pansSampleRowNeedsReview, .askTimeDefault, .askImpactNeedsReview, .askSimilarTimeExpandedRun, .askAnotherGroundedAnswer:
+        case .baselineRowDefault, .learningImpactNeedsReview, .sampleSupportRowNeedsReview, .askTimeDefault, .askImpactNeedsReview, .askSimilarTimeExpandedRun, .askAnotherGroundedAnswer:
             return action.spec(label: "Ask About Time", classification: .apiWorkflow, route: .surface(.groundedAnswer), workflow: "answer_temporal_query")
         case .groundedRowDefault:
             return action.spec(label: "Grounded temporal answer", classification: .navigation, route: .surface(.groundedAnswer), workflow: "open_grounded_answer")
@@ -24,7 +24,7 @@ public enum TemporalHomeActionMap {
             return action.spec(label: "Temporal answer evidence", classification: .drawer, route: .drawer(.temporalAnswerEvidence), workflow: "open_temporal_answer_evidence")
         case .quickCaptureDefault, .quickCaptureNeedsReview, .quickCaptureSyncPending:
             return action.spec(label: "Quick capture", classification: .localQueue, route: .drawer(.quickCapture), workflow: "annotation_captured")
-        case .reviewRunDefault, .reviewFocusNeedsReview, .kitchenReviewRowNeedsReview, .packLunchRowNeedsReview, .reviewAllNeedsReview, .openReviewExpandedRun:
+        case .reviewRunDefault, .reviewFocusNeedsReview, .runReviewRowNeedsReview, .baselineSampleRowNeedsReview, .reviewAllNeedsReview, .openReviewExpandedRun:
             return action.spec(label: "Review decision", classification: .drawer, route: .drawer(.phase8(.reviewDecision)), workflow: "review_decision")
         case .eveningCorrectRowNeedsReview:
             return action.spec(label: "Forgotten timer", classification: .drawer, route: .drawer(.phase8(.forgottenTimer)), workflow: "forgotten_timer")

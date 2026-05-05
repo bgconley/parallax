@@ -10,6 +10,7 @@
 - Unit tests may run on the Mac, but all functional tests, integration tests, end-of-phase verification/validation tests, and backend operations must run on the GPU node where Parallax will live. Frontend testing, Xcode/SwiftUI work, initial Figma work, and Playwright UI validation should run on the Mac.
 - GPU node access: `ssh -i /Users/brennanconley/vibecode/infx/ubuntu24_ed25519 bgconley@10.25.0.50`.
 - Before inferring anything about Parallax implementation or infrastructure from the GPU node, existing apps, or local conventions, review the relevant canonical artifact files and let them drive the decision.
+- After any context compaction, resume, or session transition, re-read the canonical Parallax docs before code or infrastructure changes. For broad app behavior or Phase 9 remediation, start from `AGENT_START_HERE.md`, app spec, temporal domain model, relevant phase plan sections, database README, affected contracts, guardrails, and testing/QA guidance.
 - Use `/tank/repos/parallax` for the GPU-node repo checkout and `/tank/venvs/parallax` for Parallax virtualenvs. Pull remote updates into `/tank/repos/parallax` after Mac-side pushes.
 - The existing `/tank/venvs/parallax` path is acceptable even though `tank/venvs` is root ext4 rather than ZFS.
 - Use `uv` for GPU-node Parallax Python work, with `UV_PROJECT_ENVIRONMENT=/tank/venvs/parallax`.
@@ -44,6 +45,8 @@
 - **Phase 8 Figma source of truth:** Active Figma visual targets must be source-backed or canonical-derived from `parallax_v1_3_artifact_pack/examples/` and the current canonical Figma reference pages. Simplified vector drafts are superseded, not finished mockups.
 - **Phase 8 Temporal Home Figma target:** The active Temporal Home source is Figma page `118:2`, `10 Phase 8 Temporal Home Canonical Allocation`; the active board is node `118:3`. The failed `106:2` temporal scope draft was deleted after QA because it did not preserve the corrected canonical allocation.
 - **Phase 9 optional profiles:** Optional extension profiles live under `database/optional_profiles/` and remain outside the baseline migration runner. Prove them against selected Docker images with `make phase9-smoke` instead of assuming image compatibility.
+- **Phase 9 app remediation:** The current remediation scope is app-wide dynamic behavior, not only Temporal Home. Runtime iOS screens must derive from user data, local state, and canonical APIs; Figma/example scenarios belong only in preview/test fixtures or artifact examples.
+- **iOS project membership:** SwiftPM auto-discovers new files under `apps/ios/Sources`, but `ParallaxNative.xcodeproj` must be updated manually with PBX file references and source-build-phase membership for simulator builds.
 - **Timescale restore proof:** Timescale logical restore must use custom-format `pg_dump`, create/enable TimescaleDB in the target database, call `timescaledb_pre_restore()`, run non-parallel `pg_restore`, then call `timescaledb_post_restore()`.
 - **Phase 9 k3s probes/auth:** Production k3s manifests using `external_bearer` must set a non-HS JWT algorithm plus JWKS URL, issuer, and audience. API readiness must use `/v1/ready`; liveness must use `/v1/live`.
 
@@ -68,6 +71,8 @@
 - [2026-05-04] Do not leave defective alternate Figma pages or point docs to a replacement while a user-linked page remains bad. Fix the actual linked page or delete the stale draft, then update the handoff source of truth.
 - [2026-05-04] Do not validate Timescale continuous aggregates with current open-bucket sample data or inside an open transaction. Use closed historical buckets, explicit refresh windows, and autocommit around `refresh_continuous_aggregate()`.
 - [2026-05-04] Do not point Kubernetes API readiness/liveness probes at the same dependency health endpoint. Readiness should prove dependency and migration readiness; liveness should prove only that the process is alive.
+- [2026-05-05] Do not implement Figma/example scenarios as default Parallax runtime data. Activity names, notes, preflight text, checkpoint labels, people, and places in mockups/examples are fixtures unless entered by the user or returned by the backend.
+- [2026-05-05] Do not trust `swift test` alone after adding iOS source files. Also update and verify `apps/ios/ParallaxNative.xcodeproj/project.pbxproj`, because Xcode simulator builds do not auto-include new Swift files.
 
 ## Decision Log
 
@@ -86,3 +91,4 @@
 - [2026-05-03] Phase 8 native UI/Figma implementation completed at `317308c` with the Phase 8 smoke, Swift tests, Xcode simulator build, and Python regression checks. Pause before Phase 9 unless the user explicitly starts it.
 - [2026-05-04] Phase 8 Temporal Home Figma source is `118:2` / board `118:3`; `106:2` was deleted as a failed draft. `scripts/phase8_ui_contract.py` now enforces the active `118:3` board and screenshot evidence.
 - [2026-05-04] Phase 9 optional-extension hardening adds root optional SQL profiles, Docker-backed extension smoke validation, k3s readiness manifests, and re-embedding/dual-read documentation without changing baseline source-of-truth semantics.
+- [2026-05-05] Phase 9 app remediation is treated as a corrective app-wide implementation slice to satisfy earlier temporal-loop acceptance gates with dynamic activity, timing, context capture, review, profile, Ask, privacy, and sync behavior; it does not start Phase 10.

@@ -12,7 +12,7 @@ public struct ContextCaptureSheetView: View {
         Card {
             Text("Say what happened")
                 .font(.system(size: 22, weight: .bold, design: .rounded))
-            Text(note ?? "I had to stop and find the sponge.")
+            Text(note ?? "Add a note about what changed during this run.")
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(parallax: .elevatedLight))
@@ -28,18 +28,22 @@ public struct ContextCaptureSheetView: View {
 }
 
 public struct ActivityProfileView: View {
-    public init() {}
+    private let activityName: String
+
+    public init(activityName: String = "Selected activity") {
+        self.activityName = activityName
+    }
 
     public var body: some View {
-        CanonicalScreen(title: "Clean pots and pans", subtitle: "Personal timing range", leadingIcon: "chevron.left") {
+        CanonicalScreen(title: activityName, subtitle: "Personal timing range", leadingIcon: "chevron.left") {
             Card {
                 Text("Personal range")
                     .font(.headline)
                 HStack {
-                    SoftBadge(text: "Active 14-19 min", systemName: "timer", role: .active)
-                    SoftBadge(text: "Wall 18-28 min", systemName: "clock", role: .wall)
+                    SoftBadge(text: "Active range pending", systemName: "timer", role: .active)
+                    SoftBadge(text: "Wall range pending", systemName: "clock", role: .wall)
                 }
-                Text("Sample size 8. Confidence medium. Delays usually come from missing supplies.")
+                Text("Reviewed runs will determine sample size, confidence, common friction, and preflight evidence.")
                     .foregroundStyle(.secondary)
             }
         }
@@ -52,9 +56,9 @@ public struct AskAboutTimeView: View {
     public var body: some View {
         CanonicalScreen(title: "Ask about time", subtitle: "Evidence-backed answers only", leadingIcon: "chevron.left") {
             Card {
-                Text("Why does washing pans take longer?")
+                Text("Ask a time question")
                     .font(.headline)
-                Text("Across 8 reviewed runs, missing supplies explain the largest wall-time difference.")
+                Text("Answers require reviewed evidence and include sample size, confidence, limitations, and evidence.")
                     .foregroundStyle(.secondary)
             }
         }

@@ -29,7 +29,7 @@ import Testing
     ]
     let timing = TimingSliceViewModel(
         activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
-        activityName: "Clean pots and pans",
+        activityName: "Dynamic test activity",
         sessionId: UUID(uuidString: "22222222-2222-4222-8222-222222222222")!,
         deviceId: "phase10-action-test",
         eventStore: store,
@@ -51,7 +51,7 @@ import Testing
     await temporal.perform(.askTimeDefault)
     let queryIntent = try #require(try await store.load().last)
     #expect(temporal.surfaceState == .groundedAnswer)
-    #expect(temporal.lastTemporalQuestion == "How long does clean pots and pans usually take?")
+    #expect(temporal.lastTemporalQuestion == "How long does Dynamic test activity usually take?")
     #expect(queryIntent.eventType == .intentRecorded)
     #expect(queryIntent.payload["api_path"] == "/v1/temporal/query")
     #expect(queryIntent.payload["include_raw_quotes"] == "false")

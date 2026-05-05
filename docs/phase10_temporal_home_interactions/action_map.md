@@ -8,11 +8,11 @@ Every selectable-looking element on the active 118 screens is listed here and in
 | `118:9` | Temporal action | `118_9_temporal_action` | drawer | Quick capture drawer |
 | `118:9` | Current timing focus card | `118_9_current_focus` | navigation | `118:294` expanded run |
 | `118:9` | Temporal insight card | `118_9_preflight_insight` | drawer | `preflight_evidence` |
-| `118:9` | Clean pots and pans running | `118_9_running_row` | navigation | `118:294` expanded run |
+| `118:9` | Current run | `118_9_running_row` | navigation | `118:294` expanded run |
 | `118:9` | Sponge detour preflight | `118_9_preflight_row` | drawer | `preflight_evidence` |
-| `118:9` | Laundry cycle waiting | `118_9_waiting_row` | drawer | `step_detail` |
+| `118:9` | Waiting time | `118_9_waiting_row` | drawer | `step_detail` |
 | `118:9` | Pack lunch baseline | `118_9_baseline_row` | api_workflow | temporal query |
-| `118:9` | Hand-wash pans grounded | `118_9_grounded_row` | navigation | `118:346` grounded answer |
+| `118:9` | Grounded answer | `118_9_grounded_row` | navigation | `118:346` grounded answer |
 | `118:9` | All evidence current | `118_9_evidence_current_row` | drawer | temporal answer evidence |
 | `118:9` | Capture timing evidence | `118_9_quick_capture` | local_queue | annotation capture |
 | `118:9` | Review run / approve learning | `118_9_review_run` | drawer | `review_decision` |
@@ -21,11 +21,11 @@ Every selectable-looking element on the active 118 screens is listed here and in
 | `118:104` | Temporal action | `118_104_temporal_action` | drawer | Quick capture drawer |
 | `118:104` | Review focus card | `118_104_review_focus` | drawer | `review_decision` |
 | `118:104` | Learning impact pending | `118_104_learning_impact` | api_workflow | temporal query |
-| `118:104` | Kitchen cleanup review | `118_104_kitchen_review_row` | drawer | `review_decision` |
+| `118:104` | Run review | `118_104_run_review_row` | drawer | `review_decision` |
 | `118:104` | Evening reset correct | `118_104_evening_correct_row` | drawer | `forgotten_timer` |
-| `118:104` | Pack lunch approve | `118_104_pack_lunch_row` | drawer | `review_decision` |
-| `118:104` | Sponge check decide | `118_104_sponge_check_row` | drawer | `preflight_evidence` |
-| `118:104` | Pans estimate sample | `118_104_pans_sample_row` | api_workflow | temporal query |
+| `118:104` | Baseline sample | `118_104_baseline_sample_row` | drawer | `review_decision` |
+| `118:104` | Preflight check | `118_104_preflight_check_row` | drawer | `preflight_evidence` |
+| `118:104` | Sample support | `118_104_sample_support_row` | api_workflow | temporal query |
 | `118:104` | Queue ready | `118_104_queue_ready_row` | drawer | Sync queue drawer |
 | `118:104` | Add review context | `118_104_quick_capture` | local_queue | annotation capture |
 | `118:104` | Review all / choose scopes | `118_104_review_all` | drawer | `review_decision` |

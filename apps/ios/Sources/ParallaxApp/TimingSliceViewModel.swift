@@ -29,7 +29,8 @@ public final class TimingSliceViewModel: ObservableObject {
     private var startedAt: Date?
     private var completedAt: Date?
 
-    public static let demoPreflightCheckId = UUID(uuidString: "44444444-4444-4444-8444-444444444444")!
+    public var currentCheckpointLabel = "Current checkpoint"
+    public var nextCheckpointLabel = "Next checkpoint"
 
     public init(
         activityId: UUID,
@@ -63,88 +64,6 @@ public final class TimingSliceViewModel: ObservableObject {
         self.mutationSequenceStore = mutationSequenceStore
         self.now = now
         self.mutationFactory = MutationEnvelopeFactory(clientDeviceId: deviceId)
-    }
-
-    public static func liveDemo() -> TimingSliceViewModel {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
-        let parallaxSupport = support.appendingPathComponent("Parallax", isDirectory: true)
-        return TimingSliceViewModel(
-            activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
-            activityName: "Clean pots and pans",
-            deviceId: "ios-demo-device",
-            eventStore: FilePendingTimingEventStore(
-                fileURL: parallaxSupport
-                    .appendingPathComponent("pending-timing-events.json")
-            ),
-            preflightDecisionStore: FilePendingPreflightDecisionStore(
-                fileURL: parallaxSupport
-                    .appendingPathComponent("pending-preflight-decisions.json")
-            )
-        )
-    }
-
-    public static func liveConnected(config: ParallaxRuntimeConfig) -> TimingSliceViewModel {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
-        let parallaxSupport = support.appendingPathComponent("Parallax", isDirectory: true)
-        let eventStore = FilePendingTimingEventStore(
-            fileURL: parallaxSupport.appendingPathComponent("pending-timing-events.json")
-        )
-        let preflightDecisionStore = FilePendingPreflightDecisionStore(
-            fileURL: parallaxSupport.appendingPathComponent("pending-preflight-decisions.json")
-        )
-        let syncStateStore = FilePendingSyncStateStore(
-            fileURL: parallaxSupport.appendingPathComponent("pending-sync-state.json")
-        )
-        let sequenceStore = FileMutationSequenceStore(
-            fileURL: parallaxSupport.appendingPathComponent("mutation-sequences.json")
-        )
-        let client = ParallaxAPIClient(baseURL: config.apiBaseURL, auth: config.auth)
-        let context = PendingSyncContext(
-            localActivityId: config.activityId,
-            activityDisplayName: config.activityName,
-            deviceId: config.deviceId,
-            preflightCheckText: config.preflightCheckText
-        )
-        return TimingSliceViewModel(
-            activityId: config.activityId,
-            activityName: config.activityName,
-            deviceId: config.deviceId,
-            eventStore: eventStore,
-            preflightDecisionStore: preflightDecisionStore,
-            pendingSyncService: PendingSyncService(
-                client: client,
-                eventStore: eventStore,
-                preflightDecisionStore: preflightDecisionStore,
-                syncStateStore: syncStateStore
-            ),
-            pendingSyncContext: context,
-            mutationSequenceStore: sequenceStore
-        )
-    }
-
-    public static func reviewedDemo() -> TimingSliceViewModel {
-        let model = liveDemo()
-        model.status = .reviewed
-        model.elapsedSeconds = 1_800
-        model.activeSeconds = 1_200
-        model.detourSeconds = 600
-        model.detourNote = "Had to find the sponge."
-        model.pendingEventCount = 4
-        model.reviewDecision = .saveUsefulRun
-        return model
-    }
-
-    public static func runningDemo() -> TimingSliceViewModel {
-        let model = liveDemo()
-        model.status = .running
-        model.openSpan = nil
-        model.elapsedSeconds = 734
-        model.activeSeconds = 588
-        model.detourSeconds = 56
-        model.pendingEventCount = 2
-        return model
     }
 
     public var projection: TimingSessionProjection {
@@ -194,13 +113,17 @@ public final class TimingSliceViewModel: ObservableObject {
         await appendEvent(.sessionStarted, at: timestamp, payload: ["measurement_mode": MeasurementMode.wholeTask.rawValue])
     }
 
-    public func recordSpongeDetour() async {
+    public func recordResourceDetour(
+        resourceName: String,
+        note: String,
+        durationSeconds: Int = 600
+    ) async {
         guard canRecordDetour else { return }
         let timestamp = now()
         updateDurations(at: timestamp)
         openSpan = .resourceDetour
-        detourSeconds = max(detourSeconds, 600)
-        detourNote = "Had to find the sponge."
+        detourSeconds = max(detourSeconds, durationSeconds)
+        detourNote = note
         activeSeconds = max(0, elapsedSeconds - detourSeconds)
         await appendEvent(
             .resourceDetourStarted,
@@ -208,32 +131,39 @@ public final class TimingSliceViewModel: ObservableObject {
             captureMethod: .quickChip,
             notePreview: detourNote,
             payload: [
-                "resource_name": "sponge",
+                "resource_name": resourceName,
                 "count_policy": CountPolicy.wallOnly.rawValue
             ]
         )
     }
 
-    public func confirmSpongeEvidence() async {
+    public func confirmFrictionEvidence(
+        resourceName: String,
+        note: String,
+        suggestedPreflightText: String?
+    ) async {
         guard status == .running || status == .completedUnreviewed else { return }
         let timestamp = now()
+        var payload = [
+            "confirmation_state": "user_confirmed",
+            "span_type": TemporalSpanType.resourceDetour.rawValue,
+            "friction_category": "resource",
+            "resource_name": resourceName,
+            "count_policy": CountPolicy.wallOnly.rawValue,
+        ]
+        if let suggestedPreflightText {
+            payload["suggested_preflight_text"] = suggestedPreflightText
+        }
         await appendEvent(
             .extractedEventCreated,
             at: timestamp,
             captureMethod: .quickChip,
-            notePreview: "The sponge is gross. I need to go downstairs and get a new one.",
-            payload: [
-                "confirmation_state": "user_confirmed",
-                "span_type": TemporalSpanType.resourceDetour.rawValue,
-                "friction_category": "resource",
-                "resource_name": "sponge",
-                "count_policy": CountPolicy.wallOnly.rawValue,
-                "suggested_preflight_text": "Check sponge or scrubber before starting.",
-            ]
+            notePreview: note,
+            payload: payload
         )
     }
 
-    public func completeCurrentCheckpoint() async {
+    public func completeCurrentCheckpoint(label: String? = nil) async {
         guard status == .running else { return }
         let timestamp = now()
         updateDurations(at: timestamp)
@@ -242,9 +172,9 @@ public final class TimingSliceViewModel: ObservableObject {
             at: timestamp,
             payload: [
                 "checkpoint_index": "2",
-                "checkpoint_label": "Load dishwasher",
-                "elapsed_seconds": "734",
-                "active_seconds": "588",
+                "checkpoint_label": label ?? currentCheckpointLabel,
+                "elapsed_seconds": "\(elapsedSeconds)",
+                "active_seconds": "\(activeSeconds)",
             ]
         )
     }
@@ -260,12 +190,26 @@ public final class TimingSliceViewModel: ObservableObject {
             at: timestamp,
             payload: [
                 "pause_reason": "user_paused_step",
-                "checkpoint_label": "Load dishwasher",
+                "checkpoint_label": currentCheckpointLabel,
             ]
         )
     }
 
-    public func skipCurrentCheckpoint() async {
+    public func resumeRun() async {
+        guard status == .paused else { return }
+        let timestamp = now()
+        status = .running
+        await appendEvent(
+            .sessionResumed,
+            at: timestamp,
+            payload: [
+                "resume_reason": "user_resumed_timer",
+                "checkpoint_label": currentCheckpointLabel,
+            ]
+        )
+    }
+
+    public func skipCurrentCheckpoint(label: String? = nil) async {
         guard status == .running || status == .paused else { return }
         let timestamp = now()
         updateDurations(at: timestamp)
@@ -274,27 +218,27 @@ public final class TimingSliceViewModel: ObservableObject {
             at: timestamp,
             payload: [
                 "checkpoint_index": "2",
-                "checkpoint_label": "Load dishwasher",
+                "checkpoint_label": label ?? currentCheckpointLabel,
                 "reason": "user_skipped_from_step_drawer",
             ]
         )
     }
 
-    public func moveCurrentCheckpoint() async {
+    public func moveCurrentCheckpoint(label: String? = nil) async {
         let timestamp = now()
         await appendEvent(
             .scopeChanged,
             at: timestamp,
             payload: [
                 "checkpoint_action": "move_current_step",
-                "checkpoint_label": "Load dishwasher",
+                "checkpoint_label": label ?? currentCheckpointLabel,
                 "sequence_integrity": "preserve_order",
             ]
         )
     }
 
     public func captureStepNote() async {
-        await captureTemporalHomeNote("Note for Load dishwasher checkpoint.")
+        await captureTemporalHomeNote("Note for \(currentCheckpointLabel).")
     }
 
     public func captureTemporalHomeNote(_ note: String) async {
@@ -317,13 +261,12 @@ public final class TimingSliceViewModel: ObservableObject {
             .userCorrectionApplied,
             at: timestamp,
             captureMethod: .quickChip,
-            notePreview: "Corrected sponge detour evidence.",
+            notePreview: "Corrected friction evidence.",
             payload: [
                 "correction_type": "extracted_event_corrected",
                 "span_type": TemporalSpanType.resourceDetour.rawValue,
                 "friction_category": TemporalFrictionCategory.resource.rawValue,
                 "count_policy": CountPolicy.wallOnly.rawValue,
-                "suggested_preflight_text": "Check sponge or scrubber before starting.",
             ]
         )
     }
@@ -334,7 +277,7 @@ public final class TimingSliceViewModel: ObservableObject {
             .userCorrectionApplied,
             at: timestamp,
             captureMethod: .quickChip,
-            notePreview: "Marked sponge detour evidence as not relevant.",
+            notePreview: "Marked friction evidence as not relevant.",
             payload: [
                 "correction_type": "extracted_event_ignored",
                 "confirmation_state": ExtractedEventConfirmationState.ignored.rawValue,
@@ -349,7 +292,7 @@ public final class TimingSliceViewModel: ObservableObject {
             .annotationCaptured,
             at: timestamp,
             captureMethod: .reviewReconstruction,
-            notePreview: "Keep sponge note as context only.",
+            notePreview: "Keep this note as context only.",
             payload: [
                 "model_inclusion": ModelInclusion.queryEvidenceOnly.rawValue,
                 "count_policy": CountPolicy.doNotCount.rawValue,
@@ -365,8 +308,8 @@ public final class TimingSliceViewModel: ObservableObject {
             at: timestamp,
             payload: [
                 "measurement_mode": MeasurementMode.checkpointed.rawValue,
-                "checkpoint_action": "split_hand_wash_pans",
-                "checkpoint_label": "Hand-wash pans",
+                "checkpoint_action": "update_checkpoint_plan",
+                "checkpoint_label": nextCheckpointLabel,
                 "sequence_integrity": "preserve_order",
             ]
         )
@@ -379,7 +322,7 @@ public final class TimingSliceViewModel: ObservableObject {
             at: timestamp,
             payload: [
                 "checkpoint_action": "make_optional",
-                "checkpoint_label": "Hand-wash pans",
+                "checkpoint_label": nextCheckpointLabel,
                 "sequence_integrity": "skip_without_corrupting_sequence",
             ]
         )
@@ -394,7 +337,7 @@ public final class TimingSliceViewModel: ObservableObject {
             at: timestamp,
             payload: [
                 "checkpoint_index": "3",
-                "checkpoint_label": "Hand-wash pans",
+                "checkpoint_label": nextCheckpointLabel,
                 "source": "checkpoint_setup_drawer",
             ]
         )
@@ -453,8 +396,8 @@ public final class TimingSliceViewModel: ObservableObject {
                 "trimmed_elapsed_seconds": "\(elapsedSeconds)",
                 "original_active_seconds": "\(originalActiveSeconds)",
                 "trimmed_active_seconds": "\(activeSeconds)",
-                "start_place_category": "kitchen",
-                "completion_place_category": "store",
+                "start_place_category": "start_area",
+                "completion_place_category": "later_area",
                 "privacy_display": "human_explanation_only",
             ]
         )
@@ -462,11 +405,15 @@ public final class TimingSliceViewModel: ObservableObject {
 
     public func decidePreflightCheck(
         _ decision: PreflightCheckDecision,
-        checkId: UUID = TimingSliceViewModel.demoPreflightCheckId,
+        checkId: UUID? = nil,
         snoozedUntil: Date? = nil,
         reason: String? = nil
     ) async {
         guard await seedMutationFactoryIfNeeded() else { return }
+        guard let checkId else {
+            errorMessage = "Choose a real preflight check before saving this decision."
+            return
+        }
         let timestamp = now()
         let resolvedSnoozedUntil = decision == .snooze
             ? snoozedUntil ?? timestamp.addingTimeInterval(86_400)

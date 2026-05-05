@@ -45,7 +45,7 @@ import Testing
     let result = try await service.sync(
         context: PendingSyncContext(
             localActivityId: localActivityId,
-            activityDisplayName: "Clean pots and pans",
+            activityDisplayName: "Dynamic test activity",
             deviceId: "ios-uat-device"
         )
     )
@@ -93,7 +93,7 @@ import Testing
         _ = try await service.sync(
             context: PendingSyncContext(
                 localActivityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
-                activityDisplayName: "Clean pots and pans",
+                activityDisplayName: "Dynamic test activity",
                 deviceId: "ios-uat-device"
             )
         )
@@ -133,7 +133,7 @@ import Testing
     let result = try await service.sync(
         context: PendingSyncContext(
             localActivityId: localActivityId,
-            activityDisplayName: "Clean pots and pans",
+            activityDisplayName: "Dynamic test activity",
             deviceId: "ios-uat-device"
         )
     )

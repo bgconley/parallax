@@ -16,9 +16,9 @@ struct TimingSessionScreen: View {
             leadingIcon: "chevron.left"
         ) {
             ActivitySummaryRow(
-                title: "Clean the kitchen",
-                subtitle: "Personal range 24-38 min       6 previous runs",
-                detail: "Basis: Personal        Confidence: Still calibrating ⓘ",
+                title: viewModel.activityName,
+                subtitle: "No reviewed range yet",
+                detail: "Basis: your reviewed timing runs",
                 icon: "sparkles"
             )
             badgeRail
@@ -57,42 +57,58 @@ struct TimingSessionScreen: View {
             GeometryReader { proxy in
                 let ringSize = min(max(proxy.size.width * 0.35, 112), 132)
                 HStack(alignment: .center, spacing: 10) {
-                    TimingRing(elapsedSeconds: max(viewModel.elapsedSeconds, 734), activeSeconds: max(viewModel.activeSeconds, 588))
+                    TimingRing(elapsedSeconds: viewModel.elapsedSeconds, activeSeconds: viewModel.activeSeconds)
                         .frame(width: ringSize, height: ringSize)
                     VStack(alignment: .leading, spacing: 4) {
-                        SoftBadge(text: "Step 2 of 6", systemName: nil, role: .active)
-                        Text("Load dishwasher")
+                        SoftBadge(text: viewModel.status.rawValue, systemName: nil, role: .active)
+                        Text(viewModel.currentCheckpointLabel)
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .lineLimit(2)
                             .minimumScaleFactor(0.72)
-                        Text("Usually 6-12 min")
+                        Text("Checkpoint labels are optional")
                             .font(.system(size: 10.5, weight: .medium, design: .rounded))
                             .foregroundStyle(Color(parallax: .textSecondaryLight))
-                        CompactLabel("Started 9:29 AM", systemName: "clock")
-                        CompactLabel("0 pauses  ·  1 interruption", systemName: "pause.circle")
-                        CompactLabel("Setup time 0:56", systemName: "progress.indicator")
+                        CompactLabel("\(viewModel.elapsedSeconds / 60) min elapsed", systemName: "clock")
+                        CompactLabel("\(viewModel.pendingEventCount) queued mutation\(viewModel.pendingEventCount == 1 ? "" : "s")", systemName: "pause.circle")
+                        CompactLabel(viewModel.detourNote ?? "No friction note yet", systemName: "progress.indicator")
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .frame(height: 132)
-            SessionPrimaryStepButton(title: "Done with this step") {}
+            SessionPrimaryStepButton(title: "Done with this step") {
+                Task { await viewModel.completeCurrentCheckpoint() }
+            }
             HStack(spacing: 7) {
-                SessionAction(title: "Pause", icon: "pause.circle")
-                SessionAction(title: "Interruption", icon: "bubble.left")
-                SessionAction(title: "Skip", icon: "forward")
-                SessionAction(title: "Move", icon: "arrow.up.arrow.down")
+                SessionAction(title: viewModel.status == .paused ? "Resume" : "Pause", icon: "pause.circle") {
+                    Task {
+                        if viewModel.status == .paused {
+                            await viewModel.resumeRun()
+                        } else {
+                            await viewModel.pauseCurrentStep()
+                        }
+                    }
+                }
+                SessionAction(title: "Friction", icon: "bubble.left") {
+                    activeDrawer = .frictionEvidence
+                }
+                SessionAction(title: "Skip", icon: "forward") {
+                    Task { await viewModel.skipCurrentCheckpoint() }
+                }
+                SessionAction(title: "Move", icon: "arrow.up.arrow.down") {
+                    Task { await viewModel.moveCurrentCheckpoint() }
+                }
             }
         }
     }
 
     private var stepPreviewCard: some View {
         Card {
-            StepRow(index: 1, title: "Clear counters", estimate: "3-6 min", tag: "setup-heavy", status: .done)
+            StepRow(index: 1, title: "Start activity", estimate: "timed now", tag: "source event", status: .done)
             Divider()
-            StepRow(index: 2, title: "Load dishwasher", estimate: "6-12 min", tag: "often sticky", status: .running)
+            StepRow(index: 2, title: viewModel.currentCheckpointLabel, estimate: "active now", tag: "current", status: .running)
             Divider()
-            StepRow(index: 3, title: "Hand-wash pans", estimate: "5-14 min", tag: "often expands", status: .pending)
+            StepRow(index: 3, title: viewModel.nextCheckpointLabel, estimate: "optional", tag: "pending", status: .pending)
             Button {
                 activeDrawer = .stepDetail
             } label: {
@@ -114,6 +130,7 @@ struct TimingSessionScreen: View {
                     activeDrawer = .frictionEvidence
                 }
                 DrawerLauncher(title: "Insights", subtitle: "What Parallax noticed", icon: "sparkles", role: .checkpoint) {
+                    activeDrawer = .stepDetail
                 }
             }
             HStack(spacing: 8) {
@@ -180,7 +197,11 @@ struct TimingSessionScreen: View {
         case .addStepNote:
             await viewModel.captureStepNote()
         case .confirmFrictionEvidence:
-            await viewModel.confirmSpongeEvidence()
+            await viewModel.confirmFrictionEvidence(
+                resourceName: "missing resource",
+                note: viewModel.detourNote ?? "Confirmed friction evidence.",
+                suggestedPreflightText: nil
+            )
         case .correctFrictionEvidence:
             await viewModel.correctFrictionEvidence()
         case .ignoreFrictionEvidence:
@@ -303,10 +324,10 @@ private struct CompactLabel: View {
 private struct SessionAction: View {
     let title: String
     let icon: String
+    let action: () -> Void
 
     var body: some View {
-        Button {
-        } label: {
+        Button(action: action) {
             Label(title, systemImage: icon)
                 .font(.system(size: 8.8, weight: .semibold, design: .rounded))
                 .lineLimit(1)

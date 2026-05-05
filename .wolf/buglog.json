@@ -288,6 +288,42 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-04T06:07:35Z"
+    },
+    {
+      "id": "bug-025",
+      "timestamp": "2026-05-05T05:01:49Z",
+      "error_message": "User reported the native app had coded Figma/example scenarios as the actual app UI, including wash-dishes/kitchen dummy content and buttons such as Start timer doing nothing.",
+      "file": "apps/ios/Sources/ParallaxApp, apps/ios/Sources/ParallaxCore, apps/ios/App/ParallaxNativeApp.swift",
+      "root_cause": "Phase 8/9 UI implementation treated mockup/example scenario text and fixture flows as runtime defaults instead of using user-created activities, local queued state, and canonical API-backed workflows.",
+      "fix": "Added a dynamic app store and activity setup flow, removed synthesized example activity/preflight defaults, converted runtime views/drawers/actions to selected activity and canonical workflow state, and added Swift source-leak/empty-action regression tests.",
+      "tags": ["phase9", "ios", "dynamic-app", "fixtures", "runtime-ui"],
+      "related_bugs": ["bug-024"],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T05:01:49Z"
+    },
+    {
+      "id": "bug-026",
+      "timestamp": "2026-05-05T05:01:49Z",
+      "error_message": "xcodebuild failed with cannot find type 'CheckpointTemplateDTO' in scope after adding ParallaxDTOs.swift and new app-store files.",
+      "file": "apps/ios/ParallaxNative.xcodeproj/project.pbxproj",
+      "root_cause": "SwiftPM automatically included newly added Swift source files, but the checked-in Xcode project requires explicit file references and PBXSourcesBuildPhase membership.",
+      "fix": "Added ParallaxDTOs.swift to the ParallaxCore group/source phase and ActivitySetupScreen.swift plus ParallaxAppStore.swift to the ParallaxApp group/source phase, then reran simulator xcodebuild successfully.",
+      "tags": ["phase9", "ios", "xcode", "project-membership", "build"],
+      "related_bugs": ["bug-025"],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T05:01:49Z"
+    },
+    {
+      "id": "bug-027",
+      "timestamp": "2026-05-05T05:01:49Z",
+      "error_message": "make typecheck failed with mypy union-attr errors in scripts/phase10_temporal_home_contract.py and invalid string index errors in services/api/tests/test_mutations.py.",
+      "file": "scripts/phase10_temporal_home_contract.py, services/api/tests/test_mutations.py",
+      "root_cause": "The contract script used a helper assertion that did not narrow a regex Match optional for mypy, and the FastAPI HTTPException detail test indexed detail without first narrowing it to a dict.",
+      "fix": "Replaced the helper assertion with an explicit None check before using match.end(), narrowed HTTPException.detail with isinstance(detail, dict), and reran typecheck successfully.",
+      "tags": ["typecheck", "mypy", "phase10", "tests"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T05:01:49Z"
     }
   ]
 }

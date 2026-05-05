@@ -4,8 +4,9 @@ import SwiftUI
 
 struct TimingLauncherSheet: View {
     let activityName: String
-    let startTiming: () async -> Void
+    let startTiming: (MeasurementMode) async -> Void
     let dismiss: () -> Void
+    @State private var selectedMode: MeasurementMode = .wholeTask
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -37,15 +38,25 @@ struct TimingLauncherSheet: View {
                         .font(.system(size: 11.5, weight: .medium, design: .rounded))
                         .padding(.horizontal, 4)
                         .padding(.bottom, 4)
-                    MeasurementOption(selected: false, icon: "clock", title: "Estimate only", detail: "Use what I know already")
+                    MeasurementOption(selected: selectedMode == .estimateOnly, icon: "clock", title: "Estimate only", detail: "Use what I know already") {
+                        selectedMode = .estimateOnly
+                    }
                     Divider()
-                    MeasurementOption(selected: false, icon: "stopwatch", title: "Time once", detail: "Quick start and stop")
+                    MeasurementOption(selected: selectedMode == .wholeTask, icon: "stopwatch", title: "Time once", detail: "Quick start and stop") {
+                        selectedMode = .wholeTask
+                    }
                     Divider()
-                    MeasurementOption(selected: true, icon: "chart.line.uptrend.xyaxis", title: "Checkpointed timing", detail: "Learn the steps inside this workflow")
+                    MeasurementOption(selected: selectedMode == .checkpointed, icon: "chart.line.uptrend.xyaxis", title: "Checkpointed timing", detail: "Learn the steps inside this workflow") {
+                        selectedMode = .checkpointed
+                    }
                     Divider()
-                    MeasurementOption(selected: false, icon: "list.bullet", title: "Routine run", detail: "Follow a saved sequence")
+                    MeasurementOption(selected: selectedMode == .routine, icon: "list.bullet", title: "Routine run", detail: "Follow a saved sequence") {
+                        selectedMode = .routine
+                    }
                     Divider()
-                    MeasurementOption(selected: false, icon: "scope", title: "Calibration run", detail: "Guess first, compare after")
+                    MeasurementOption(selected: selectedMode == .calibration, icon: "scope", title: "Calibration run", detail: "Guess first, compare after") {
+                        selectedMode = .calibration
+                    }
                 }
                 .padding(8)
                 .background(Color(parallax: .cardLight))
@@ -54,7 +65,7 @@ struct TimingLauncherSheet: View {
 
                 HStack(spacing: 10) {
                     PrimaryButton(title: "Start timing", systemName: nil) {
-                        Task { await startTiming() }
+                        Task { await startTiming(selectedMode) }
                     }
                     Button(action: dismiss) {
                         Text("Not now")
@@ -78,30 +89,36 @@ private struct MeasurementOption: View {
     let icon: String
     let title: String
     let detail: String
+    let action: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: selected ? "largecircle.fill.circle" : "circle")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(selected ? Color(parallax: .active) : Color(parallax: .textTertiaryLight))
-            CircleIcon(systemName: icon, tint: Color(parallax: .active), fill: Color(parallax: .activeSoft), size: 30, symbolSize: 13)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.68)
-                Text(detail)
-                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                    .foregroundStyle(Color(parallax: .textSecondaryLight))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.68)
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: selected ? "largecircle.fill.circle" : "circle")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(selected ? Color(parallax: .active) : Color(parallax: .textTertiaryLight))
+                CircleIcon(systemName: icon, tint: Color(parallax: .active), fill: Color(parallax: .activeSoft), size: 30, symbolSize: 13)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.68)
+                    Text(detail)
+                        .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(parallax: .textSecondaryLight))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.68)
+                }
+                Spacer()
             }
-            Spacer()
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(selected ? Color(parallax: .activeSoft).opacity(0.42) : Color.clear)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? Color(parallax: .active) : Color.clear, lineWidth: 1.2))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(selected ? Color(parallax: .activeSoft).opacity(0.42) : Color.clear)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? Color(parallax: .active) : Color.clear, lineWidth: 1.2))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
     }
 }

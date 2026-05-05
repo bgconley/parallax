@@ -33,6 +33,13 @@ public final class TemporalHomeViewModel: ObservableObject {
 
     public func perform(_ action: TemporalHomeAction) async {
         lastAction = action
+        if routeDraftTimingFocusToLauncher(action) {
+            showsLauncher = true
+            return
+        }
+        if suppressReviewWithoutCompletedRun(action) {
+            return
+        }
         let spec = TemporalHomeActionMap.spec(for: action)
         switch spec.classification {
         case .apiWorkflow:
@@ -127,7 +134,7 @@ public final class TemporalHomeViewModel: ObservableObject {
 
     private func askTemporalQuestion(_ question: String) async {
         lastTemporalQuestion = question
-        await timingViewModel.recordTemporalQueryIntent(question)
+        await timingViewModel.submitTemporalQuery(question)
     }
 
     private func apply(_ route: TemporalHomeRoute) {
@@ -168,5 +175,22 @@ public final class TemporalHomeViewModel: ObservableObject {
             return .syncPending
         }
         return .defaultHome
+    }
+
+    private func routeDraftTimingFocusToLauncher(_ action: TemporalHomeAction) -> Bool {
+        guard action == .currentFocusDefault || action == .runningRowDefault else {
+            return false
+        }
+        return timingViewModel.canStart
+    }
+
+    private func suppressReviewWithoutCompletedRun(_ action: TemporalHomeAction) -> Bool {
+        switch action {
+        case .reviewRunDefault, .reviewFocusNeedsReview, .runReviewRowNeedsReview,
+             .baselineSampleRowNeedsReview, .reviewAllNeedsReview, .openReviewExpandedRun:
+            return !(timingViewModel.canSaveReview || timingViewModel.status == .reviewed)
+        default:
+            return false
+        }
     }
 }

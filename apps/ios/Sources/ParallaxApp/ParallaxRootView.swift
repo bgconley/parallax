@@ -44,8 +44,8 @@ public struct ParallaxRootView: View {
                         viewModel: viewModel,
                         showsLauncher: $showsLauncher,
                         initialDrawer: demoDrawer,
-                        startTiming: {
-                            await viewModel.startRun()
+                        startTiming: { mode in
+                            await viewModel.startRun(mode: mode)
                             showsLauncher = false
                             screen = .timingSession
                         }
@@ -65,6 +65,9 @@ public struct ParallaxRootView: View {
                         initialDrawer: demoDrawer,
                         saveReview: {
                             await viewModel.saveUsefulReview()
+                        },
+                        goBack: {
+                            screen = .today
                         }
                     )
                 case .checkpointSetup:

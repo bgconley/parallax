@@ -63,7 +63,10 @@ struct ActivitySetupScreen: View {
     }
 
     private func createActivity() {
-        appStore.createActivity(named: activityName)
+        let name = activityName
         activityName = ""
+        Task {
+            await appStore.createActivity(named: name)
+        }
     }
 }

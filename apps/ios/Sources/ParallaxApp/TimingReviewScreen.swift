@@ -6,6 +6,7 @@ struct TimingReviewScreen: View {
     @ObservedObject var viewModel: TimingSliceViewModel
     let initialDrawer: String?
     let saveReview: () async -> Void
+    let goBack: () -> Void
     @State private var activeDrawer: Phase8DrawerWorkflow?
     @State private var presentedInitialDrawer = false
 
@@ -13,7 +14,8 @@ struct TimingReviewScreen: View {
         CanonicalScreen(
             title: "Timing Review",
             subtitle: "Let’s save what actually happened.",
-            leadingIcon: "chevron.left"
+            leadingIcon: "chevron.left",
+            leadingAction: goBack
         ) {
             summaryCard
             estimateCard

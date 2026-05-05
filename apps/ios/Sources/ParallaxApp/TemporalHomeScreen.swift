@@ -7,14 +7,14 @@ struct TemporalHomeScreen: View {
     @StateObject private var temporalViewModel: TemporalHomeViewModel
     @Binding private var showsLauncher: Bool
     let initialDrawer: String?
-    let startTiming: () async -> Void
+    let startTiming: (MeasurementMode) async -> Void
     @State private var presentedInitialDrawer = false
 
     init(
         viewModel: TimingSliceViewModel,
         showsLauncher: Binding<Bool>,
         initialDrawer: String?,
-        startTiming: @escaping () async -> Void
+        startTiming: @escaping (MeasurementMode) async -> Void
     ) {
         self.timingViewModel = viewModel
         _temporalViewModel = StateObject(wrappedValue: TemporalHomeViewModel(timingViewModel: viewModel))
@@ -42,8 +42,8 @@ struct TemporalHomeScreen: View {
             if showsLauncher || temporalViewModel.showsLauncher {
                 TimingLauncherSheet(
                     activityName: timingViewModel.activityName,
-                    startTiming: {
-                        await startTiming()
+                    startTiming: { mode in
+                        await startTiming(mode)
                         temporalViewModel.dismissLauncher()
                     },
                     dismiss: {
@@ -120,14 +120,16 @@ struct TemporalHomeScreen: View {
         return "\(minutes):\(String(format: "%02d", remainder))"
     }
 
+    @ViewBuilder
     private var defaultHome: some View {
+        let canStart = timingViewModel.canStart
         VStack(spacing: 8) {
             temporalFocusCard(
                 eyebrow: "CURRENT TIMING FOCUS",
                 title: timingViewModel.activityName,
                 detail: focusDetail,
                 role: .active,
-                action: .currentFocusDefault
+                action: canStart ? .startAgainExpandedRun : .currentFocusDefault
             )
             temporalInsightCard(
                 title: "Timing intelligence",
@@ -135,7 +137,7 @@ struct TemporalHomeScreen: View {
                 action: .preflightInsightDefault
             )
             timelineCard(rows: [
-                .button(timingViewModel.activityName, runStatusDetail, .active, .runningRowDefault),
+                .button(timingViewModel.activityName, runStatusDetail, .active, canStart ? .startAgainExpandedRun : .runningRowDefault),
                 .button("Preflight check", "only after real evidence", .detour, .preflightRowDefault),
                 .button("Waiting or pause", "wall time stays separate", .waiting, .waitingRowDefault),
                 .button("Personal range", "ask when evidence exists", .checkpoint, .baselineRowDefault),
@@ -143,7 +145,12 @@ struct TemporalHomeScreen: View {
                 .button("Evidence state", evidenceDetail, .active, .evidenceCurrentRowDefault),
             ])
             quickCapture(action: .quickCaptureDefault, label: "Capture timing evidence")
-            bottomActions(left: ("Review run", "approve learning", .reviewRunDefault), right: ("Ask time", "grounded answer", .askTimeDefault))
+            bottomActions(
+                left: canStart
+                    ? ("Start timer", "begin run", .startAgainExpandedRun)
+                    : ("Review run", "approve learning", .reviewRunDefault),
+                right: ("Ask time", "grounded answer", .askTimeDefault)
+            )
         }
     }
 
@@ -221,25 +228,37 @@ struct TemporalHomeScreen: View {
         }
     }
 
+    @ViewBuilder
     private var groundedAnswer: some View {
+        let answer = timingViewModel.lastTemporalQueryAnswer
+        let question = temporalViewModel.lastTemporalQuestion
+            ?? answer?.question
+            ?? "How long does \(timingViewModel.activityName) take?"
+        let answerTitle = answer?.answerText == nil ? "Answer pending evidence" : "Grounded answer"
+        let answerDetail = answer?.answerText
+            ?? answer?.limitations?.first
+            ?? "Parallax will use reviewed runs, sample size, confidence, and limitations."
+        let reviewedRunDetail = answer.map { "\($0.sampleSize ?? 0) reviewed sample\(($0.sampleSize ?? 0) == 1 ? "" : "s")" }
+            ?? "sample count required"
+        let confidenceDetail = answer?.confidence.map { "confidence \($0)" } ?? "computed from runs"
         VStack(spacing: 8) {
             temporalFocusCard(
                 eyebrow: "QUESTION",
-                title: "How long does \(timingViewModel.activityName) take?",
-                detail: "Answered from reviewed runs and confirmed detours.",
+                title: question,
+                detail: answer?.status == nil ? "Submit a grounded timing question." : "Answer status: \(answer?.status ?? "pending")",
                 role: .detour,
                 action: .questionFocusGroundedAnswer
             )
             temporalInsightCard(
-                title: "Answer pending evidence",
-                detail: "Parallax will use reviewed runs, sample size, confidence, and limitations.",
+                title: answerTitle,
+                detail: answerDetail,
                 action: .answerSummaryGroundedAnswer
             )
             timelineCard(rows: [
-                .button("Reviewed runs", "sample count required", .active, .reviewedRunsRowGroundedAnswer),
+                .button("Reviewed runs", reviewedRunDetail, .active, .reviewedRunsRowGroundedAnswer),
                 .button("Resource detours", "from confirmed evidence", .detour, .resourceDetoursRowGroundedAnswer),
                 .button("Raw notes shown", "off by default", .privacy, .rawNotesRowGroundedAnswer),
-                .button("Median wall time", "computed from runs", .wall, .medianRowGroundedAnswer),
+                .button("Median wall time", confidenceDetail, .wall, .medianRowGroundedAnswer),
                 .button("Slow-case envelope", "computed from runs", .waiting, .slowCaseRowGroundedAnswer),
                 .button("Before starting", "preflight from evidence", .checkpoint, .beforeStartingRowGroundedAnswer),
             ])
@@ -278,6 +297,9 @@ struct TemporalHomeScreen: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityIdentifier(action.rawValue)
     }
 
     private func temporalInsightCard(title: String, detail: String, action: TemporalHomeAction) -> some View {
@@ -306,6 +328,9 @@ struct TemporalHomeScreen: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityIdentifier(action.rawValue)
     }
 
     private func timelineCard(rows: [TemporalTimelineRowModel]) -> some View {
@@ -333,6 +358,9 @@ struct TemporalHomeScreen: View {
                 rowContent(row)
             }
             .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(row.title)
+            .accessibilityIdentifier(action.rawValue)
         case .display:
             rowContent(row)
         }
@@ -404,6 +432,9 @@ struct TemporalHomeScreen: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityIdentifier(action.rawValue)
     }
 
     private func wideAction(title: String, subtitle: String, action: TemporalHomeAction) -> some View {
@@ -428,6 +459,9 @@ struct TemporalHomeScreen: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityIdentifier(action.rawValue)
     }
 
     private func perform(_ action: TemporalHomeAction) {

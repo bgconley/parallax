@@ -14,6 +14,7 @@ public final class TimingSliceViewModel: ObservableObject {
     @Published public private(set) var detourNote: String?
     @Published public private(set) var pendingEventCount: Int
     @Published public private(set) var reviewDecision: ModelUpdateDecision?
+    @Published public private(set) var lastTemporalQueryAnswer: TemporalQueryAnswerDTO?
     @Published public private(set) var errorMessage: String?
 
     public let activityId: UUID
@@ -23,6 +24,7 @@ public final class TimingSliceViewModel: ObservableObject {
     private let pendingSyncService: PendingSyncService?
     private let pendingSyncContext: PendingSyncContext?
     private let mutationSequenceStore: (any MutationSequenceStore)?
+    private let apiClient: ParallaxAPIClient?
     private let now: () -> Date
     private var mutationFactory: MutationEnvelopeFactory
     private var seededMutationFactory = false
@@ -42,6 +44,7 @@ public final class TimingSliceViewModel: ObservableObject {
         pendingSyncService: PendingSyncService? = nil,
         pendingSyncContext: PendingSyncContext? = nil,
         mutationSequenceStore: (any MutationSequenceStore)? = nil,
+        apiClient: ParallaxAPIClient? = nil,
         now: @escaping () -> Date = Date.init
     ) {
         self.activityId = activityId
@@ -55,6 +58,7 @@ public final class TimingSliceViewModel: ObservableObject {
         self.detourNote = nil
         self.pendingEventCount = 0
         self.reviewDecision = nil
+        self.lastTemporalQueryAnswer = nil
         self.errorMessage = nil
         self.deviceId = deviceId
         self.eventStore = eventStore
@@ -62,6 +66,7 @@ public final class TimingSliceViewModel: ObservableObject {
         self.pendingSyncService = pendingSyncService
         self.pendingSyncContext = pendingSyncContext
         self.mutationSequenceStore = mutationSequenceStore
+        self.apiClient = apiClient
         self.now = now
         self.mutationFactory = MutationEnvelopeFactory(clientDeviceId: deviceId)
     }
@@ -98,7 +103,7 @@ public final class TimingSliceViewModel: ObservableObject {
         await syncPendingIfConfigured()
     }
 
-    public func startRun() async {
+    public func startRun(mode: MeasurementMode = .wholeTask) async {
         guard canStart else { return }
         let timestamp = now()
         startedAt = timestamp
@@ -110,7 +115,8 @@ public final class TimingSliceViewModel: ObservableObject {
         detourSeconds = 0
         detourNote = nil
         reviewDecision = nil
-        await appendEvent(.sessionStarted, at: timestamp, payload: ["measurement_mode": MeasurementMode.wholeTask.rawValue])
+        lastTemporalQueryAnswer = nil
+        await appendEvent(.sessionStarted, at: timestamp, payload: ["measurement_mode": mode.rawValue])
     }
 
     public func recordResourceDetour(
@@ -470,8 +476,25 @@ public final class TimingSliceViewModel: ObservableObject {
         )
     }
 
-    public func recordTemporalQueryIntent(_ question: String) async {
+    public func submitTemporalQuery(_ question: String) async {
         let timestamp = now()
+        lastTemporalQueryAnswer = nil
+        if let apiClient, await seedMutationFactoryIfNeeded() {
+            do {
+                let mutation = try await nextMutation(prefix: "temporal_query", at: timestamp)
+                let request = try apiClient.createTemporalQueryRequest(
+                    mutation: mutation,
+                    question: question,
+                    activityId: activityId,
+                    includeRawQuotes: false
+                )
+                lastTemporalQueryAnswer = try await apiClient.send(request, decode: TemporalQueryAnswerDTO.self)
+                errorMessage = nil
+                return
+            } catch {
+                errorMessage = "Question saved locally. Backend answer can retry when reachable."
+            }
+        }
         await appendEvent(
             .intentRecorded,
             at: timestamp,

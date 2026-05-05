@@ -28,12 +28,15 @@ public final class ParallaxAppStore: ObservableObject {
     @Published public private(set) var errorMessage: String?
 
     private let config: ParallaxRuntimeConfig?
+    private let apiClient: ParallaxAPIClient?
     private let eventStoreFactory: @Sendable (UUID) -> any PendingTimingEventStore
     private let preflightStoreFactory: @Sendable (UUID) -> any PendingPreflightDecisionStore
     private let sequenceStore: (any MutationSequenceStore)?
+    private var appMutationFactory: MutationEnvelopeFactory
 
     public init(
         config: ParallaxRuntimeConfig? = nil,
+        apiClient: ParallaxAPIClient? = nil,
         activities: [ParallaxActivitySummary] = [],
         selectedActivity: ParallaxActivitySummary? = nil,
         timingViewModel: TimingSliceViewModel? = nil,
@@ -42,17 +45,20 @@ public final class ParallaxAppStore: ObservableObject {
         sequenceStore: (any MutationSequenceStore)? = nil
     ) {
         self.config = config
+        self.apiClient = apiClient ?? config.map { ParallaxAPIClient(baseURL: $0.apiBaseURL, auth: $0.auth) }
         self.activities = activities
         self.selectedActivity = selectedActivity
         self.eventStoreFactory = eventStoreFactory
         self.preflightStoreFactory = preflightStoreFactory
         self.sequenceStore = sequenceStore
+        self.appMutationFactory = MutationEnvelopeFactory(clientDeviceId: config?.deviceId ?? "ios-local-device")
         if let timingViewModel {
             self.timingViewModel = timingViewModel
         } else if let selectedActivity {
             self.timingViewModel = Self.makeTimingViewModel(
                 activity: selectedActivity,
                 config: config,
+                apiClient: self.apiClient,
                 eventStore: eventStoreFactory(selectedActivity.id),
                 preflightStore: preflightStoreFactory(selectedActivity.id),
                 sequenceStore: sequenceStore
@@ -89,24 +95,36 @@ public final class ParallaxAppStore: ObservableObject {
 
     public func bootstrap() async {
         guard selectedActivity == nil else { return }
-        guard let seedName = config?.activityName else {
+        if let seedName = config?.activityName {
+            await bootstrapSeedActivity(named: seedName)
             return
         }
-        let activity = ParallaxActivitySummary(
-            id: config?.activityId ?? UUID(),
-            displayName: seedName,
-            source: .uatSeed
-        )
-        activities = [activity]
-        selectActivity(activity)
+        await loadBackendActivitiesIfAvailable()
     }
 
-    public func createActivity(named rawName: String) {
+    public func createActivity(named rawName: String) async {
         let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else {
             errorMessage = "Enter an activity name to start timing."
             return
         }
+
+        if let apiClient {
+            do {
+                let created = try await createRemoteActivity(named: name, client: apiClient)
+                let activity = ParallaxActivitySummary(
+                    id: created.id,
+                    displayName: created.displayName,
+                    source: .backend
+                )
+                upsertActivity(activity)
+                selectActivity(activity)
+                return
+            } catch {
+                errorMessage = "Saved locally. Sync can create the backend activity when reachable."
+            }
+        }
+
         let activity = ParallaxActivitySummary(id: UUID(), displayName: name, source: .local)
         activities.append(activity)
         selectActivity(activity)
@@ -118,15 +136,89 @@ public final class ParallaxAppStore: ObservableObject {
         timingViewModel = Self.makeTimingViewModel(
             activity: activity,
             config: config,
+            apiClient: apiClient,
             eventStore: eventStoreFactory(activity.id),
             preflightStore: preflightStoreFactory(activity.id),
             sequenceStore: sequenceStore
         )
     }
 
+    private func bootstrapSeedActivity(named seedName: String) async {
+        if let existing = activities.first(where: { $0.displayName.caseInsensitiveCompare(seedName) == .orderedSame }) {
+            selectActivity(existing)
+            return
+        }
+        if let apiClient {
+            do {
+                let activity = try await ensureRemoteActivity(named: seedName, client: apiClient)
+                let summary = ParallaxActivitySummary(
+                    id: activity.id,
+                    displayName: activity.displayName,
+                    source: .backend
+                )
+                upsertActivity(summary)
+                selectActivity(summary)
+                return
+            } catch {
+                errorMessage = "Using local seed activity. Backend sync can retry when reachable."
+            }
+        }
+        let activity = ParallaxActivitySummary(
+            id: config?.activityId ?? UUID(),
+            displayName: seedName,
+            source: .uatSeed
+        )
+        activities = [activity]
+        selectActivity(activity)
+    }
+
+    private func loadBackendActivitiesIfAvailable() async {
+        guard let apiClient else { return }
+        do {
+            let request = try apiClient.listActivitiesRequest(limit: 25)
+            let remoteActivities = try await apiClient.send(request, decode: [ActivityDTO].self)
+            let summaries = remoteActivities.map {
+                ParallaxActivitySummary(id: $0.id, displayName: $0.displayName, source: .backend)
+            }
+            activities = summaries
+            errorMessage = nil
+        } catch {
+            errorMessage = "Backend activities unavailable. You can still create and time locally."
+        }
+    }
+
+    private func ensureRemoteActivity(named name: String, client: ParallaxAPIClient) async throws -> ActivityDTO {
+        let listRequest = try client.listActivitiesRequest(q: name, limit: 10)
+        let matches = try await client.send(listRequest, decode: [ActivityDTO].self)
+        if let exact = matches.first(where: { $0.displayName.caseInsensitiveCompare(name) == .orderedSame }) {
+            return exact
+        }
+        return try await createRemoteActivity(named: name, client: client)
+    }
+
+    private func createRemoteActivity(named name: String, client: ParallaxAPIClient) async throws -> ActivityDTO {
+        let mutation = appMutationFactory.next(prefix: "create_activity", at: Date())
+        try await sequenceStore?.saveSequence(
+            mutation.clientSequence,
+            clientDeviceId: mutation.clientDeviceId
+        )
+        let request = try client.createActivityRequest(
+            displayName: name,
+            mutation: mutation,
+            defaultTimingMode: .wholeTask
+        )
+        return try await client.send(request, decode: ActivityDTO.self)
+    }
+
+    private func upsertActivity(_ activity: ParallaxActivitySummary) {
+        activities.removeAll { $0.id == activity.id }
+        activities.append(activity)
+    }
+
     private static func makeTimingViewModel(
         activity: ParallaxActivitySummary,
         config: ParallaxRuntimeConfig?,
+        apiClient: ParallaxAPIClient?,
         eventStore: any PendingTimingEventStore,
         preflightStore: any PendingPreflightDecisionStore,
         sequenceStore: (any MutationSequenceStore)?
@@ -134,11 +226,10 @@ public final class ParallaxAppStore: ObservableObject {
         let deviceId = config?.deviceId ?? "ios-local-device"
         var pendingSyncService: PendingSyncService?
         var pendingSyncContext: PendingSyncContext?
-        if let config {
+        if let config, let client = apiClient {
             let syncStateStore = FilePendingSyncStateStore(
                 fileURL: appSupportRoot().appendingPathComponent("pending-sync-state.json")
             )
-            let client = ParallaxAPIClient(baseURL: config.apiBaseURL, auth: config.auth)
             pendingSyncService = PendingSyncService(
                 client: client,
                 eventStore: eventStore,
@@ -160,7 +251,8 @@ public final class ParallaxAppStore: ObservableObject {
             preflightDecisionStore: preflightStore,
             pendingSyncService: pendingSyncService,
             pendingSyncContext: pendingSyncContext,
-            mutationSequenceStore: sequenceStore
+            mutationSequenceStore: sequenceStore,
+            apiClient: apiClient
         )
     }
 

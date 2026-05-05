@@ -18,7 +18,7 @@ import Testing
 @Test func appStoreCreatesAndSelectsArbitraryActivity() async throws {
     let store = ParallaxAppStore.localEmpty()
 
-    store.createActivity(named: "UAT Dynamic Activity")
+    await store.createActivity(named: "UAT Dynamic Activity")
 
     let selected = try #require(store.selectedActivity)
     #expect(selected.displayName == "UAT Dynamic Activity")

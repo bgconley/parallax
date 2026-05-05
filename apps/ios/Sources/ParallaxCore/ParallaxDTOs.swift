@@ -126,6 +126,17 @@ public struct TemporalQueryAnswerDTO: Codable, Equatable, Identifiable, Sendable
     public let sampleSize: Int?
     public let evidence: [TemporalQueryEvidenceDTO]?
     public let limitations: [String]?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case question
+        case status
+        case answerText = "answer"
+        case confidence
+        case sampleSize
+        case evidence
+        case limitations
+    }
 }
 
 public struct TemporalQueryEvidenceDTO: Codable, Equatable, Identifiable, Sendable {

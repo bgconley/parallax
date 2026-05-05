@@ -6,7 +6,22 @@ struct CanonicalScreen<Content: View>: View {
     let title: String
     let subtitle: String?
     let leadingIcon: String
+    let leadingAction: (() -> Void)?
     @ViewBuilder let content: () -> Content
+
+    init(
+        title: String,
+        subtitle: String?,
+        leadingIcon: String,
+        leadingAction: (() -> Void)? = nil,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.leadingIcon = leadingIcon
+        self.leadingAction = leadingAction
+        self.content = content
+    }
 
     var body: some View {
         ScrollView {
@@ -22,7 +37,15 @@ struct CanonicalScreen<Content: View>: View {
 
     private var header: some View {
         HStack(alignment: .top) {
-            CircleIcon(systemName: leadingIcon)
+            if let leadingAction {
+                Button(action: leadingAction) {
+                    CircleIcon(systemName: leadingIcon)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Back")
+            } else {
+                CircleIcon(systemName: leadingIcon)
+            }
             Spacer()
             VStack(spacing: 3) {
                 Text(title)

@@ -26,6 +26,7 @@ import Testing
     var timestamps = [
         Date(timeIntervalSince1970: 1_775_100_000),
         Date(timeIntervalSince1970: 1_775_100_001),
+        Date(timeIntervalSince1970: 1_775_100_002),
     ]
     let timing = TimingSliceViewModel(
         activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
@@ -37,6 +38,12 @@ import Testing
     )
     let temporal = TemporalHomeViewModel(timingViewModel: timing, initialSurface: .defaultHome)
 
+    await temporal.perform(.currentFocusDefault)
+    #expect(temporal.showsLauncher)
+    #expect(temporal.surfaceState == .defaultHome)
+
+    temporal.dismissLauncher()
+    await timing.startRun()
     await temporal.perform(.currentFocusDefault)
     #expect(temporal.surfaceState == .expandedTimingRun)
 

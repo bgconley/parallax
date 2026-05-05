@@ -101,6 +101,84 @@ import Testing
     #expect(try await eventStore.load().count == 1)
 }
 
+@Test func syncUploadsAnnotationCapturedEventsThroughAnnotationEndpoint() async throws {
+    let transport = RecordingHTTPTransport(responses: [
+        .json(200, #"{"recommended_activity_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}"#),
+        .json(201, #"{"id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"}"#),
+        .json(
+            201,
+            """
+            {
+              "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+              "user_id": "99999999-9999-4999-8999-999999999999",
+              "session_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+              "checkpoint_run_id": null,
+              "input_mode": "text",
+              "raw_text": "UAT dynamic note should survive sync.",
+              "redacted_text": null,
+              "transcript_confidence": null,
+              "audio_object_ref": null,
+              "timer_elapsed_seconds": 60,
+              "timer_active_seconds": 50,
+              "occurred_at": "2026-05-05T00:00:00Z",
+              "privacy_class": "normal",
+              "status": "captured",
+              "client_mutation_id": "annotation_captured-1",
+              "client_device_id": "ios-uat-device",
+              "idempotency_key": "ios-uat-device:1",
+              "capture_context_snapshot_id": null,
+              "capture_context_snapshot_ref": null,
+              "metadata": {"capture_method": "manual_button"},
+              "created_at": "2026-05-05T00:00:00Z",
+              "updated_at": "2026-05-05T00:00:00Z"
+            }
+            """
+        ),
+    ])
+    let localActivityId = UUID(uuidString: "11111111-1111-4111-8111-111111111111")!
+    let localSessionId = UUID(uuidString: "22222222-2222-4222-8222-222222222222")!
+    let eventStore = InMemoryPendingTimingEventStore(events: [
+        pendingEvent(
+            .annotationCaptured,
+            sessionId: localSessionId,
+            sequence: 1,
+            notePreview: "UAT dynamic note should survive sync.",
+            payload: ["source": "timing_session_friction"]
+        ),
+    ])
+    let service = PendingSyncService(
+        client: ParallaxAPIClient(
+            baseURL: URL(string: "http://127.0.0.1:18000")!,
+            auth: .bearer(token: "uat-token"),
+            transport: transport
+        ),
+        eventStore: eventStore,
+        preflightDecisionStore: InMemoryPendingPreflightDecisionStore(),
+        syncStateStore: InMemoryPendingSyncStateStore()
+    )
+
+    let result = try await service.sync(
+        context: PendingSyncContext(
+            localActivityId: localActivityId,
+            activityDisplayName: "Dynamic test activity",
+            deviceId: "ios-uat-device"
+        )
+    )
+
+    #expect(result.uploadedTimingEventCount == 1)
+    #expect(try await eventStore.load().isEmpty)
+    let requests = await transport.recordedRequests()
+    #expect(requests.map(\.path) == [
+        "/v1/activities/resolve",
+        "/v1/timing/sessions",
+        "/v1/timing/sessions/BBBBBBBB-BBBB-4BBB-8BBB-BBBBBBBBBBBB/annotations",
+    ])
+    let body = try #require(requests.last?.body?.data(using: .utf8))
+    let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+    #expect(json["raw_text"] as? String == "UAT dynamic note should survive sync.")
+    #expect(json["input_mode"] as? String == AnnotationInputMode.text.rawValue)
+}
+
 @Test func syncCreatesRemotePreflightCheckBeforeUploadingDecision() async throws {
     let transport = RecordingHTTPTransport(responses: [
         .json(200, #"{"recommended_activity_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}"#),
@@ -155,6 +233,7 @@ private func pendingEvent(
     _ eventType: TimingEventType,
     sessionId: UUID,
     sequence: Int,
+    notePreview: String? = nil,
     payload: [String: String] = [:]
 ) -> PendingTimingEvent {
     PendingTimingEvent(
@@ -165,6 +244,7 @@ private func pendingEvent(
         timerElapsedSeconds: sequence * 60,
         timerActiveSeconds: sequence * 50,
         captureMethod: .manualButton,
+        notePreview: notePreview,
         payload: payload
     )
 }

@@ -32,6 +32,7 @@ public final class ParallaxAppStore: ObservableObject {
     private let eventStoreFactory: @Sendable (UUID) -> any PendingTimingEventStore
     private let preflightStoreFactory: @Sendable (UUID) -> any PendingPreflightDecisionStore
     private let sequenceStore: (any MutationSequenceStore)?
+    private let selectedActivityDefaultsKey: String
     private var appMutationFactory: MutationEnvelopeFactory
 
     public init(
@@ -51,6 +52,7 @@ public final class ParallaxAppStore: ObservableObject {
         self.eventStoreFactory = eventStoreFactory
         self.preflightStoreFactory = preflightStoreFactory
         self.sequenceStore = sequenceStore
+        self.selectedActivityDefaultsKey = "parallax.selectedActivityId.\(config?.deviceId ?? "ios-local-device")"
         self.appMutationFactory = MutationEnvelopeFactory(clientDeviceId: config?.deviceId ?? "ios-local-device")
         if let timingViewModel {
             self.timingViewModel = timingViewModel
@@ -132,6 +134,7 @@ public final class ParallaxAppStore: ObservableObject {
 
     public func selectActivity(_ activity: ParallaxActivitySummary) {
         selectedActivity = activity
+        UserDefaults.standard.set(activity.id.uuidString, forKey: selectedActivityDefaultsKey)
         errorMessage = nil
         timingViewModel = Self.makeTimingViewModel(
             activity: activity,
@@ -146,6 +149,16 @@ public final class ParallaxAppStore: ObservableObject {
     private func bootstrapSeedActivity(named seedName: String) async {
         if let existing = activities.first(where: { $0.displayName.caseInsensitiveCompare(seedName) == .orderedSame }) {
             selectActivity(existing)
+            return
+        }
+        if let activityId = config?.activityId {
+            let activity = ParallaxActivitySummary(
+                id: activityId,
+                displayName: seedName,
+                source: .uatSeed
+            )
+            activities = [activity]
+            selectActivity(activity)
             return
         }
         if let apiClient {
@@ -181,6 +194,9 @@ public final class ParallaxAppStore: ObservableObject {
                 ParallaxActivitySummary(id: $0.id, displayName: $0.displayName, source: .backend)
             }
             activities = summaries
+            if let activity = preferredActivity(from: summaries) {
+                selectActivity(activity)
+            }
             errorMessage = nil
         } catch {
             errorMessage = "Backend activities unavailable. You can still create and time locally."
@@ -213,6 +229,15 @@ public final class ParallaxAppStore: ObservableObject {
     private func upsertActivity(_ activity: ParallaxActivitySummary) {
         activities.removeAll { $0.id == activity.id }
         activities.append(activity)
+    }
+
+    private func preferredActivity(from activities: [ParallaxActivitySummary]) -> ParallaxActivitySummary? {
+        if let selectedIdString = UserDefaults.standard.string(forKey: selectedActivityDefaultsKey),
+           let selectedId = UUID(uuidString: selectedIdString),
+           let selected = activities.first(where: { $0.id == selectedId }) {
+            return selected
+        }
+        return activities.count == 1 ? activities.first : nil
     }
 
     private static func makeTimingViewModel(

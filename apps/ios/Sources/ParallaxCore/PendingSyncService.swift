@@ -222,8 +222,28 @@ public actor PendingSyncService {
             _ = try await client.send(reviewRequest, decode: RemoteIDResponse.self)
             return
         }
+        if let annotationRequest = try annotationRequest(for: event, remoteSessionId: remoteSessionId) {
+            _ = try await client.send(annotationRequest, decode: RemoteIDResponse.self)
+            return
+        }
         let request = try client.appendTimingEventRequest(event, remoteSessionId: remoteSessionId)
         _ = try await client.send(request, decode: RemoteIDResponse.self)
+    }
+
+    private func annotationRequest(for event: PendingTimingEvent, remoteSessionId: UUID) throws -> URLRequest? {
+        guard event.eventType == .annotationCaptured,
+              let rawText = event.notePreview?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !rawText.isEmpty
+        else {
+            return nil
+        }
+        return try client.createAnnotationRequest(
+            sessionId: remoteSessionId,
+            mutation: event.mutation,
+            rawText: rawText,
+            occurredAt: event.clientTime,
+            captureMethod: event.captureMethod ?? .manualButton
+        )
     }
 
     private func reviewRequest(for event: PendingTimingEvent, remoteSessionId: UUID) throws -> URLRequest? {

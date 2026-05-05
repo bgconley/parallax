@@ -7,6 +7,7 @@ struct TimingSessionScreen: View {
     let initialDrawer: String?
     let finishAndReview: () async -> Void
     @State private var activeDrawer: Phase8DrawerWorkflow?
+    @State private var showsFrictionCapture = false
     @State private var presentedInitialDrawer = false
 
     var body: some View {
@@ -29,6 +30,19 @@ struct TimingSessionScreen: View {
         .overlay {
             if let activeDrawer {
                 sessionDrawerOverlay(activeDrawer)
+            }
+            if showsFrictionCapture {
+                FrictionCaptureDrawerView(
+                    activityName: viewModel.activityName,
+                    existingNote: viewModel.detourNote,
+                    dismiss: { showsFrictionCapture = false },
+                    save: { resourceName, note in
+                        Task {
+                            await viewModel.logFriction(resourceName: resourceName, note: note)
+                            showsFrictionCapture = false
+                        }
+                    }
+                )
             }
         }
         .task {
@@ -90,7 +104,7 @@ struct TimingSessionScreen: View {
                     }
                 }
                 SessionAction(title: "Friction", icon: "bubble.left") {
-                    activeDrawer = .frictionEvidence
+                    showsFrictionCapture = true
                 }
                 SessionAction(title: "Skip", icon: "forward") {
                     Task { await viewModel.skipCurrentCheckpoint() }
@@ -127,7 +141,7 @@ struct TimingSessionScreen: View {
                 .frame(width: 42, height: 4)
             HStack(spacing: 8) {
                 DrawerLauncher(title: "Log friction", subtitle: "What slowed this down", icon: "bubble.left", role: .waiting) {
-                    activeDrawer = .frictionEvidence
+                    showsFrictionCapture = true
                 }
                 DrawerLauncher(title: "Insights", subtitle: "What Parallax noticed", icon: "sparkles", role: .checkpoint) {
                     activeDrawer = .stepDetail
@@ -213,6 +227,87 @@ struct TimingSessionScreen: View {
              .snoozePreflight, .hidePreflight, .retirePreflight, .viewPreflightRuns,
              .updateCheckpointPlan, .makeCheckpointOptional, .startFromCheckpoint:
             break
+        }
+    }
+}
+
+private struct FrictionCaptureDrawerView: View {
+    let activityName: String
+    let existingNote: String?
+    let dismiss: () -> Void
+    let save: (_ resourceName: String, _ note: String) -> Void
+
+    @State private var resourceName = ""
+    @State private var note = ""
+
+    private var trimmedNote: String {
+        note.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var body: some View {
+        Phase8DrawerOverlay(figmaSheetHeight: 520, dismiss: dismiss) { _ in
+            VStack(alignment: .leading, spacing: 14) {
+                Capsule()
+                    .fill(Color(parallax: .detour))
+                    .frame(width: 44, height: 4)
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 2)
+                Text("Log friction")
+                    .font(.system(size: 25, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(parallax: .textPrimaryLight))
+                Text(activityName)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color(parallax: .detourText))
+                    .lineLimit(2)
+                Text("Capture what slowed this run down. The raw note is saved as a private annotation, then the detour is queued as wall-only friction.")
+                    .font(.system(size: 13, weight: .regular, design: .rounded))
+                    .foregroundStyle(Color(parallax: .textSecondaryLight))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    TextField("Resource or blocker", text: $resourceName)
+                        .textFieldStyle(.roundedBorder)
+                        .accessibilityLabel("Resource or blocker")
+                    TextField("What slowed this down?", text: $note, axis: .vertical)
+                        .lineLimit(3...5)
+                        .textFieldStyle(.roundedBorder)
+                        .accessibilityLabel("What slowed this down?")
+                }
+                .padding(14)
+                .background(Color(parallax: .elevatedLight))
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+
+                if let existingNote {
+                    Label(existingNote, systemImage: "checkmark.circle")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(parallax: .textSecondaryLight))
+                        .lineLimit(2)
+                }
+
+                HStack(spacing: 9) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("Cancel")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .frame(maxWidth: .infinity, minHeight: 42)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button {
+                        save(resourceName, trimmedNote)
+                    } label: {
+                        Label("Save friction", systemImage: "tray.and.arrow.down")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .frame(maxWidth: .infinity, minHeight: 42)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(trimmedNote.isEmpty)
+                    .opacity(trimmedNote.isEmpty ? 0.55 : 1)
+                }
+            }
+            .padding(.top, 34)
+            .padding(.horizontal, 20)
         }
     }
 }

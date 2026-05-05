@@ -90,6 +90,37 @@ import Testing
     #expect(events[5].payload["scopes"] == "friction_patterns,preflight_suggestions")
 }
 
+@MainActor
+@Test func dynamicFrictionLoggingQueuesUserNoteAndDetour() async throws {
+    let store = InMemoryPendingTimingEventStore()
+    var timestamps = [
+        Date(timeIntervalSince1970: 1_775_011_000),
+        Date(timeIntervalSince1970: 1_775_011_060),
+        Date(timeIntervalSince1970: 1_775_011_120),
+    ]
+    let viewModel = TimingSliceViewModel(
+        activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
+        activityName: "Dynamic friction activity",
+        sessionId: UUID(uuidString: "66666666-6666-4666-8666-666666666666")!,
+        deviceId: "ios-friction-test-device",
+        eventStore: store,
+        now: { timestamps.removeFirst() }
+    )
+
+    await viewModel.startRun()
+    await viewModel.logFriction(
+        resourceName: "dynamic blocker",
+        note: "UAT dynamic note should survive sync."
+    )
+
+    let events = try await store.load()
+    #expect(events.map(\.eventType) == [.sessionStarted, .annotationCaptured, .resourceDetourStarted])
+    #expect(events[1].notePreview == "UAT dynamic note should survive sync.")
+    #expect(events[1].payload["source"] == "timing_session_friction")
+    #expect(events[2].payload["resource_name"] == "dynamic blocker")
+    #expect(viewModel.detourNote == "UAT dynamic note should survive sync.")
+}
+
 @Test func phase8DrawerWorkflowAliasesMatchFigmaHandoffNames() {
     #expect(Phase8DrawerWorkflow(rawDemoValue: "step_detail") == .stepDetail)
     #expect(Phase8DrawerWorkflow(rawDemoValue: "friction_evidence") == .frictionEvidence)

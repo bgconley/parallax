@@ -143,6 +143,24 @@ public final class TimingSliceViewModel: ObservableObject {
         )
     }
 
+    public func logFriction(resourceName: String, note: String) async {
+        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedNote.isEmpty else {
+            errorMessage = "Add a short note before saving friction."
+            return
+        }
+        let trimmedResource = resourceName.trimmingCharacters(in: .whitespacesAndNewlines)
+        await captureTemporalHomeNote(
+            trimmedNote,
+            source: "timing_session_friction",
+            captureMethod: .manualButton
+        )
+        await recordResourceDetour(
+            resourceName: trimmedResource.isEmpty ? "user-entered friction" : trimmedResource,
+            note: trimmedNote
+        )
+    }
+
     public func confirmFrictionEvidence(
         resourceName: String,
         note: String,
@@ -247,16 +265,21 @@ public final class TimingSliceViewModel: ObservableObject {
         await captureTemporalHomeNote("Note for \(currentCheckpointLabel).")
     }
 
-    public func captureTemporalHomeNote(_ note: String) async {
+    public func captureTemporalHomeNote(
+        _ note: String,
+        source: String = "temporal_home",
+        captureMethod: CaptureMethod = .quickChip
+    ) async {
         let timestamp = now()
+        let inputMode = annotationInputMode(for: captureMethod)
         await appendEvent(
             .annotationCaptured,
             at: timestamp,
-            captureMethod: .quickChip,
+            captureMethod: captureMethod,
             notePreview: note,
             payload: [
-                "input_mode": AnnotationInputMode.quickChip.rawValue,
-                "source": "temporal_home",
+                "input_mode": inputMode.rawValue,
+                "source": source,
             ]
         )
     }
@@ -630,6 +653,21 @@ public final class TimingSliceViewModel: ObservableObject {
             .map(\.mutation.clientSequence)
             .max() ?? 0
         return max(timingMax, preflightMax)
+    }
+
+    private func annotationInputMode(for captureMethod: CaptureMethod) -> AnnotationInputMode {
+        switch captureMethod {
+        case .voice:
+            return .voice
+        case .quickChip:
+            return .quickChip
+        case .backgroundSignal:
+            return .systemDetected
+        case .reviewReconstruction:
+            return .reviewNote
+        case .manualButton, .lockScreenWidget, .watch, .shortcut, .nfcTag, .calendarImport:
+            return .text
+        }
     }
 
     private func updateDurations(at timestamp: Date) {

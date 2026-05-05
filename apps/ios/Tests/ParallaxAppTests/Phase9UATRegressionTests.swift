@@ -55,6 +55,49 @@ import Testing
 }
 
 @MainActor
+@Test func connectedBootstrapSelectsOnlyBackendActivityAfterRelaunch() async throws {
+    UserDefaults.standard.removeObject(forKey: "parallax.selectedActivityId.ios-uat-relaunch-device")
+    let transport = RecordingHTTPTransport(responses: [
+        .json(
+            200,
+            """
+            [{
+              "id": "abababab-abab-4aba-8bab-abababababab",
+              "user_id": "11111111-1111-4111-8111-111111111111",
+              "display_name": "Dynamic persisted activity",
+              "canonical_key": "dynamic-persisted-activity",
+              "status": "active",
+              "default_timing_mode": "whole_task",
+              "privacy_class": "normal",
+              "created_at": "2026-05-05T00:00:00Z",
+              "updated_at": "2026-05-05T00:00:00Z"
+            }]
+            """
+        ),
+    ])
+    let client = ParallaxAPIClient(
+        baseURL: URL(string: "http://127.0.0.1:18000")!,
+        auth: .devHeader(userId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!),
+        transport: transport
+    )
+    let store = ParallaxAppStore(
+        config: ParallaxRuntimeConfig(
+            apiBaseURL: URL(string: "http://127.0.0.1:18000")!,
+            auth: .devHeader(userId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!),
+            deviceId: "ios-uat-relaunch-device"
+        ),
+        apiClient: client,
+        eventStoreFactory: { _ in InMemoryPendingTimingEventStore() }
+    )
+
+    await store.bootstrap()
+
+    #expect(store.selectedActivity?.displayName == "Dynamic persisted activity")
+    #expect(store.timingViewModel?.activityName == "Dynamic persisted activity")
+    #expect(await transport.recordedRequests().map(\.path) == ["/v1/activities"])
+}
+
+@MainActor
 @Test func draftTemporalHomePrimaryActionsOpenLauncherAndDoNotOpenReview() async throws {
     let timing = TimingSliceViewModel(
         activityId: UUID(uuidString: "22222222-2222-4222-8222-222222222222")!,

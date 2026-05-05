@@ -270,6 +270,30 @@ class TimingRepository:
                 },
             },
         )
+        self._store.session_events.setdefault(session_id, []).append(
+            TimingEvent(
+                id=uuid4(),
+                user_id=user_id,
+                session_id=session_id,
+                event_type="review_saved",
+                client_time=reviewed_at,
+                server_time=reviewed_at,
+                timer_elapsed_seconds=totals.wall_seconds,
+                timer_active_seconds=totals.active_seconds,
+                client_sequence=request.mutation.client_sequence,
+                client_mutation_id=request.mutation.client_mutation_id,
+                client_device_id=request.mutation.client_device_id,
+                idempotency_key=request.mutation.idempotency_key,
+                capture_context_snapshot_id=None,
+                capture_context_snapshot_ref=None,
+                payload={
+                    "model_update_decision_id": str(decision.id),
+                    "decision": request.decision,
+                    "model_inclusion": request.model_inclusion,
+                    "scopes": request.scopes,
+                },
+            )
+        )
         self._store.review_decisions.setdefault(session_id, []).append(decision)
         self._store.sessions[session_id] = session.model_copy(
             update={

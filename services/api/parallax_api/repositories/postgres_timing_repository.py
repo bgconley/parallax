@@ -372,6 +372,31 @@ class PostgresTimingRepository:
                 raise RuntimeError("model update decision insert returned no row")
             decision = _decision_from_row(row)
             cursor.execute(
+                INSERT_EVENT_SQL,
+                (
+                    user_id,
+                    session_id,
+                    "review_saved",
+                    decision.reviewed_at,
+                    totals.wall_seconds,
+                    totals.active_seconds,
+                    request.mutation.client_sequence,
+                    request.mutation.client_mutation_id,
+                    request.mutation.client_device_id,
+                    request.mutation.idempotency_key,
+                    None,
+                    None,
+                    Jsonb(
+                        {
+                            "model_update_decision_id": str(decision.id),
+                            "decision": request.decision,
+                            "model_inclusion": request.model_inclusion,
+                            "scopes": request.scopes,
+                        }
+                    ),
+                ),
+            )
+            cursor.execute(
                 """
                 update timing_session
                 set status = %s,

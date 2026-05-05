@@ -336,6 +336,18 @@
       "related_bugs": ["bug-025"],
       "occurrences": 1,
       "last_seen": "2026-05-05T06:42:00Z"
+    },
+    {
+      "id": "bug-029",
+      "timestamp": "2026-05-05T06:47:00Z",
+      "error_message": "Final UAT evidence review found API review saves persisted model_update_decision and audit log data but did not create a canonical timing_event row with event_type review_saved.",
+      "file": "services/api/parallax_api/repositories/postgres_timing_repository.py, services/api/parallax_api/repositories/timing_repository.py, services/api/tests/test_phase2_review_profile.py",
+      "root_cause": "The Phase 2 review implementation treated model_update_decision as the sole durable review source while the temporal domain model and timing_event enum also define review_saved as a source timing event.",
+      "fix": "Inserted a review_saved timing_event inside the review mutation apply path for both Postgres and in-memory repositories, populated payload with decision/model_inclusion/scopes/model_update_decision_id, and added regression coverage proving duplicate review replay keeps a single review_saved event.",
+      "tags": ["phase9", "phase2", "review", "timing-event", "idempotency"],
+      "related_bugs": ["bug-025", "bug-028"],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T06:47:00Z"
     }
   ]
 }

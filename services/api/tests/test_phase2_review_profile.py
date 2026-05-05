@@ -139,6 +139,14 @@ def test_review_derives_wall_only_friction_spans_and_updates_profile() -> None:
     assert fetched["active_seconds"] == 900
     assert fetched["detour_seconds"] == 600
     assert fetched["interruption_seconds"] == 300
+    review_events = [
+        event for event in fetched["events"] if event["event_type"] == "review_saved"
+    ]
+    assert len(review_events) == 1
+    assert review_events[0]["timer_elapsed_seconds"] == 1800
+    assert review_events[0]["timer_active_seconds"] == 900
+    assert review_events[0]["payload"]["decision"] == "save_useful_run"
+    assert review_events[0]["payload"]["model_inclusion"] == "full"
 
     spans_by_type = {span["span_type"]: span for span in fetched["spans"]}
     assert spans_by_type["resource_detour"]["count_policy"] == "wall_only"
@@ -243,6 +251,11 @@ def test_duplicate_review_replay_does_not_double_count_profile_sample() -> None:
         headers={"X-Parallax-User-Id": USER_ID},
     ).json()
     assert profile["latest_stats"]["sample_size"] == 1
+    fetched = client.get(
+        f"/v1/timing/sessions/{session_id}",
+        headers={"X-Parallax-User-Id": USER_ID},
+    ).json()
+    assert [event["event_type"] for event in fetched["events"]].count("review_saved") == 1
 
 
 def test_discard_all_marks_bad_timer_and_excludes_activity_profile_baseline() -> None:

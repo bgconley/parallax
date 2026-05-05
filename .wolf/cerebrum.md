@@ -48,7 +48,7 @@
 - **Phase 9 app remediation:** The current remediation scope is app-wide dynamic behavior, not only Temporal Home. Runtime iOS screens must derive from user data, local state, and canonical APIs; Figma/example scenarios belong only in preview/test fixtures or artifact examples.
 - **Phase 9 UAT dynamic friction:** User-facing "Log friction" is not the fixed Phase 8 `friction_evidence` mock drawer. It must collect user-entered blocker/note text, queue a canonical `annotation_captured` source action, queue a wall-only `resource_detour_started` event, and sync raw text through `POST /v1/timing/sessions/{session_id}/annotations`.
 - **Simulator backend env:** For reliable simulator launches against the GPU-node backend tunnel, pass runtime settings as `SIMCTL_CHILD_PARALLAX_*` env vars to `xcrun simctl launch`; unprefixed launch environment did not reliably reach the app process.
-- **Review persistence proof:** The backend review endpoint persists `model_update_decision` and derived/profile state. A `timing_event.review_saved` row is not current proof for API review saves unless the backend contract is explicitly expanded to emit that source event too.
+- **Review persistence proof:** The backend review endpoint must persist `model_update_decision`, update derived/profile state, and create exactly one `timing_event.review_saved` source event for the review mutation. Duplicate mutation replay must return the original decision without adding another review event.
 - **iOS project membership:** SwiftPM auto-discovers new files under `apps/ios/Sources`, but `ParallaxNative.xcodeproj` must be updated manually with PBX file references and source-build-phase membership for simulator builds.
 - **Timescale restore proof:** Timescale logical restore must use custom-format `pg_dump`, create/enable TimescaleDB in the target database, call `timescaledb_pre_restore()`, run non-parallel `pg_restore`, then call `timescaledb_post_restore()`.
 - **Phase 9 k3s probes/auth:** Production k3s manifests using `external_bearer` must set a non-HS JWT algorithm plus JWKS URL, issuer, and audience. API readiness must use `/v1/ready`; liveness must use `/v1/live`.
@@ -77,7 +77,7 @@
 - [2026-05-05] Do not implement Figma/example scenarios as default Parallax runtime data. Activity names, notes, preflight text, checkpoint labels, people, and places in mockups/examples are fixtures unless entered by the user or returned by the backend.
 - [2026-05-05] Do not trust `swift test` alone after adding iOS source files. Also update and verify `apps/ios/ParallaxNative.xcodeproj/project.pbxproj`, because Xcode simulator builds do not auto-include new Swift files.
 - [2026-05-05] Do not wire user-driven friction logging to the static Phase 8 evidence drawer. It must be a dynamic capture path with typed user note/blocker input and canonical annotation sync.
-- [2026-05-05] Do not treat successful review UI navigation as proof that the backend wrote a timing `review_saved` event. Verify the current persistence table: API review saves currently prove through `model_update_decision`.
+- [2026-05-05] Do not treat successful review UI navigation or `model_update_decision` insertion alone as complete review proof. Verify the API review path also writes exactly one `timing_event.review_saved` event for the same mutation.
 
 ## Decision Log
 

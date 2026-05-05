@@ -108,19 +108,43 @@ def main() -> int:
                     select
                       (select count(*) from model_update_decision where user_id = %s) as decisions,
                       (select count(*) from timing_event_span where user_id = %s) as spans,
-                      (select count(*) from activity_stats_snapshot where user_id = %s) as stats
+                      (select count(*) from activity_stats_snapshot where user_id = %s) as stats,
+                      (
+                        select count(*)
+                        from timing_event
+                        where user_id = %s and event_type = 'review_saved'
+                      ) as review_events,
+                      (
+                        select count(*)
+                        from timing_event
+                        where session_id = %s and event_type = 'review_saved'
+                      ) as reviewed_session_review_events
                     """,
-                    (user_id, user_id, user_id),
+                    (user_id, user_id, user_id, user_id, UUID(session_id)),
                 )
                 row = cursor.fetchone()
                 if row is None:
                     raise AssertionError("Phase 2 SQL proof returned no row")
-                decision_count, span_count, stats_count = row
+                (
+                    decision_count,
+                    span_count,
+                    stats_count,
+                    review_event_count,
+                    reviewed_event_count,
+                ) = row
 
-        if decision_count != 2 or span_count < 2 or stats_count < 1:
+        if (
+            decision_count != 2
+            or span_count < 2
+            or stats_count < 1
+            or review_event_count != 2
+            or reviewed_event_count != 1
+        ):
             raise AssertionError(
                 "expected Phase 2 persistence rows, got "
-                f"decisions={decision_count}, spans={span_count}, stats={stats_count}"
+                f"decisions={decision_count}, spans={span_count}, stats={stats_count}, "
+                f"review_events={review_event_count}, "
+                f"reviewed_session_review_events={reviewed_event_count}"
             )
 
         summary.update(
@@ -136,6 +160,8 @@ def main() -> int:
                 "model_update_decisions": decision_count,
                 "timing_event_spans": span_count,
                 "activity_stats_snapshots": stats_count,
+                "review_saved_events": review_event_count,
+                "reviewed_session_review_saved_events": reviewed_event_count,
             }
         )
         print(json.dumps({"status": "passed", "phase": "phase2", "summary": summary}, indent=2))

@@ -255,12 +255,13 @@
 
 - `Phase9RemediationTests.swift` — source-leak and runtime-config regression tests preventing hardcoded example activity/default UI data and empty button actions (~500 tok)
 - `APIClientTests.swift` — request-builder contract tests for canonical paths, mutation envelopes, auth, profile/query/read helpers, and privacy defaults (~650 tok)
-- `PendingSyncServiceTests.swift` — sync replay tests for dynamic activity names, event queues, preflight decisions, and bearer failure retention (~500 tok)
+- `PendingSyncServiceTests.swift` — sync replay tests for dynamic activity names, event queues, annotation API upload, preflight decisions, and bearer failure retention (~700 tok)
 
 ## apps/ios/Tests/ParallaxAppTests/
 
 - `ParallaxAppStoreTests.swift` — dynamic app store tests for no-seed empty launch, arbitrary activity create/select, and explicit UAT seed preservation (~350 tok)
-- `TimingSliceViewModelTests.swift` — app view-model tests for canonical timing events, review/discard, forgotten timer correction, and drawer actions (~700 tok)
+- `TimingSliceViewModelTests.swift` — app view-model tests for canonical timing events, review/discard, forgotten timer correction, dynamic friction logging, and drawer actions (~850 tok)
+- `Phase9UATRegressionTests.swift` — connected/dynamic UAT regressions for activity creation, relaunch selection, Temporal Home launcher routing, measurement-mode start, and grounded Ask API calls (~650 tok)
 - `TemporalHomeActionMapTests.swift` — action-map coverage and dynamic Temporal Home routing tests tied to the canonical interaction contract (~350 tok)
 - `Phase8DrawerActionTests.swift` — drawer workflow/action inventory and nested action regression tests (~450 tok)
 

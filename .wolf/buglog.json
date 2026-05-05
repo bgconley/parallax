@@ -324,6 +324,18 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-05T05:01:49Z"
+    },
+    {
+      "id": "bug-028",
+      "timestamp": "2026-05-05T06:42:00Z",
+      "error_message": "Production-style simulator UAT still exposed static Phase 8 friction evidence content for user Log friction, annotationCaptured sync used the generic timing event endpoint, and relaunch did not reliably select the user's only backend activity.",
+      "file": "apps/ios/Sources/ParallaxApp/TimingSessionScreen.swift, apps/ios/Sources/ParallaxApp/TimingSliceViewModel.swift, apps/ios/Sources/ParallaxCore/PendingSyncService.swift, apps/ios/Sources/ParallaxApp/ParallaxAppStore.swift",
+      "root_cause": "The dynamic-app remediation converted the main screens but left one user-driven action routed to a mock evidence drawer, left the canonical annotation API helper unused for queued annotation events, and did not persist or infer selected activity after backend reload.",
+      "fix": "Added a typed friction capture drawer, added TimingSliceViewModel.logFriction to queue annotation plus resource-detour events, routed annotationCaptured sync through /v1/timing/sessions/{session_id}/annotations, persisted selected activity by device, auto-selected a single backend activity on relaunch, and added regression tests for each path.",
+      "tags": ["phase9", "ios", "uat", "dynamic-app", "friction", "sync", "relaunch"],
+      "related_bugs": ["bug-025"],
+      "occurrences": 1,
+      "last_seen": "2026-05-05T06:42:00Z"
     }
   ]
 }

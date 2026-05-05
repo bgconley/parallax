@@ -46,6 +46,9 @@
 - **Phase 8 Temporal Home Figma target:** The active Temporal Home source is Figma page `118:2`, `10 Phase 8 Temporal Home Canonical Allocation`; the active board is node `118:3`. The failed `106:2` temporal scope draft was deleted after QA because it did not preserve the corrected canonical allocation.
 - **Phase 9 optional profiles:** Optional extension profiles live under `database/optional_profiles/` and remain outside the baseline migration runner. Prove them against selected Docker images with `make phase9-smoke` instead of assuming image compatibility.
 - **Phase 9 app remediation:** The current remediation scope is app-wide dynamic behavior, not only Temporal Home. Runtime iOS screens must derive from user data, local state, and canonical APIs; Figma/example scenarios belong only in preview/test fixtures or artifact examples.
+- **Phase 9 UAT dynamic friction:** User-facing "Log friction" is not the fixed Phase 8 `friction_evidence` mock drawer. It must collect user-entered blocker/note text, queue a canonical `annotation_captured` source action, queue a wall-only `resource_detour_started` event, and sync raw text through `POST /v1/timing/sessions/{session_id}/annotations`.
+- **Simulator backend env:** For reliable simulator launches against the GPU-node backend tunnel, pass runtime settings as `SIMCTL_CHILD_PARALLAX_*` env vars to `xcrun simctl launch`; unprefixed launch environment did not reliably reach the app process.
+- **Review persistence proof:** The backend review endpoint persists `model_update_decision` and derived/profile state. A `timing_event.review_saved` row is not current proof for API review saves unless the backend contract is explicitly expanded to emit that source event too.
 - **iOS project membership:** SwiftPM auto-discovers new files under `apps/ios/Sources`, but `ParallaxNative.xcodeproj` must be updated manually with PBX file references and source-build-phase membership for simulator builds.
 - **Timescale restore proof:** Timescale logical restore must use custom-format `pg_dump`, create/enable TimescaleDB in the target database, call `timescaledb_pre_restore()`, run non-parallel `pg_restore`, then call `timescaledb_post_restore()`.
 - **Phase 9 k3s probes/auth:** Production k3s manifests using `external_bearer` must set a non-HS JWT algorithm plus JWKS URL, issuer, and audience. API readiness must use `/v1/ready`; liveness must use `/v1/live`.
@@ -73,6 +76,8 @@
 - [2026-05-04] Do not point Kubernetes API readiness/liveness probes at the same dependency health endpoint. Readiness should prove dependency and migration readiness; liveness should prove only that the process is alive.
 - [2026-05-05] Do not implement Figma/example scenarios as default Parallax runtime data. Activity names, notes, preflight text, checkpoint labels, people, and places in mockups/examples are fixtures unless entered by the user or returned by the backend.
 - [2026-05-05] Do not trust `swift test` alone after adding iOS source files. Also update and verify `apps/ios/ParallaxNative.xcodeproj/project.pbxproj`, because Xcode simulator builds do not auto-include new Swift files.
+- [2026-05-05] Do not wire user-driven friction logging to the static Phase 8 evidence drawer. It must be a dynamic capture path with typed user note/blocker input and canonical annotation sync.
+- [2026-05-05] Do not treat successful review UI navigation as proof that the backend wrote a timing `review_saved` event. Verify the current persistence table: API review saves currently prove through `model_update_decision`.
 
 ## Decision Log
 
@@ -92,3 +97,4 @@
 - [2026-05-04] Phase 8 Temporal Home Figma source is `118:2` / board `118:3`; `106:2` was deleted as a failed draft. `scripts/phase8_ui_contract.py` now enforces the active `118:3` board and screenshot evidence.
 - [2026-05-04] Phase 9 optional-extension hardening adds root optional SQL profiles, Docker-backed extension smoke validation, k3s readiness manifests, and re-embedding/dual-read documentation without changing baseline source-of-truth semantics.
 - [2026-05-05] Phase 9 app remediation is treated as a corrective app-wide implementation slice to satisfy earlier temporal-loop acceptance gates with dynamic activity, timing, context capture, review, profile, Ask, privacy, and sync behavior; it does not start Phase 10.
+- [2026-05-05] Dynamic friction remediation keeps the Phase 8 `friction_evidence` workflow for explicit handoff/prototype routing, but the operational Timing Session "Log friction" action uses a separate text capture sheet and canonical queued workflows.

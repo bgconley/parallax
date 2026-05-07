@@ -22,6 +22,14 @@ public enum TimingReviewDockLayout {
     }
 }
 
+public enum TimingReviewEstimateLayout {
+    public static let valueFontSize: CGFloat = 14
+    public static let supportingCaptionFontSize: CGFloat = 10.5
+    public static let supportingCaptionLineLimit = 2
+    public static let supportingCaptionMinimumScaleFactor: CGFloat = 0.72
+    public static let supportingCaptionCapsAccessibilityScaling = true
+}
+
 struct TimingReviewScreen: View {
     @ObservedObject var viewModel: TimingSliceViewModel
     let initialDrawer: String?
@@ -194,10 +202,13 @@ struct TimingReviewScreen: View {
                 VStack(alignment: .leading) {
                     Text("Difference")
                     Text("Review")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .font(.system(size: TimingReviewEstimateLayout.valueFontSize, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(parallax: .checkpointText))
                     Text("range updates after review")
-                        .font(.caption)
+                        .font(.system(size: TimingReviewEstimateLayout.supportingCaptionFontSize, weight: .medium, design: .rounded))
+                        .lineLimit(TimingReviewEstimateLayout.supportingCaptionLineLimit)
+                        .minimumScaleFactor(TimingReviewEstimateLayout.supportingCaptionMinimumScaleFactor)
+                        .dynamicTypeSize(.xSmall ... .xxxLarge)
                 }
             }
             ProgressView(value: 0.76)

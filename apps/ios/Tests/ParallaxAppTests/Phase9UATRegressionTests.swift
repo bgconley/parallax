@@ -672,6 +672,13 @@ import Testing
     #expect(!TimingReviewDockLayout.summaryRowShowsNavigationChevron)
 }
 
+@Test func reviewEstimateSupportingCaptionStaysSubordinateAtAccessibilitySizes() {
+    #expect(TimingReviewEstimateLayout.supportingCaptionCapsAccessibilityScaling)
+    #expect(TimingReviewEstimateLayout.supportingCaptionFontSize < TimingReviewEstimateLayout.valueFontSize)
+    #expect(TimingReviewEstimateLayout.supportingCaptionLineLimit >= 2)
+    #expect(TimingReviewEstimateLayout.supportingCaptionMinimumScaleFactor >= 0.7)
+}
+
 @Test func launcherBottomSheetUsesAttachedSafeAreaTreatment() {
     #expect(TimingLauncherSheetLayout.bottomSheetUsesOverlayAttachment)
     #expect(TimingLauncherSheetLayout.bottomSheetExtendsThroughBottomSafeArea)

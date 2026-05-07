@@ -1,0 +1,2 @@
+P0 M-series guard passed: no open UAT-M01/M02/M04/M05/M06 rows.
+M-series guard passed: no open UAT-M01 through UAT-M09 rows.

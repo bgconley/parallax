@@ -277,6 +277,10 @@
 - `phase9_optional_extension_hardening.md` — Phase 9 scope, Firecrawl-backed extension notes, re-embedding/dual-read plan, k3s boundary, and verification contract (~850 tok)
 - `phase8_design_implementation.md` — Phase 8 design implementation notes, active Figma source, iOS vertical-slice scope, screenshot evidence, and smoke/build verification (~900 tok)
 
+## docs/
+
+- `phase9_dynamic_app_uat_matrix.md` — canonical Phase 9 dynamic-app/UAT ledger, including findings, M-series polish rows, evidence roots, and closeout criteria (~4200 tok)
+
 ## docs/phase9_app_remediation/
 
 - `README.md` — canonical Phase 9 app-wide remediation scope, source-of-truth list, runtime rules, and acceptance gate for replacing hardcoded examples with dynamic app behavior (~1600 tok)
@@ -294,6 +298,7 @@
 
 - `uat_matrix_20260506T032650Z/` — Phase 9 dynamic app UAT screenshots/logs with simulator plus GPU-node backend proof for temporal workflows (~120 tok)
 - `presentation_quality_20260506T174000Z/` — Phase 9 native iOS presentation-quality screenshots, Figma reference captures, and bottom-sheet/copy-polish evidence including PQ50-PQ55 (~120 tok)
+- `uat_closeout_20260507T032416Z/` — Phase 9 M-series full UI polish closeout screenshots/logs for canonical shell, Home, launcher/setup, review, drawers, checkpointed timing, offline/sync, and Dynamic Type proof (~160 tok)
 
 ## tests/
 
@@ -366,6 +371,7 @@
 
 - `2026-04-28-phase-2-review-profile.md` — Detailed Phase 2 implementation plan and acceptance mapping (~520 tok)
 - `2026-04-28-phase-3-context-capture.md` — Detailed Phase 3 implementation plan, TDD checklist, and Phase 2/4 seam mapping (~750 tok)
+- `2026-05-07-phase9-uat-closeout.md` — executable Phase 9 UAT closeout plan for M-series full UI polish, simulator evidence capture, matrix updates, OpenWolf notes, and local/GPU verification (~3600 tok)
 
 ## parallax_v1_3_artifact_pack/source_inputs/
 

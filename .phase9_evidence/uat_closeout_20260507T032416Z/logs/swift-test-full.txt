@@ -1,0 +1,201 @@
+Test Suite 'All tests' started at 2026-05-06 23:50:09.947.
+Test Suite 'All tests' passed at 2026-05-06 23:50:09.948.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 1501
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Test firstVerticalSliceQueuesCanonicalEventsThroughReview() started.
+◇ Test checkpointedRunsKeepCheckpointControlsActive() started.
+◇ Test localQuickCaptureRefreshesTemporalHomeToSyncPendingSurface() started.
+◇ Test checkpointSetupContextBadgeDoesNotPretendToBeAnAction() started.
+◇ Test connectedAskAboutTimeSubmitsTemporalQueryInsteadOfTimingIntentOnly() started.
+◇ Test forgottenTimerDrawerLoadsRealReviewFlagAndTrimResolvesIt() started.
+◇ Test syncQueueProjectionUsesUserFacingPendingChangesInSequenceOrder() started.
+◇ Test pauseDurationDoesNotAccumulateAsActiveTime() started.
+◇ Test dynamicFrictionLoggingQueuesUserNoteAndDetour() started.
+◇ Test reviewedRunCanStartAgainAsNewSession() started.
+◇ Test temporalHomeActionsRouteToDrawersNavigationAndLocalQueue() started.
+◇ Test mutationFactorySeedsFromDurableSequenceWhenQueuesAreEmpty() started.
+◇ Test localCreatedActivitySurvivesRelaunchFromAppStateCache() started.
+◇ Test disabledDrawerActionsKeepReadableLabels() started.
+◇ Test preflightDrawerDecisionUsesRealBackendCheckId() started.
+◇ Test phase8NestedDrawerActionInventoryIsComplete() started.
+◇ Test refreshTimerUpdatesLiveDurationsWithoutAppendingEvents() started.
+◇ Test phase8DrawerWorkflowAliasesMatchFigmaHandoffNames() started.
+◇ Test temporalHomeProjectionRefreshesLoadedPendingQueueToSyncPendingSurface() started.
+◇ Test checkpointStepNotesCarryCurrentCheckpointContextForSync() started.
+◇ Test temporalHomeViewModelReattachesToReplacementTimingModelBeforeSubmittingAskQuestion() started.
+◇ Test checkpointSetupStartFromStepCreatesCheckpointedRunBoundary() started.
+◇ Test resourceDetourUsesActualOpenSpanTimeInsteadOfFixedPlaceholderDuration() started.
+◇ Test preflightEvidenceProjectionUsesCheckEvidenceWhenDependencyRowsAreMissing() started.
+◇ Test appStoreUsesExplicitSeedOnlyWhenProvided() started.
+◇ Test connectedBootstrapSelectsOnlyBackendActivityAfterRelaunch() started.
+◇ Test appStoreCreatesAndSelectsArbitraryActivity() started.
+◇ Test stepDetailDrawerDoesNotInventRunningCheckpointForDraftWholeTask() started.
+◇ Test forgottenTimerNotSureSnoozesReviewFlagWithoutChangingTotals() started.
+◇ Test connectedBootstrapDoesNotUseCachedActivityFromDifferentRuntimeUser() started.
+◇ Test preflightSnoozeDefaultsToTomorrowWhenDrawerOmitsDate() started.
+◇ Test forgottenTimerRefreshUsesRemoteSessionIdAfterOnlineSync() started.
+◇ Test askAnotherDoesNotSubmitPlaceholderQuestion() started.
+◇ Test forgottenTimerCorrectionTrimsInflatedDurations() started.
+◇ Test wholeTaskRunsDoNotEmitCheckpointEventsFromCheckpointControls() started.
+◇ Test launcherBottomSheetUsesAttachedSafeAreaTreatment() started.
+◇ Test drawerActionsQueueCanonicalEvidenceCorrectionAndReviewEvents() started.
+◇ Test mutationFactorySeedsFromPersistedEventsBeforeAppending() started.
+◇ Test discardReviewDecisionUsesDiscardStateAndSyncOperation() started.
+◇ Test nonInteractiveSummaryAndStepRowsDoNotShowNavigationChevrons() started.
+◇ Test stepDetailProjectionKeepsWholeTaskAndCheckpointedActionsSeparate() started.
+◇ Test temporalQueryPayloadKeepsAnswersEvidenceBackedAndPrivate() started.
+◇ Test appStoreStartsEmptyWhenNoSeedActivityExists() started.
+◇ Test reviewDecisionDisplayExposesEveryCanonicalModelUpdateDecision() started.
+◇ Test repeatedSameReviewDecisionDoesNotQueueDuplicateReviewEvent() started.
+◇ Test syncKeepsQueuedEventsWhenBearerRequestFails() started.
+◇ Test temporalRolesPreserveCanonicalDesignTokenNames() started.
+◇ Test runtimeConfigDoesNotSynthesizeExampleActivityWhenSeedIsAbsent() started.
+◇ Test syncUsesExistingRemotePreflightCheckWhenDecisionCarriesRemoteId() started.
+◇ Test frictionEvidenceProjectionUsesCapturedResourceAndNote() started.
+◇ Test preflightEvidenceDrawerDoesNotInventBackendEvidenceWhenEmpty() started.
+◇ Test reviewEstimateSupportingCaptionStaysSubordinateAtAccessibilitySizes() started.
+◇ Test runtimeSwiftSourcesDoNotUseEmptyButtonActions() started.
+◇ Test timingInstrumentLayoutKeepsInfoLaneSeparatedFromTimerRing() started.
+◇ Test syncUploadsAnnotationCapturedEventsThroughAnnotationEndpoint() started.
+◇ Test uiPresentationProjectionsHumanizeCanonicalIdentifiers() started.
+◇ Test expandedRunReviewProjectionReflectsSavedReviewDecision() started.
+◇ Test temporalHomeDrawerPerformerQueuesNestedDrawerActions() started.
+◇ Test bearerAuthRequestDoesNotSendDevelopmentHeader() started.
+◇ Test checkpointedRunStartEmitsCurrentCheckpointStartedWithCanonicalPayload() started.
+◇ Test selectedMeasurementModeIsQueuedOnSessionStart() started.
+◇ Test preflightDrawerDecisionPersistsPendingMutation() started.
+◇ Test connectedActivityCreationPostsCanonicalActivityAndSelectsBackendActivity() started.
+◇ Test phase10ReviewFlagRequestsUseCanonicalPromptEndpoints() started.
+◇ Test temporalNavigationRoutesSyncAndAskToDrawersWithoutSyntheticState() started.
+◇ Test draftTemporalHomePrimaryActionsOpenLauncherAndDoNotOpenReview() started.
+◇ Test runtimeConfigRequiresBearerTokenForExternalBearerMode() started.
+◇ Test terminalTemporalDrawerActionsDoNotShowNavigationChevron() started.
+◇ Test phase10ActionMapJsonMatchesSwiftActionEnum() started.
+◇ Test syncCreatesRemotePreflightCheckBeforeUploadingDecision() started.
+◇ Test runtimeConfigKeepsExplicitUATSeedInputs() started.
+◇ Test readHelpersUseCanonicalPathsWithoutMutationBodies() started.
+◇ Test runtimeSwiftSourcesDoNotEmbedExampleScenarioStrings() started.
+◇ Test reviewDecisionDisplayProjectsCanonicalDomainValues() started.
+◇ Test reviewBottomDockUsesSameAttachedSafeAreaTreatment() started.
+◇ Test fileEventStorePersistsPendingEventsIdempotently() started.
+◇ Test completingCheckpointAdvancesProjectionAndUsesCanonicalSequencePayload() started.
+◇ Test annotationRequestCarriesCaptureMethodInMetadata() started.
+◇ Test phase10ExtractedEventRequestsUseCanonicalConfirmAndCorrectEndpoints() started.
+◇ Test timingSessionStatesProjectFromCanonicalDomainState() started.
+◇ Test syncPersistsCheckpointRunMappingAndUsesItForLaterStepAnnotation() started.
+◇ Test spongeDetourExampleMapsToTemporalProjection() started.
+◇ Test syncCreatesCheckpointedSessionFromCheckpointSetupIntent() started.
+◇ Test syncCreatesRemoteSessionBeforeUploadingQueuedTimingEvents() started.
+◇ Test filePreflightStorePersistsPendingDecisionsIdempotently() started.
+◇ Test defaultMeasurementModeChoicesStayWithinDesignTokenLimit() started.
+◇ Test phase10TemporalQueryRequestUsesCanonicalEndpointAndPrivacyDefault() started.
+◇ Test pullUpDrawerSurfacesUseBottomAttachedSheetTreatment() started.
+◇ Test activityProfilePayloadCarriesPreflightAndConfidenceEvidence() started.
+◇ Test appendTimingEventRequestUsesCanonicalMutationEnvelopeAndDevAuthHeader() started.
+◇ Test runtimeSwiftSourcesDoNotUseExpandedTaskManagementCopy() started.
+◇ Test preflightDecisionRequestUsesCanonicalPhase6LifecycleEndpoint() started.
+◇ Test sessionLifecycleRequestsUseCanonicalPathsAndReviewScopes() started.
+◇ Test missingBearerTokenIsRejectedBeforeRequestLeavesClient() started.
+◇ Test syncBindsConfirmedFrictionEvidenceToUploadedAnnotation() started.
+◇ Test annotationRequestCarriesCheckpointTimerAndSourceContext() started.
+◇ Test remotePreflightDecisionOverridesStaleLocalMapping() started.
+✔ Test checkpointSetupContextBadgeDoesNotPretendToBeAnAction() passed after 0.007 seconds.
+✔ Test disabledDrawerActionsKeepReadableLabels() passed after 0.008 seconds.
+✔ Test phase8DrawerWorkflowAliasesMatchFigmaHandoffNames() passed after 0.007 seconds.
+✔ Test phase8NestedDrawerActionInventoryIsComplete() passed after 0.007 seconds.
+✔ Test launcherBottomSheetUsesAttachedSafeAreaTreatment() passed after 0.007 seconds.
+✔ Test nonInteractiveSummaryAndStepRowsDoNotShowNavigationChevrons() passed after 0.007 seconds.
+✔ Test temporalRolesPreserveCanonicalDesignTokenNames() passed after 0.007 seconds.
+✔ Test reviewEstimateSupportingCaptionStaysSubordinateAtAccessibilitySizes() passed after 0.007 seconds.
+✔ Test timingInstrumentLayoutKeepsInfoLaneSeparatedFromTimerRing() passed after 0.007 seconds.
+✔ Test reviewDecisionDisplayExposesEveryCanonicalModelUpdateDecision() passed after 0.007 seconds.
+✔ Test runtimeConfigDoesNotSynthesizeExampleActivityWhenSeedIsAbsent() passed after 0.007 seconds.
+✔ Test temporalQueryPayloadKeepsAnswersEvidenceBackedAndPrivate() passed after 0.007 seconds.
+✔ Test runtimeConfigKeepsExplicitUATSeedInputs() passed after 0.007 seconds.
+✔ Test runtimeConfigRequiresBearerTokenForExternalBearerMode() passed after 0.007 seconds.
+✔ Test phase10ActionMapJsonMatchesSwiftActionEnum() passed after 0.007 seconds.
+✔ Test reviewBottomDockUsesSameAttachedSafeAreaTreatment() passed after 0.007 seconds.
+✔ Test reviewDecisionDisplayProjectsCanonicalDomainValues() passed after 0.007 seconds.
+✔ Test syncCreatesRemotePreflightCheckBeforeUploadingDecision() passed after 0.007 seconds.
+✔ Test terminalTemporalDrawerActionsDoNotShowNavigationChevron() passed after 0.007 seconds.
+✔ Test syncUploadsAnnotationCapturedEventsThroughAnnotationEndpoint() passed after 0.007 seconds.
+✔ Test syncKeepsQueuedEventsWhenBearerRequestFails() passed after 0.007 seconds.
+✔ Test timingSessionStatesProjectFromCanonicalDomainState() passed after 0.007 seconds.
+✔ Test syncUsesExistingRemotePreflightCheckWhenDecisionCarriesRemoteId() passed after 0.007 seconds.
+✔ Test fileEventStorePersistsPendingEventsIdempotently() passed after 0.007 seconds.
+✔ Test spongeDetourExampleMapsToTemporalProjection() passed after 0.007 seconds.
+✔ Test defaultMeasurementModeChoicesStayWithinDesignTokenLimit() passed after 0.007 seconds.
+✔ Test bearerAuthRequestDoesNotSendDevelopmentHeader() passed after 0.007 seconds.
+✔ Test syncCreatesCheckpointedSessionFromCheckpointSetupIntent() passed after 0.007 seconds.
+✔ Test phase10ReviewFlagRequestsUseCanonicalPromptEndpoints() passed after 0.007 seconds.
+✔ Test phase10TemporalQueryRequestUsesCanonicalEndpointAndPrivacyDefault() passed after 0.007 seconds.
+✔ Test appendTimingEventRequestUsesCanonicalMutationEnvelopeAndDevAuthHeader() passed after 0.007 seconds.
+✔ Test pullUpDrawerSurfacesUseBottomAttachedSheetTreatment() passed after 0.007 seconds.
+✔ Test activityProfilePayloadCarriesPreflightAndConfidenceEvidence() passed after 0.007 seconds.
+✔ Test annotationRequestCarriesCaptureMethodInMetadata() passed after 0.007 seconds.
+✔ Test readHelpersUseCanonicalPathsWithoutMutationBodies() passed after 0.007 seconds.
+✔ Test preflightDecisionRequestUsesCanonicalPhase6LifecycleEndpoint() passed after 0.007 seconds.
+✔ Test missingBearerTokenIsRejectedBeforeRequestLeavesClient() passed after 0.007 seconds.
+✔ Test sessionLifecycleRequestsUseCanonicalPathsAndReviewScopes() passed after 0.007 seconds.
+✔ Test annotationRequestCarriesCheckpointTimerAndSourceContext() passed after 0.007 seconds.
+✔ Test syncBindsConfirmedFrictionEvidenceToUploadedAnnotation() passed after 0.007 seconds.
+✔ Test remotePreflightDecisionOverridesStaleLocalMapping() passed after 0.007 seconds.
+✔ Test syncPersistsCheckpointRunMappingAndUsesItForLaterStepAnnotation() passed after 0.007 seconds.
+✔ Test appStoreUsesExplicitSeedOnlyWhenProvided() passed after 0.008 seconds.
+✔ Test syncCreatesRemoteSessionBeforeUploadingQueuedTimingEvents() passed after 0.007 seconds.
+✔ Test phase10ExtractedEventRequestsUseCanonicalConfirmAndCorrectEndpoints() passed after 0.007 seconds.
+✔ Test appStoreCreatesAndSelectsArbitraryActivity() passed after 0.008 seconds.
+✔ Test filePreflightStorePersistsPendingDecisionsIdempotently() passed after 0.007 seconds.
+✔ Test appStoreStartsEmptyWhenNoSeedActivityExists() passed after 0.009 seconds.
+✔ Test stepDetailDrawerDoesNotInventRunningCheckpointForDraftWholeTask() passed after 0.010 seconds.
+✔ Test localCreatedActivitySurvivesRelaunchFromAppStateCache() passed after 0.012 seconds.
+✔ Test draftTemporalHomePrimaryActionsOpenLauncherAndDoNotOpenReview() passed after 0.011 seconds.
+✔ Test syncQueueProjectionUsesUserFacingPendingChangesInSequenceOrder() passed after 0.014 seconds.
+✔ Test connectedBootstrapSelectsOnlyBackendActivityAfterRelaunch() passed after 0.013 seconds.
+✔ Test preflightEvidenceProjectionUsesCheckEvidenceWhenDependencyRowsAreMissing() passed after 0.014 seconds.
+✔ Test connectedBootstrapDoesNotUseCachedActivityFromDifferentRuntimeUser() passed after 0.014 seconds.
+✔ Test connectedActivityCreationPostsCanonicalActivityAndSelectsBackendActivity() passed after 0.014 seconds.
+✔ Test temporalNavigationRoutesSyncAndAskToDrawersWithoutSyntheticState() passed after 0.014 seconds.
+✔ Test preflightEvidenceDrawerDoesNotInventBackendEvidenceWhenEmpty() passed after 0.015 seconds.
+✔ Test temporalHomeViewModelReattachesToReplacementTimingModelBeforeSubmittingAskQuestion() passed after 0.015 seconds.
+✔ Test localQuickCaptureRefreshesTemporalHomeToSyncPendingSurface() passed after 0.016 seconds.
+✔ Test temporalHomeProjectionRefreshesLoadedPendingQueueToSyncPendingSurface() passed after 0.016 seconds.
+✔ Test uiPresentationProjectionsHumanizeCanonicalIdentifiers() passed after 0.016 seconds.
+✔ Test connectedAskAboutTimeSubmitsTemporalQueryInsteadOfTimingIntentOnly() passed after 0.017 seconds.
+✔ Test wholeTaskRunsDoNotEmitCheckpointEventsFromCheckpointControls() passed after 0.016 seconds.
+✔ Test refreshTimerUpdatesLiveDurationsWithoutAppendingEvents() passed after 0.017 seconds.
+✔ Test askAnotherDoesNotSubmitPlaceholderQuestion() passed after 0.017 seconds.
+✔ Test preflightDrawerDecisionUsesRealBackendCheckId() passed after 0.017 seconds.
+✔ Test preflightDrawerDecisionPersistsPendingMutation() passed after 0.017 seconds.
+✔ Test preflightSnoozeDefaultsToTomorrowWhenDrawerOmitsDate() passed after 0.018 seconds.
+✔ Test mutationFactorySeedsFromPersistedEventsBeforeAppending() passed after 0.018 seconds.
+✔ Test selectedMeasurementModeIsQueuedOnSessionStart() passed after 0.018 seconds.
+✔ Test checkpointedRunStartEmitsCurrentCheckpointStartedWithCanonicalPayload() passed after 0.018 seconds.
+✔ Test mutationFactorySeedsFromDurableSequenceWhenQueuesAreEmpty() passed after 0.019 seconds.
+✔ Test frictionEvidenceProjectionUsesCapturedResourceAndNote() passed after 0.019 seconds.
+✔ Test expandedRunReviewProjectionReflectsSavedReviewDecision() passed after 0.019 seconds.
+✔ Test dynamicFrictionLoggingQueuesUserNoteAndDetour() passed after 0.019 seconds.
+✔ Test checkpointStepNotesCarryCurrentCheckpointContextForSync() passed after 0.019 seconds.
+✔ Test resourceDetourUsesActualOpenSpanTimeInsteadOfFixedPlaceholderDuration() passed after 0.019 seconds.
+✔ Test checkpointSetupStartFromStepCreatesCheckpointedRunBoundary() passed after 0.019 seconds.
+✔ Test repeatedSameReviewDecisionDoesNotQueueDuplicateReviewEvent() passed after 0.019 seconds.
+✔ Test stepDetailProjectionKeepsWholeTaskAndCheckpointedActionsSeparate() passed after 0.019 seconds.
+✔ Test temporalHomeDrawerPerformerQueuesNestedDrawerActions() passed after 0.019 seconds.
+✔ Test pauseDurationDoesNotAccumulateAsActiveTime() passed after 0.020 seconds.
+✔ Test reviewedRunCanStartAgainAsNewSession() passed after 0.020 seconds.
+✔ Test forgottenTimerDrawerLoadsRealReviewFlagAndTrimResolvesIt() passed after 0.020 seconds.
+✔ Test forgottenTimerNotSureSnoozesReviewFlagWithoutChangingTotals() passed after 0.020 seconds.
+✔ Test completingCheckpointAdvancesProjectionAndUsesCanonicalSequencePayload() passed after 0.020 seconds.
+✔ Test forgottenTimerRefreshUsesRemoteSessionIdAfterOnlineSync() passed after 0.020 seconds.
+✔ Test temporalHomeActionsRouteToDrawersNavigationAndLocalQueue() passed after 0.021 seconds.
+✔ Test forgottenTimerCorrectionTrimsInflatedDurations() passed after 0.021 seconds.
+✔ Test checkpointedRunsKeepCheckpointControlsActive() passed after 0.021 seconds.
+✔ Test discardReviewDecisionUsesDiscardStateAndSyncOperation() passed after 0.021 seconds.
+✔ Test firstVerticalSliceQueuesCanonicalEventsThroughReview() passed after 0.022 seconds.
+✔ Test runtimeSwiftSourcesDoNotUseEmptyButtonActions() passed after 0.023 seconds.
+✔ Test drawerActionsQueueCanonicalEvidenceCorrectionAndReviewEvents() passed after 0.025 seconds.
+✔ Test runtimeSwiftSourcesDoNotEmbedExampleScenarioStrings() passed after 0.029 seconds.
+✔ Test runtimeSwiftSourcesDoNotUseExpandedTaskManagementCopy() passed after 0.042 seconds.
+✔ Test run with 97 tests in 0 suites passed after 0.043 seconds.

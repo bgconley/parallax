@@ -564,6 +564,30 @@
       "related_bugs": ["bug-043", "bug-045"],
       "occurrences": 1,
       "last_seen": "2026-05-07T00:51:00Z"
+    },
+    {
+      "id": "bug-048",
+      "timestamp": "2026-05-07T03:48:36Z",
+      "error_message": "Phase 9 closeout Dynamic Type screenshot showed the Timing Review estimate caption scaling into hero-sized text.",
+      "file": "apps/ios/Sources/ParallaxApp/TimingReviewScreen.swift, apps/ios/Tests/ParallaxAppTests/Phase9UATRegressionTests.swift, docs/phase9_dynamic_app_uat_matrix.md",
+      "root_cause": "The estimate-card supporting caption used SwiftUI .caption without a project layout contract or Dynamic Type upper bound, so accessibility text sizing gave secondary explanatory copy the visual weight of primary content.",
+      "fix": "Added TimingReviewEstimateLayout, capped the supporting caption's accessibility scaling while preserving wrapping/readability, added reviewEstimateSupportingCaptionStaysSubordinateAtAccessibilitySizes, and recaptured M09 Dynamic Type review evidence.",
+      "tags": ["phase9", "ios", "presentation-quality", "dynamic-type", "timing-review", "uat"],
+      "related_bugs": ["bug-043", "bug-042"],
+      "occurrences": 1,
+      "last_seen": "2026-05-07T03:48:36Z"
+    },
+    {
+      "id": "bug-049",
+      "timestamp": "2026-05-07T03:53:09Z",
+      "error_message": "GPU-node validation could not fast-forward /tank/repos/parallax because the checkout contained dirty local changes that would be overwritten.",
+      "file": "/tank/repos/parallax, .phase9_evidence/uat_closeout_20260507T032416Z/logs/gpu-node-api-regressions-dirty-checkout-failed.txt",
+      "root_cause": "The shared GPU-node checkout had prior uncommitted working-tree changes and untracked evidence files, so git pull --ff-only correctly refused to merge over them.",
+      "fix": "Left the dirty checkout untouched and validated the current Mac working tree in an isolated temporary GPU-node copy under /tmp with .env, .git, venv, evidence, DerivedData, and cache paths excluded.",
+      "tags": ["phase9", "gpu-node", "validation", "git", "dirty-checkout"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-07T03:53:09Z"
     }
   ]
 }

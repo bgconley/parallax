@@ -1,0 +1,5 @@
+ timing_sessions | completed_unreviewed | decisions | answers 
+-----------------+----------------------+-----------+---------
+              12 |                    2 |         9 |       5
+(1 row)
+

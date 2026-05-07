@@ -1,0 +1,5 @@
+                  id                  |                question                 |  status  | sample_size | confidence |  time_window  |          evidence_bundle_id          | evidence_items 
+--------------------------------------+-----------------------------------------+----------+-------------+------------+---------------+--------------------------------------+----------------
+ 6d9ebbcd-dc26-4d55-90cc-dc34a755850d | How long do reviewed UAT runs take now? | complete |           5 | medium     | last_180_days | d17adcd3-4c9e-4d16-8305-504529f47fad |              5
+(1 row)
+

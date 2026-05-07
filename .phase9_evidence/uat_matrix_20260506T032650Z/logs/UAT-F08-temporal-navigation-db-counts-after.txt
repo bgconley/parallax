@@ -1,0 +1,5 @@
+after_activities=1
+after_client_mutations=1
+after_timing_events=0
+after_sessions=0
+after_temporal_queries=0

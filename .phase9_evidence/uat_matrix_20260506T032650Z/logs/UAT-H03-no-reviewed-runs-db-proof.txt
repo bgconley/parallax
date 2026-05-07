@@ -1,0 +1,5 @@
+                  id                  |                                 question                                  |  status  | sample_size | confidence |  time_window  |                          answer                           |          evidence_bundle_id          | evidence_items 
+--------------------------------------+---------------------------------------------------------------------------+----------+-------------+------------+---------------+-----------------------------------------------------------+--------------------------------------+----------------
+ 881977ef-542e-4c15-a98b-dc342d513af4 | How long does Phase 9 UAT Matrix Ask Empty 20260506T190300Z usually take? | complete |           0 | very_low   | last_180_days | I do not have reviewed timing history for that scope yet. | 5a798ffc-a715-405a-bc44-6d630ef494f2 |              0
+(1 row)
+

@@ -1,0 +1,5 @@
+ activity_fixture_leaks | annotation_fixture_leaks 
+------------------------+--------------------------
+                      0 |                        0
+(1 row)
+

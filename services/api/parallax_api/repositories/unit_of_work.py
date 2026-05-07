@@ -119,6 +119,14 @@ class TimingRepositoryProtocol(Protocol):
         span_drafts: list[TimingEventSpanDraft],
     ) -> list[TimingEventSpan]: ...
 
+    def replace_derived_spans_and_totals(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        span_drafts: list[TimingEventSpanDraft],
+        totals: TimingSpanTotals,
+    ) -> list[TimingEventSpan]: ...
+
     def upsert_extracted_event_span(
         self,
         user_id: UUID,

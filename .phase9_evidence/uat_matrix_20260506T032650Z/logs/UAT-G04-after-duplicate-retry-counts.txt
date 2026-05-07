@@ -1,0 +1,38 @@
+-[ RECORD 1 ]-+--
+timing_events | 6
+
+-[ RECORD 1 ]--
+annotations | 2
+
+-[ RECORD 1 ]
+reviews | 1
+
+-[ RECORD 1 ]-----+--
+mutation_log_rows | 8
+
+-[ RECORD 1 ]------+--------------------------
+client_sequence    | 1
+client_mutation_id | session_started-1
+event_type         | session_started
+-[ RECORD 2 ]------+--------------------------
+client_sequence    | 2
+client_mutation_id | annotation_captured-2
+event_type         | annotation_captured
+-[ RECORD 3 ]------+--------------------------
+client_sequence    | 3
+client_mutation_id | resource_detour_started-3
+event_type         | resource_detour_started
+-[ RECORD 4 ]------+--------------------------
+client_sequence    | 4
+client_mutation_id | annotation_captured-4
+event_type         | annotation_captured
+-[ RECORD 5 ]------+--------------------------
+client_sequence    | 5
+client_mutation_id | session_completed-5
+event_type         | session_completed
+-[ RECORD 6 ]------+--------------------------
+client_sequence    | 6
+client_mutation_id | review_saved-6
+event_type         | review_saved
+
+local_pending_events_after_duplicate_retry=0

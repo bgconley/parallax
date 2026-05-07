@@ -1,0 +1,32 @@
+-[ RECORD 1 ]---+------------------------------------------------------------------------------------------------------
+id              | f2d2c94a-2c86-4d70-9ecf-d30427c379c3
+status          | resolved
+resolution_note | Trimmed at place change.
+resolved_at     | 2026-05-06 16:26:07.466884+00
+evidence        | {"source": "uat_matrix", "source_workflow": "DetectForgottenTimerWorkflow", "idle_gap_seconds": 2700}
+
+-[ RECORD 1 ]---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+event_type            | session_started
+client_sequence       | 3
+timer_elapsed_seconds | 0
+timer_active_seconds  | 0
+payload               | {"measurement_mode": "whole_task"}
+-[ RECORD 2 ]---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+event_type            | session_completed
+client_sequence       | 4
+timer_elapsed_seconds | 44
+timer_active_seconds  | 44
+payload               | {}
+-[ RECORD 3 ]---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+event_type            | user_correction_applied
+client_sequence       | 5
+timer_elapsed_seconds | 44
+timer_active_seconds  | 44
+payload               | {"reason_code": "place_changed_after_long_idle_gap", "correction_type": "forgotten_timer_place_change", "privacy_display": "human_explanation_only", "idle_gap_seconds": "2700", "start_place_category": "start_area", "trimmed_active_seconds": "44", "original_active_seconds": "44", "trimmed_elapsed_seconds": "44", "original_elapsed_seconds": "44", "completion_place_category": "later_area"}
+
+-[ RECORD 1 ]--+-------------------------------------
+id             | a6b4f8f1-6fed-4937-8e04-2dfa2a7c709a
+status         | completed_unreviewed
+active_seconds | 44
+wall_seconds   | 44
+

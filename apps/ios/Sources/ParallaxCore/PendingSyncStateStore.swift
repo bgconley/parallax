@@ -63,19 +63,89 @@ public struct PreflightCheckSyncMapping: Codable, Equatable, Sendable {
     }
 }
 
+public struct CheckpointRunSyncMapping: Codable, Equatable, Sendable {
+    public let localSessionId: UUID
+    public let sequenceOrder: Int
+    public let remoteCheckpointRunId: UUID
+    public let label: String?
+    public let createdAt: Date
+
+    public init(
+        localSessionId: UUID,
+        sequenceOrder: Int,
+        remoteCheckpointRunId: UUID,
+        label: String? = nil,
+        createdAt: Date
+    ) {
+        self.localSessionId = localSessionId
+        self.sequenceOrder = sequenceOrder
+        self.remoteCheckpointRunId = remoteCheckpointRunId
+        self.label = label
+        self.createdAt = createdAt
+    }
+}
+
+public struct AnnotationSyncMapping: Codable, Equatable, Sendable {
+    public let localSessionId: UUID
+    public let localEventId: UUID
+    public let clientSequence: Int
+    public let source: String?
+    public let remoteAnnotationId: UUID
+    public let createdAt: Date
+
+    public init(
+        localSessionId: UUID,
+        localEventId: UUID,
+        clientSequence: Int,
+        source: String? = nil,
+        remoteAnnotationId: UUID,
+        createdAt: Date
+    ) {
+        self.localSessionId = localSessionId
+        self.localEventId = localEventId
+        self.clientSequence = clientSequence
+        self.source = source
+        self.remoteAnnotationId = remoteAnnotationId
+        self.createdAt = createdAt
+    }
+}
+
 public struct PendingSyncState: Codable, Equatable, Sendable {
     public var activities: [ActivitySyncMapping]
     public var sessions: [TimingSessionSyncMapping]
     public var preflightChecks: [PreflightCheckSyncMapping]
+    public var checkpointRuns: [CheckpointRunSyncMapping]
+    public var annotations: [AnnotationSyncMapping]
 
     public init(
         activities: [ActivitySyncMapping] = [],
         sessions: [TimingSessionSyncMapping] = [],
-        preflightChecks: [PreflightCheckSyncMapping] = []
+        preflightChecks: [PreflightCheckSyncMapping] = [],
+        checkpointRuns: [CheckpointRunSyncMapping] = [],
+        annotations: [AnnotationSyncMapping] = []
     ) {
         self.activities = activities
         self.sessions = sessions
         self.preflightChecks = preflightChecks
+        self.checkpointRuns = checkpointRuns
+        self.annotations = annotations
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case activities
+        case sessions
+        case preflightChecks
+        case checkpointRuns
+        case annotations
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.activities = try container.decodeIfPresent([ActivitySyncMapping].self, forKey: .activities) ?? []
+        self.sessions = try container.decodeIfPresent([TimingSessionSyncMapping].self, forKey: .sessions) ?? []
+        self.preflightChecks = try container.decodeIfPresent([PreflightCheckSyncMapping].self, forKey: .preflightChecks) ?? []
+        self.checkpointRuns = try container.decodeIfPresent([CheckpointRunSyncMapping].self, forKey: .checkpointRuns) ?? []
+        self.annotations = try container.decodeIfPresent([AnnotationSyncMapping].self, forKey: .annotations) ?? []
     }
 
     public func activity(localActivityId: UUID) -> ActivitySyncMapping? {
@@ -88,6 +158,27 @@ public struct PendingSyncState: Codable, Equatable, Sendable {
 
     public func preflightCheck(localCheckId: UUID) -> PreflightCheckSyncMapping? {
         preflightChecks.first { $0.localCheckId == localCheckId }
+    }
+
+    public func checkpointRun(
+        localSessionId: UUID,
+        sequenceOrder: Int
+    ) -> CheckpointRunSyncMapping? {
+        checkpointRuns.first {
+            $0.localSessionId == localSessionId && $0.sequenceOrder == sequenceOrder
+        }
+    }
+
+    public func latestAnnotation(
+        localSessionId: UUID,
+        source: String? = nil
+    ) -> AnnotationSyncMapping? {
+        annotations
+            .filter { mapping in
+                mapping.localSessionId == localSessionId
+                    && (source == nil || mapping.source == source)
+            }
+            .max { lhs, rhs in lhs.clientSequence < rhs.clientSequence }
     }
 
     public mutating func upsert(_ mapping: ActivitySyncMapping) {
@@ -103,6 +194,19 @@ public struct PendingSyncState: Codable, Equatable, Sendable {
     public mutating func upsert(_ mapping: PreflightCheckSyncMapping) {
         preflightChecks.removeAll { $0.localCheckId == mapping.localCheckId }
         preflightChecks.append(mapping)
+    }
+
+    public mutating func upsert(_ mapping: CheckpointRunSyncMapping) {
+        checkpointRuns.removeAll {
+            $0.localSessionId == mapping.localSessionId
+                && $0.sequenceOrder == mapping.sequenceOrder
+        }
+        checkpointRuns.append(mapping)
+    }
+
+    public mutating func upsert(_ mapping: AnnotationSyncMapping) {
+        annotations.removeAll { $0.localEventId == mapping.localEventId }
+        annotations.append(mapping)
     }
 }
 

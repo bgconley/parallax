@@ -46,9 +46,12 @@ public enum Phase8DrawerAction: String, CaseIterable, Equatable, Sendable {
     case forgottenTimerNotSure = "forgotten_timer_not_sure"
     case saveUsefulRun = "save_useful_run"
     case markUnusual = "mark_unusual"
+    case savePartial = "save_partial"
     case activeTimeOnly = "active_time_only"
     case frictionEvidenceOnly = "friction_evidence_only"
+    case queryEvidenceOnly = "query_evidence_only"
     case discardTimingKeepNote = "discard_timing_keep_note"
+    case discardAll = "discard_all"
     case keepPreflightActive = "keep_preflight_active"
     case snoozePreflight = "snooze_preflight"
     case hidePreflight = "hide_preflight"
@@ -104,6 +107,14 @@ public enum ReviewDecisionDisplayFactory {
                 selected: decision == .markUnusual
             ),
             ReviewDecisionDisplay(
+                decision: .savePartial,
+                modelInclusion: .activeDurationOnly,
+                scopes: [.activeDuration],
+                title: "Useful partial run",
+                subtitle: "learn partial active time only",
+                selected: decision == .savePartial
+            ),
+            ReviewDecisionDisplay(
                 decision: .activeOnly,
                 modelInclusion: .activeDurationOnly,
                 scopes: [.activeDuration],
@@ -120,12 +131,28 @@ public enum ReviewDecisionDisplayFactory {
                 selected: decision == .frictionOnly
             ),
             ReviewDecisionDisplay(
+                decision: .queryEvidenceOnly,
+                modelInclusion: .queryEvidenceOnly,
+                scopes: [],
+                title: "Evidence for answers only",
+                subtitle: "ground Ask without updating predictions",
+                selected: decision == .queryEvidenceOnly
+            ),
+            ReviewDecisionDisplay(
                 decision: .discardTimingKeepNote,
                 modelInclusion: .exclude,
                 scopes: [],
                 title: "Discard timing, keep note",
                 subtitle: "source note stays; run does not teach timing",
                 selected: decision == .discardTimingKeepNote
+            ),
+            ReviewDecisionDisplay(
+                decision: .discardAll,
+                modelInclusion: .exclude,
+                scopes: [],
+                title: "Discard all",
+                subtitle: "exclude timing and context from learning",
+                selected: decision == .discardAll
             ),
         ]
     }

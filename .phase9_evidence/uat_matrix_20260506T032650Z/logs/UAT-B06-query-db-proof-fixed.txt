@@ -1,0 +1,16 @@
+                  id                  |                       question                        |                          answer                           | confidence | sample_size |  time_window  |  status  
+--------------------------------------+-------------------------------------------------------+-----------------------------------------------------------+------------+-------------+---------------+----------
+ 8b592f03-d527-4461-9bbc-590dcd4ae10b | Does the Phase 9 Ask fix show the backend answer now? | I do not have reviewed timing history for that scope yet. | very_low   |           0 | last_180_days | complete
+(1 row)
+
+ client_mutation_id |     mutation_type     |      entity_type      |              entity_id               |          received_at          
+--------------------+-----------------------+-----------------------+--------------------------------------+-------------------------------
+ temporal_query-5   | create_temporal_query | temporal_query_answer | 8b592f03-d527-4461-9bbc-590dcd4ae10b | 2026-05-06 04:14:24.902054+00
+(1 row)
+
+        event_name        |    aggregate_type     |             aggregate_id             |                       question                        
+--------------------------+-----------------------+--------------------------------------+-------------------------------------------------------
+ temporal_query.answered  | temporal_query_answer | 8b592f03-d527-4461-9bbc-590dcd4ae10b | Does the Phase 9 Ask fix show the backend answer now?
+ temporal_query.requested | temporal_query_answer | 8b592f03-d527-4461-9bbc-590dcd4ae10b | Does the Phase 9 Ask fix show the backend answer now?
+(2 rows)
+

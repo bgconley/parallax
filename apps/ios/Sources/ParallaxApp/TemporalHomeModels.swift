@@ -7,23 +7,46 @@ public enum TemporalHomeSurfaceState: String, CaseIterable, Sendable {
     case syncPending = "sync_pending"
     case expandedTimingRun = "expanded_timing_run"
     case groundedAnswer = "grounded_answer"
+
+    public var displayText: String {
+        switch self {
+        case .defaultHome:
+            return "Ready"
+        case .needsReview:
+            return "Needs review"
+        case .syncPending:
+            return "Sync pending"
+        case .expandedTimingRun:
+            return "Run evidence"
+        case .groundedAnswer:
+            return "Grounded answer"
+        }
+    }
 }
 
 public enum TemporalHomeActionClassification: String, CaseIterable, Sendable {
     case drawer
     case navigation
     case localQueue = "local_queue"
-    case apiWorkflow = "api_workflow"
     case displayOnly = "display_only"
 }
 
 public enum TemporalHomeDrawerKind: Equatable, Sendable {
     case temporalNavigation
+    case askTime
     case quickCapture
     case syncQueue
     case timingRunEvidence
     case temporalAnswerEvidence
     case phase8(Phase8DrawerWorkflow)
+}
+
+public enum TemporalNavigationDestination: Equatable, Sendable {
+    case currentRun
+    case needsReview
+    case syncQueue
+    case askTime
+    case close
 }
 
 public enum TemporalHomeRoute: Equatable, Sendable {
@@ -46,6 +69,7 @@ public enum TemporalHomeAction: String, CaseIterable, Sendable {
     case evidenceCurrentRowDefault = "118_9_evidence_current_row"
     case quickCaptureDefault = "118_9_quick_capture"
     case reviewRunDefault = "118_9_review_run"
+    case startTimerDefault = "118_9_start_timer"
     case askTimeDefault = "118_9_ask_time"
     case menuNeedsReview = "118_104_menu"
     case temporalActionNeedsReview = "118_104_temporal_action"

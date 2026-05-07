@@ -1,0 +1,5 @@
+                  id                  |  status  | run_quality  |   model_inclusion   |      decision       | decision_inclusion  | scopes | review_saved_events 
+--------------------------------------+----------+--------------+---------------------+---------------------+---------------------+--------+---------------------
+ 00d827d8-d7e2-48aa-8b16-58b16d5306b4 | reviewed | do_not_train | query_evidence_only | query_evidence_only | query_evidence_only | {}     |                   1
+(1 row)
+

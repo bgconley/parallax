@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 public enum ParallaxAPIError: Error, Equatable {
@@ -11,6 +12,15 @@ public enum ParallaxAPIAuth: Equatable, Sendable {
     case devHeader(userId: UUID)
     case bearer(token: String)
 
+    public var localStorageIdentity: String {
+        switch self {
+        case let .devHeader(userId):
+            return "dev-header-\(userId.uuidString.lowercased())"
+        case let .bearer(token):
+            return "bearer-\(Self.sha256Hex(token.trimmingCharacters(in: .whitespacesAndNewlines)))"
+        }
+    }
+
     public func apply(to request: inout URLRequest) throws {
         switch self {
         case let .devHeader(userId):
@@ -22,6 +32,12 @@ public enum ParallaxAPIAuth: Equatable, Sendable {
             }
             request.setValue("Bearer \(trimmed)", forHTTPHeaderField: "Authorization")
         }
+    }
+
+    private static func sha256Hex(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
     }
 }
 
@@ -69,7 +85,7 @@ public struct ParallaxAPIClient: Sendable {
     }
 
     public func resolveActivityRequest(query: String, limit: Int = 5) throws -> URLRequest {
-        try jsonRequest(
+        return try jsonRequest(
             path: "/v1/activities/resolve",
             method: "POST",
             body: ResolveActivityBody(query: query, limit: limit)
@@ -217,20 +233,28 @@ public struct ParallaxAPIClient: Sendable {
     public func createAnnotationRequest(
         sessionId: UUID,
         mutation: MutationEnvelope,
+        checkpointRunId: UUID? = nil,
         rawText: String,
         occurredAt: Date,
-        captureMethod: CaptureMethod
+        timerElapsedSeconds: Int? = nil,
+        timerActiveSeconds: Int? = nil,
+        captureMethod: CaptureMethod,
+        metadata: [String: String] = [:]
     ) throws -> URLRequest {
-        try jsonRequest(
+        let annotationMetadata = metadata.merging(["capture_method": captureMethod.rawValue]) { _, new in new }
+        return try jsonRequest(
             path: "/v1/timing/sessions/\(sessionId.uuidString)/annotations",
             method: "POST",
             body: CreateAnnotationBody(
                 mutation: mutation,
+                checkpointRunId: checkpointRunId,
                 inputMode: inputMode(for: captureMethod),
                 rawText: rawText,
+                timerElapsedSeconds: timerElapsedSeconds,
+                timerActiveSeconds: timerActiveSeconds,
                 occurredAt: occurredAt,
                 privacyClass: "normal",
-                metadata: ["capture_method": captureMethod.rawValue]
+                metadata: annotationMetadata
             )
         )
     }
@@ -503,8 +527,11 @@ private struct ReviewTimingSessionBody: Encodable {
 
 private struct CreateAnnotationBody: Encodable {
     let mutation: MutationEnvelope
+    let checkpointRunId: UUID?
     let inputMode: AnnotationInputMode
     let rawText: String
+    let timerElapsedSeconds: Int?
+    let timerActiveSeconds: Int?
     let occurredAt: Date
     let privacyClass: String
     let metadata: [String: String]

@@ -24,17 +24,20 @@ public struct PendingSyncResult: Equatable, Sendable {
     public let uploadedPreflightDecisionCount: Int
     public let remoteActivityId: UUID?
     public let remoteSessionIds: [UUID]
+    public let remoteSessionIdsByLocalSessionId: [UUID: UUID]
 
     public init(
         uploadedTimingEventCount: Int,
         uploadedPreflightDecisionCount: Int,
         remoteActivityId: UUID?,
-        remoteSessionIds: [UUID]
+        remoteSessionIds: [UUID],
+        remoteSessionIdsByLocalSessionId: [UUID: UUID] = [:]
     ) {
         self.uploadedTimingEventCount = uploadedTimingEventCount
         self.uploadedPreflightDecisionCount = uploadedPreflightDecisionCount
         self.remoteActivityId = remoteActivityId
         self.remoteSessionIds = remoteSessionIds
+        self.remoteSessionIdsByLocalSessionId = remoteSessionIdsByLocalSessionId
     }
 }
 
@@ -76,6 +79,7 @@ public actor PendingSyncService {
         var state = try await syncStateStore.load()
         let activity = try await ensureActivity(context: context, state: &state)
         var remoteSessionIds: [UUID] = []
+        var remoteSessionIdsByLocalSessionId: [UUID: UUID] = [:]
         var uploadedTimingEventIds: Set<UUID> = []
 
         for (localSessionId, events) in Dictionary(grouping: timingEvents, by: \.sessionId) {
@@ -87,8 +91,22 @@ public actor PendingSyncService {
                 state: &state
             )
             remoteSessionIds.append(session.remoteSessionId)
+            remoteSessionIdsByLocalSessionId[localSessionId] = session.remoteSessionId
             for event in events.sorted(by: { $0.mutation.clientSequence < $1.mutation.clientSequence }) {
-                try await upload(event: event, remoteSessionId: session.remoteSessionId)
+                let preparedEvent = eventWithResolvedAnnotationReference(event, state: state)
+                let uploadedEvent = try await upload(
+                    event: preparedEvent,
+                    remoteSessionId: session.remoteSessionId,
+                    state: state
+                )
+                if let mapping = uploadedEvent.annotationMapping {
+                    state.upsert(mapping)
+                    try await syncStateStore.save(state)
+                }
+                if let mapping = checkpointRunMapping(from: uploadedEvent.timingEvent, localEvent: preparedEvent) {
+                    state.upsert(mapping)
+                    try await syncStateStore.save(state)
+                }
                 uploadedTimingEventIds.insert(event.id)
             }
         }
@@ -123,7 +141,8 @@ public actor PendingSyncService {
             uploadedTimingEventCount: uploadedTimingEventIds.count,
             uploadedPreflightDecisionCount: uploadedPreflightDecisionIds.count,
             remoteActivityId: activity.remoteActivityId,
-            remoteSessionIds: remoteSessionIds
+            remoteSessionIds: remoteSessionIds,
+            remoteSessionIdsByLocalSessionId: remoteSessionIdsByLocalSessionId
         )
     }
 
@@ -153,7 +172,7 @@ public actor PendingSyncService {
                 deviceId: context.deviceId,
                 label: "create_activity_\(context.localActivityId.uuidString.lowercased())"
             ),
-            defaultTimingMode: .checkpointed
+            defaultTimingMode: .wholeTask
         )
         let response = try await client.send(request, decode: RemoteIDResponse.self)
         let mapping = ActivitySyncMapping(
@@ -206,7 +225,11 @@ public actor PendingSyncService {
         return mapping
     }
 
-    private func upload(event: PendingTimingEvent, remoteSessionId: UUID) async throws {
+    private func upload(
+        event: PendingTimingEvent,
+        remoteSessionId: UUID,
+        state: PendingSyncState
+    ) async throws -> UploadedTimingMutation {
         if event.eventType == .sessionCompleted {
             let request = try client.completeTimingSessionRequest(
                 sessionId: remoteSessionId,
@@ -216,21 +239,72 @@ public actor PendingSyncService {
                 timerActiveSeconds: event.timerActiveSeconds ?? 0
             )
             _ = try await client.send(request, decode: RemoteIDResponse.self)
-            return
+            return UploadedTimingMutation()
         }
         if let reviewRequest = try reviewRequest(for: event, remoteSessionId: remoteSessionId) {
             _ = try await client.send(reviewRequest, decode: RemoteIDResponse.self)
-            return
+            return UploadedTimingMutation()
         }
-        if let annotationRequest = try annotationRequest(for: event, remoteSessionId: remoteSessionId) {
-            _ = try await client.send(annotationRequest, decode: RemoteIDResponse.self)
-            return
+        if let annotationRequest = try annotationRequest(
+            for: event,
+            remoteSessionId: remoteSessionId,
+            state: state
+        ) {
+            let response = try await client.send(annotationRequest, decode: RemoteIDResponse.self)
+            return UploadedTimingMutation(
+                annotationMapping: AnnotationSyncMapping(
+                    localSessionId: event.sessionId,
+                    localEventId: event.id,
+                    clientSequence: event.mutation.clientSequence,
+                    source: event.payload["source"],
+                    remoteAnnotationId: response.id,
+                    createdAt: now()
+                )
+            )
         }
         let request = try client.appendTimingEventRequest(event, remoteSessionId: remoteSessionId)
+        if isCheckpointEvent(event.eventType) {
+            let timingEvent = try await client.send(request, decode: TimingEventDTO.self)
+            return UploadedTimingMutation(timingEvent: timingEvent)
+        }
         _ = try await client.send(request, decode: RemoteIDResponse.self)
+        return UploadedTimingMutation()
     }
 
-    private func annotationRequest(for event: PendingTimingEvent, remoteSessionId: UUID) throws -> URLRequest? {
+    private func eventWithResolvedAnnotationReference(
+        _ event: PendingTimingEvent,
+        state: PendingSyncState
+    ) -> PendingTimingEvent {
+        guard event.eventType == .extractedEventCreated,
+              event.payload["annotation_id"] == nil,
+              let annotation = state.latestAnnotation(
+                localSessionId: event.sessionId,
+                source: "timing_session_friction"
+              )
+        else {
+            return event
+        }
+        var payload = event.payload
+        payload["annotation_id"] = annotation.remoteAnnotationId.uuidString
+        return PendingTimingEvent(
+            id: event.id,
+            sessionId: event.sessionId,
+            eventType: event.eventType,
+            mutation: event.mutation,
+            clientTime: event.clientTime,
+            timerElapsedSeconds: event.timerElapsedSeconds,
+            timerActiveSeconds: event.timerActiveSeconds,
+            captureMethod: event.captureMethod,
+            notePreview: event.notePreview,
+            payload: payload
+        )
+    }
+
+    private func annotationRequest(
+        for event: PendingTimingEvent,
+        remoteSessionId: UUID,
+        state: PendingSyncState
+    ) throws -> URLRequest? {
         guard event.eventType == .annotationCaptured,
               let rawText = event.notePreview?.trimmingCharacters(in: .whitespacesAndNewlines),
               !rawText.isEmpty
@@ -240,9 +314,13 @@ public actor PendingSyncService {
         return try client.createAnnotationRequest(
             sessionId: remoteSessionId,
             mutation: event.mutation,
+            checkpointRunId: checkpointRunId(for: event, state: state),
             rawText: rawText,
             occurredAt: event.clientTime,
-            captureMethod: event.captureMethod ?? .manualButton
+            timerElapsedSeconds: event.timerElapsedSeconds,
+            timerActiveSeconds: event.timerActiveSeconds,
+            captureMethod: event.captureMethod ?? .manualButton,
+            metadata: annotationMetadata(for: event)
         )
     }
 
@@ -281,6 +359,22 @@ public actor PendingSyncService {
         context: PendingSyncContext,
         state: inout PendingSyncState
     ) async throws -> PreflightCheckSyncMapping {
+        if let remoteCheckId = decision.remoteCheckId {
+            if let existing = state.preflightCheck(localCheckId: decision.checkId),
+               existing.remoteCheckId == remoteCheckId {
+                return existing
+            }
+            let mapping = PreflightCheckSyncMapping(
+                localCheckId: decision.checkId,
+                localActivityId: activity.localActivityId,
+                remoteActivityId: activity.remoteActivityId,
+                remoteCheckId: remoteCheckId,
+                createdAt: now()
+            )
+            state.upsert(mapping)
+            try await syncStateStore.save(state)
+            return mapping
+        }
         if let existing = state.preflightCheck(localCheckId: decision.checkId) {
             return existing
         }
@@ -306,9 +400,24 @@ public actor PendingSyncService {
     }
 
     private func measurementMode(from events: [PendingTimingEvent]) -> MeasurementMode {
-        events.first(where: { $0.eventType == .sessionStarted })?
+        if let startedMode = events.first(where: { $0.eventType == .sessionStarted })?
             .payload["measurement_mode"]
-            .flatMap(MeasurementMode.init(rawValue:)) ?? .wholeTask
+            .flatMap(MeasurementMode.init(rawValue:)) {
+            return startedMode
+        }
+        if let intentMode = events.first(where: { $0.payload["measurement_mode"] != nil })?
+            .payload["measurement_mode"]
+            .flatMap(MeasurementMode.init(rawValue:)) {
+            return intentMode
+        }
+        if events.contains(where: { event in
+            event.eventType == .checkpointStarted
+                || event.eventType == .checkpointCompleted
+                || event.eventType == .checkpointSkipped
+        }) {
+            return .checkpointed
+        }
+        return .wholeTask
     }
 
     private func parseScopes(_ raw: String) -> [ReviewLearningScope] {
@@ -324,6 +433,67 @@ public actor PendingSyncService {
         return decision.snoozedUntil ?? now().addingTimeInterval(86_400)
     }
 
+    private func isCheckpointEvent(_ eventType: TimingEventType) -> Bool {
+        switch eventType {
+        case .checkpointStarted, .checkpointCompleted, .checkpointSkipped:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func checkpointRunMapping(
+        from uploadedEvent: TimingEventDTO?,
+        localEvent: PendingTimingEvent
+    ) -> CheckpointRunSyncMapping? {
+        guard let uploadedEvent,
+              let sequenceOrder = checkpointSequenceOrder(from: localEvent.payload),
+              let checkpointRunValue = uploadedEvent.payload?["checkpoint_run_id"],
+              let remoteCheckpointRunId = UUID(uuidString: checkpointRunValue)
+        else {
+            return nil
+        }
+        return CheckpointRunSyncMapping(
+            localSessionId: localEvent.sessionId,
+            sequenceOrder: sequenceOrder,
+            remoteCheckpointRunId: remoteCheckpointRunId,
+            label: localEvent.payload["checkpoint_label"] ?? localEvent.payload["label"],
+            createdAt: now()
+        )
+    }
+
+    private func checkpointRunId(for event: PendingTimingEvent, state: PendingSyncState) -> UUID? {
+        if let value = event.payload["checkpoint_run_id"], let id = UUID(uuidString: value) {
+            return id
+        }
+        guard let sequenceOrder = checkpointSequenceOrder(from: event.payload) else {
+            return nil
+        }
+        return state.checkpointRun(
+            localSessionId: event.sessionId,
+            sequenceOrder: sequenceOrder
+        )?.remoteCheckpointRunId
+    }
+
+    private func checkpointSequenceOrder(from payload: [String: String]) -> Int? {
+        payload["sequence_order"].flatMap(Int.init)
+    }
+
+    private func annotationMetadata(for event: PendingTimingEvent) -> [String: String] {
+        let allowedKeys = [
+            "source",
+            "sequence_order",
+            "label",
+            "checkpoint_index",
+            "checkpoint_label",
+        ]
+        return allowedKeys.reduce(into: [:]) { metadata, key in
+            if let value = event.payload[key], !value.isEmpty {
+                metadata[key] = value
+            }
+        }
+    }
+
     private func deterministicMutation(deviceId: String, label: String) -> MutationEnvelope {
         MutationEnvelope(
             idempotencyKey: "\(deviceId):sync:\(label)",
@@ -337,6 +507,19 @@ public actor PendingSyncService {
 
 private struct RemoteIDResponse: Decodable {
     let id: UUID
+}
+
+private struct UploadedTimingMutation {
+    let timingEvent: TimingEventDTO?
+    let annotationMapping: AnnotationSyncMapping?
+
+    init(
+        timingEvent: TimingEventDTO? = nil,
+        annotationMapping: AnnotationSyncMapping? = nil
+    ) {
+        self.timingEvent = timingEvent
+        self.annotationMapping = annotationMapping
+    }
 }
 
 private struct ResolveActivityResponse: Decodable {

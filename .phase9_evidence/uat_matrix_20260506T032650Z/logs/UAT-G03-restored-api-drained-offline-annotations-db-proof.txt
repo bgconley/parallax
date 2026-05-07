@@ -1,0 +1,6 @@
+               raw_text               | rows | input_mode |       status       
+--------------------------------------+------+------------+--------------------
+ Offline sync pending UAT note        |    1 | quick_chip | extraction_pending
+ Second offline sync pending UAT note |    1 | quick_chip | extraction_pending
+(2 rows)
+

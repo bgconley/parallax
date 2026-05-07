@@ -2,6 +2,52 @@ import ParallaxCore
 import ParallaxDesignSystem
 import SwiftUI
 
+public enum ParallaxBottomSheetLayout {
+    public static let topCornerRadius: CGFloat = 24
+    public static let bottomCornerRadius: CGFloat = 0
+    public static let handleWidth: CGFloat = 46
+    public static let handleHeight: CGFloat = 5
+    public static let precedingContentGap: CGFloat = 26
+    public static let bottomContentPadding: CGFloat = 14
+    public static let usesFlatBottomShape = true
+    public static let usesFloatingCardShape = false
+}
+
+public enum ParallaxDrawerActionLayout {
+    public static let disabledLabelOpacity: Double = 0.9
+    public static let disabledBackgroundOpacity: Double = 0.78
+    public static let disabledPrimaryUsesNeutralFill = true
+    public static let disabledActionsHideText = false
+}
+
+public enum ParallaxStaticRowAccessoryLayout {
+    public static let nonInteractiveSummaryRowsShowChevron = false
+    public static let nonInteractiveStepRowsShowChevron = false
+}
+
+extension View {
+    func parallaxBottomAttachedSheet(
+        topCornerRadius: CGFloat = ParallaxBottomSheetLayout.topCornerRadius,
+        fill: Color = Color(parallax: .elevatedLight).opacity(0.98),
+        stroke: Color = Color(parallax: .separatorLight),
+        shadowOpacity: Double = 0.08,
+        shadowRadius: CGFloat = 14,
+        shadowY: CGFloat = -4
+    ) -> some View {
+        let shape = UnevenRoundedRectangle(
+            topLeadingRadius: topCornerRadius,
+            bottomLeadingRadius: ParallaxBottomSheetLayout.bottomCornerRadius,
+            bottomTrailingRadius: ParallaxBottomSheetLayout.bottomCornerRadius,
+            topTrailingRadius: topCornerRadius
+        )
+        return self
+            .background(fill)
+            .overlay(shape.stroke(stroke, lineWidth: 1))
+            .clipShape(shape)
+            .shadow(color: .black.opacity(shadowOpacity), radius: shadowRadius, y: shadowY)
+    }
+}
+
 struct CanonicalScreen<Content: View>: View {
     let title: String
     let subtitle: String?
@@ -143,6 +189,7 @@ struct ActivitySummaryRow: View {
     let subtitle: String
     let detail: String
     let icon: String
+    var showsChevron: Bool = ParallaxStaticRowAccessoryLayout.nonInteractiveSummaryRowsShowChevron
 
     var body: some View {
         Card {
@@ -160,8 +207,8 @@ struct ActivitySummaryRow: View {
                     Text(title)
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(parallax: .textPrimaryLight))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.68)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.82)
                     Text(subtitle)
                         .font(.system(size: 10.5, weight: .medium, design: .rounded))
                         .foregroundStyle(Color(parallax: .textSecondaryLight))
@@ -174,9 +221,11 @@ struct ActivitySummaryRow: View {
                         .minimumScaleFactor(0.62)
                 }
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(Color(parallax: .textTertiaryLight))
+                if showsChevron {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(Color(parallax: .textTertiaryLight))
+                }
             }
         }
     }
@@ -203,6 +252,8 @@ struct StepRow: View {
     let estimate: String
     let tag: String
     let status: StepStatus
+    var trailingText: String?
+    var showsChevron: Bool = ParallaxStaticRowAccessoryLayout.nonInteractiveStepRowsShowChevron
 
     var body: some View {
         HStack(spacing: 6) {
@@ -216,10 +267,10 @@ struct StepRow: View {
             .frame(width: 20, height: 20)
 
             Text(title)
-                .font(.system(size: 10.2, weight: .semibold, design: .rounded))
+                .font(.system(size: 10.8, weight: .semibold, design: .rounded))
                 .foregroundStyle(Color(parallax: .textPrimaryLight))
-                .lineLimit(1)
-                .minimumScaleFactor(0.58)
+                .lineLimit(2)
+                .minimumScaleFactor(0.78)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(estimate)
@@ -239,14 +290,16 @@ struct StepRow: View {
                 .clipShape(Capsule())
 
             Spacer()
-            Text(status.trailingText(index: index))
+            Text(trailingText ?? status.trailingText)
                 .font(.system(size: 8.7, weight: .medium, design: .rounded))
                 .foregroundStyle(status == .running ? Color(parallax: .active) : Color(parallax: .textSecondaryLight))
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
-            Image(systemName: "chevron.right")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(Color(parallax: .textTertiaryLight))
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Color(parallax: .textTertiaryLight))
+            }
         }
         .padding(.vertical, 2)
         .padding(.horizontal, 6)
@@ -291,12 +344,12 @@ enum StepStatus {
         }
     }
 
-    func trailingText(index: Int) -> String {
+    var trailingText: String {
         switch self {
         case .done:
-            return index == 1 ? "Done 3:12" : "Done"
+            return "Done"
         case .running:
-            return "Running 12:14"
+            return "Running"
         case .pending:
             return ""
         }

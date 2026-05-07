@@ -1,0 +1,29 @@
+-[ RECORD 1 ]----+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+session_id       | 1c200995-af69-4f9e-94ff-308f90aaecb8
+status           | running
+mode             | checkpointed
+event_type       | intent_recorded
+payload          | {"checkpoint_label": "Next checkpoint", "measurement_mode": "checkpointed", "checkpoint_action": "update_checkpoint_plan", "sequence_integrity": "preserve_order"}
+client_device_id | ios-uat-matrix-20260506t185500z-checkpointsetup2
+-[ RECORD 2 ]----+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+session_id       | 1c200995-af69-4f9e-94ff-308f90aaecb8
+status           | running
+mode             | checkpointed
+event_type       | intent_recorded
+payload          | {"checkpoint_label": "Next checkpoint", "checkpoint_action": "make_optional", "sequence_integrity": "skip_without_corrupting_sequence"}
+client_device_id | ios-uat-matrix-20260506t185500z-checkpointsetup2
+-[ RECORD 3 ]----+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+session_id       | 1c200995-af69-4f9e-94ff-308f90aaecb8
+status           | running
+mode             | checkpointed
+event_type       | session_started
+payload          | {"source": "checkpoint_setup_drawer", "measurement_mode": "checkpointed"}
+client_device_id | ios-uat-matrix-20260506t185500z-checkpointsetup2
+-[ RECORD 4 ]----+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+session_id       | 1c200995-af69-4f9e-94ff-308f90aaecb8
+status           | running
+mode             | checkpointed
+event_type       | checkpoint_started
+payload          | {"label": "Next checkpoint", "source": "checkpoint_setup_drawer", "sequence_order": "3", "checkpoint_index": "3", "checkpoint_label": "Next checkpoint", "checkpoint_run_id": "fd6c76b7-87d0-42ad-be30-c02a712902f7"}
+client_device_id | ios-uat-matrix-20260506t185500z-checkpointsetup2
+

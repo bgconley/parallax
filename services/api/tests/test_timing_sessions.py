@@ -199,6 +199,64 @@ def test_phase1_scripted_timer_reconstructs_wall_and_active_time() -> None:
     assert completed_session["needs_timeline_recompute"] is False
 
 
+def test_completion_derives_spans_before_review() -> None:
+    client = TestClient(make_app())
+    activity_id = create_activity(client)
+    session = client.post(
+        "/v1/timing/sessions",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={
+            "mutation": mutation("session-complete-spans"),
+            "activity_id": activity_id,
+            "client_session_id": "client-session-complete-spans",
+            "mode": "whole_task",
+        },
+    ).json()
+
+    for mutation_id, sequence, event_type, client_time in [
+        ("complete-spans-start", 2, "session_started", "2026-04-27T12:00:00Z"),
+        (
+            "complete-spans-detour",
+            3,
+            "resource_detour_started",
+            "2026-04-27T12:05:00Z",
+        ),
+    ]:
+        response = client.post(
+            f"/v1/timing/sessions/{session['id']}/events",
+            headers={"X-Parallax-User-Id": USER_ID},
+            json={
+                "mutation": mutation(mutation_id, sequence),
+                "event_type": event_type,
+                "client_time": client_time,
+            },
+        )
+        assert response.status_code == 201
+
+    completed = client.post(
+        f"/v1/timing/sessions/{session['id']}/complete",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={
+            "mutation": mutation("complete-spans-complete", 4),
+            "completed_at": "2026-04-27T12:20:00Z",
+        },
+    )
+
+    assert completed.status_code == 200
+    completed_session = completed.json()
+    assert completed_session["status"] == "completed_unreviewed"
+    assert completed_session["wall_seconds"] == 1200
+    assert completed_session["active_seconds"] == 300
+    assert completed_session["detour_seconds"] == 900
+
+    spans_by_type = {span["span_type"]: span for span in completed_session["spans"]}
+    assert spans_by_type["active_work"]["duration_seconds"] == 300
+    assert spans_by_type["active_work"]["count_in_active_time"] is True
+    assert spans_by_type["resource_detour"]["duration_seconds"] == 900
+    assert spans_by_type["resource_detour"]["count_policy"] == "wall_only"
+    assert spans_by_type["resource_detour"]["count_in_active_time"] is False
+
+
 def test_duplicate_timing_event_replay_uses_idempotency_key() -> None:
     client = TestClient(make_app())
     activity_id = create_activity(client)

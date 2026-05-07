@@ -90,7 +90,11 @@ class PostgresTimingRepository:
         events = self._load_events(user_id, session_id)
         projection = project_timing_session(session, events)
         session_updates = projection.session_updates
-        if session.status in {"reviewed", "discarded"}:
+        spans = self._load_spans(user_id, session_id)
+        has_persisted_timeline = session.status in {"reviewed", "discarded"} or (
+            session.status == "completed_unreviewed" and bool(spans)
+        )
+        if has_persisted_timeline:
             session_updates = {
                 **session_updates,
                 "status": session.status,
@@ -105,13 +109,14 @@ class PostgresTimingRepository:
                 "side_quest_seconds": session.side_quest_seconds,
                 "start_latency_seconds": session.start_latency_seconds,
                 "transition_seconds": session.transition_seconds,
-                "needs_timeline_recompute": session.needs_timeline_recompute,
+                "needs_timeline_recompute": session.needs_timeline_recompute
+                or bool(session_updates["needs_timeline_recompute"]),
             }
         return session.model_copy(
             update={
                 **session_updates,
                 "events": projection.ordered_events,
-                "spans": self._load_spans(user_id, session_id),
+                "spans": spans,
             }
         )
 
@@ -230,6 +235,47 @@ class PostgresTimingRepository:
                 if row is None:
                     raise RuntimeError("timing span insert returned no row")
                 spans.append(_span_from_row(row))
+        return spans
+
+    def replace_derived_spans_and_totals(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        span_drafts: list[TimingEventSpanDraft],
+        totals: TimingSpanTotals,
+    ) -> list[TimingEventSpan]:
+        spans = self.replace_derived_spans(user_id, session_id, span_drafts)
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                """
+                update timing_session
+                set active_seconds = %s,
+                    wall_seconds = %s,
+                    setup_seconds = %s,
+                    detour_seconds = %s,
+                    interruption_seconds = %s,
+                    waiting_seconds = %s,
+                    side_quest_seconds = %s,
+                    start_latency_seconds = %s,
+                    transition_seconds = %s,
+                    needs_timeline_recompute = false,
+                    updated_at = now()
+                where user_id = %s and id = %s
+                """,
+                (
+                    totals.active_seconds,
+                    totals.wall_seconds,
+                    totals.setup_seconds,
+                    totals.detour_seconds,
+                    totals.interruption_seconds,
+                    totals.waiting_seconds,
+                    totals.side_quest_seconds,
+                    totals.start_latency_seconds,
+                    totals.transition_seconds,
+                    user_id,
+                    session_id,
+                ),
+            )
         return spans
 
     def upsert_extracted_event_span(

@@ -19,9 +19,12 @@ import Testing
         "forgotten_timer_not_sure",
         "save_useful_run",
         "mark_unusual",
+        "save_partial",
         "active_time_only",
         "friction_evidence_only",
+        "query_evidence_only",
         "discard_timing_keep_note",
+        "discard_all",
         "keep_preflight_active",
         "snooze_preflight",
         "hide_preflight",
@@ -42,6 +45,8 @@ import Testing
         Date(timeIntervalSince1970: 1_775_110_000),
         Date(timeIntervalSince1970: 1_775_110_010),
         Date(timeIntervalSince1970: 1_775_110_020),
+        Date(timeIntervalSince1970: 1_775_110_030),
+        Date(timeIntervalSince1970: 1_775_110_040),
     ]
     let timing = TimingSliceViewModel(
         activityId: UUID(uuidString: "11111111-1111-4111-8111-111111111111")!,
@@ -57,8 +62,14 @@ import Testing
     await temporal.performDrawerAction(.pauseStep)
     await temporal.performDrawerAction(.addStepNote)
 
+    #expect(temporal.activeDrawer == .quickCapture)
+    #expect(try await store.load().map(\.eventType) == [.sessionStarted, .sessionPaused])
+
+    await temporal.saveQuickCapture("UAT typed step note")
+
     let events = try await store.load()
     #expect(events.map(\.eventType) == [.sessionStarted, .sessionPaused, .annotationCaptured])
     #expect(events[1].payload["pause_reason"] == "user_paused_step")
     #expect(events[2].payload["source"] == "temporal_home")
+    #expect(events[2].notePreview == "UAT typed step note")
 }

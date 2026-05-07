@@ -1,0 +1,7 @@
+   event_type    |        client_device_id         | timer_elapsed_seconds | timer_active_seconds |                                              payload                                               |          created_at           
+-----------------+---------------------------------+-----------------------+----------------------+----------------------------------------------------------------------------------------------------+-------------------------------
+ session_started | ios-uat-matrix-20260506t032650z |                     0 |                    0 | {"measurement_mode": "whole_task"}                                                                 | 2026-05-06 04:16:04.691994+00
+ session_paused  | ios-uat-matrix-20260506t032650z |                    90 |                   90 | {"pause_reason": "user_paused_step", "checkpoint_label": "Phase 9 UAT Matrix 20260506T032650Z"}    | 2026-05-06 04:17:35.137418+00
+ session_resumed | ios-uat-matrix-20260506t032650z |                   121 |                   90 | {"resume_reason": "user_resumed_timer", "checkpoint_label": "Phase 9 UAT Matrix 20260506T032650Z"} | 2026-05-06 04:18:05.416015+00
+(3 rows)
+

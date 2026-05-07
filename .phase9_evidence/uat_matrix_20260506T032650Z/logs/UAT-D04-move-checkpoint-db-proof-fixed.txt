@@ -1,0 +1,12 @@
+     event_type     |  client_mutation_id   |        client_device_id         | timer_elapsed_seconds | timer_active_seconds |                                                                                                       payload                                                                                                       
+--------------------+-----------------------+---------------------------------+-----------------------+----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ session_started    | session_started-61    | ios-uat-matrix-20260506t032650z |                     0 |                    0 | {"measurement_mode": "checkpointed"}
+ checkpoint_started | checkpoint_started-62 | ios-uat-matrix-20260506t032650z |                     0 |                    0 | {"label": "Current checkpoint", "source": "timing_launcher", "sequence_order": "2", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint", "checkpoint_run_id": "137f60e1-a780-4fc2-8b15-a5eae1839715"}
+ scope_changed      | scope_changed-63      | ios-uat-matrix-20260506t032650z |                    16 |                   16 | {"label": "Current checkpoint", "sequence_order": "2", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint", "checkpoint_action": "move_current_step", "sequence_integrity": "preserve_order"}
+(3 rows)
+
+                  id                  |       label        | sequence_order | status  |       started_at       
+--------------------------------------+--------------------+----------------+---------+------------------------
+ 137f60e1-a780-4fc2-8b15-a5eae1839715 | Current checkpoint |              2 | running | 2026-05-06 06:21:45+00
+(1 row)
+

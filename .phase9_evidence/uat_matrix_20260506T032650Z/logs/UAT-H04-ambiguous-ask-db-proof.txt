@@ -1,0 +1,5 @@
+                  id                  |         question          |  status  | sample_size | confidence |  time_window  |                          answer                           |         computed_activity_id         |                   computed_activity_name                    | primary_reviewed_runs | secondary_reviewed_runs | evidence_items 
+--------------------------------------+---------------------------+----------+-------------+------------+---------------+-----------------------------------------------------------+--------------------------------------+-------------------------------------------------------------+-----------------------+-------------------------+----------------
+ 4d7e0c93-a2f3-4f81-bfeb-620af695d0cf | How long does clean take? | complete |           0 | very_low   | last_180_days | I do not have reviewed timing history for that scope yet. | 53b45161-13ef-43d4-806f-416ddbe9b858 | Phase 9 UAT Matrix Ambiguous Clean Primary 20260506T191300Z |                     0 |                       1 |              0
+(1 row)
+

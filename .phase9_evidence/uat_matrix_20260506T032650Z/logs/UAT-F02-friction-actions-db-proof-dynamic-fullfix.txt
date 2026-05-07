@@ -1,0 +1,44 @@
+Pager usage is off.
+latest_session
+                  id                  |             activity_id              |    mode    | status  |              source_device_id              |       started_at       | completed_at | active_seconds | wall_seconds | detour_seconds | model_inclusion 
+--------------------------------------+--------------------------------------+------------+---------+--------------------------------------------+------------------------+--------------+----------------+--------------+----------------+-----------------
+ c3e2325d-6849-4914-bca1-3ad1f33865e7 | f883c9ab-8264-4f39-b85a-b82c49b64543 | whole_task | running | ios-uat-matrix-20260506t032650z-f02fullfix | 2026-05-06 07:19:35+00 |              |                |              |              0 | not_reviewed
+(1 row)
+
+latest_activity
+                  id                  |                  display_name                  | default_timing_mode 
+--------------------------------------+------------------------------------------------+---------------------
+ f883c9ab-8264-4f39-b85a-b82c49b64543 | Phase 9 UAT Matrix F02 Full Fix 20260506T0319Z | whole_task
+(1 row)
+
+annotations
+                  id                  |              session_id              | input_mode  |       status       |                              raw_text                              | checkpoint_run_id | timer_elapsed_seconds | timer_active_seconds |                                                                             metadata                                                                              
+--------------------------------------+--------------------------------------+-------------+--------------------+--------------------------------------------------------------------+-------------------+-----------------------+----------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ faa41131-2df6-4daa-8183-9bfdf246d0cc | c3e2325d-6849-4914-bca1-3ad1f33865e7 | text        | extraction_pending | Dynamic F02 full friction note links annotation to extracted event |                   |                    57 |                   57 | {"source": "timing_session_friction", "capture_method": "manual_timer_button", "retrieval_document": {"reason": "extraction_not_available", "created": false}}
+ 59998d31-8be9-4fb1-8e08-02a9c71f42ce | c3e2325d-6849-4914-bca1-3ad1f33865e7 | review_note | extraction_pending | Keep this note as context only.                                    |                   |                   157 |                   57 | {"source": "friction_evidence_drawer", "capture_method": "review_reconstruction", "retrieval_document": {"reason": "extraction_not_available", "created": false}}
+(2 rows)
+
+timing_events
+ client_sequence |       event_type        | timer_elapsed_seconds | timer_active_seconds |                                                                                                                   payload                                                                                                                    
+-----------------+-------------------------+-----------------------+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+               3 | session_started         |                     0 |                    0 | {"measurement_mode": "whole_task"}
+               4 | annotation_captured     |                    57 |                   57 | {"source": "timing_session_friction", "input_mode": "text", "annotation_id": "faa41131-2df6-4daa-8183-9bfdf246d0cc"}
+               5 | resource_detour_started |                    57 |                   57 | {"count_policy": "wall_only", "resource_name": "Dynamic F02 full blocker"}
+               6 | user_correction_applied |                   112 |                   57 | {"span_type": "resource_detour", "count_policy": "wall_only", "correction_type": "extracted_event_corrected", "friction_category": "resource"}
+               7 | user_correction_applied |                   130 |                   57 | {"count_policy": "do_not_count", "correction_type": "extracted_event_ignored", "confirmation_state": "ignored"}
+               8 | annotation_captured     |                   157 |                   57 | {"source": "friction_evidence_drawer", "input_mode": "review_note", "annotation_id": "59998d31-8be9-4fb1-8e08-02a9c71f42ce"}
+               9 | extracted_event_created |                   177 |                   57 | {"span_type": "resource_detour", "count_policy": "wall_only", "annotation_id": "FAA41131-2DF6-4DAA-8183-9BFDF246D0CC", "resource_name": "Dynamic F02 full blocker", "friction_category": "resource", "confirmation_state": "user_confirmed"}
+(7 rows)
+
+extracted_events
+                  id                  |            annotation_id             |    span_type    | friction_category |      resource_name       | count_policy | count_in_wall_time | count_in_active_time | confirmation_state |                                                                                                                                                                                source_json                                                                                                                                                                                
+--------------------------------------+--------------------------------------+-----------------+-------------------+--------------------------+--------------+--------------------+----------------------+--------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ fb531ce1-6bac-4cad-8cc4-d3abbac0687e | faa41131-2df6-4daa-8183-9bfdf246d0cc | resource_detour | resource          | Dynamic F02 full blocker | wall_only    | t                  | f                    | confirmed          | {"source": "client_confirmed_extracted_event", "payload": {"span_type": "resource_detour", "count_policy": "wall_only", "annotation_id": "FAA41131-2DF6-4DAA-8183-9BFDF246D0CC", "resource_name": "Dynamic F02 full blocker", "friction_category": "resource", "confirmation_state": "user_confirmed"}, "source_timing_event_id": "a3618567-3290-4b04-a822-44b315679034"}
+(1 row)
+
+spans
+                  id                  |    span_type    | friction_category | count_policy | count_in_wall_time | count_in_active_time |         linked_annotation_id         |      linked_extracted_event_id       | user_corrected 
+--------------------------------------+-----------------+-------------------+--------------+--------------------+----------------------+--------------------------------------+--------------------------------------+----------------
+ e9da5097-e2b1-4e85-aa6e-563e814f519d | resource_detour | resource          | wall_only    | t                  | f                    | faa41131-2df6-4daa-8183-9bfdf246d0cc | fb531ce1-6bac-4cad-8cc4-d3abbac0687e | f
+(1 row)
+

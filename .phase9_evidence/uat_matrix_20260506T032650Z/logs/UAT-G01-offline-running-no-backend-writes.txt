@@ -1,0 +1,9 @@
+-[ RECORD 1 ]-------+--
+matching_activities | 0
+
+-[ RECORD 1 ]-----+--
+matching_sessions | 0
+
+-[ RECORD 1 ]-------------+--
+matching_client_mutations | 0
+

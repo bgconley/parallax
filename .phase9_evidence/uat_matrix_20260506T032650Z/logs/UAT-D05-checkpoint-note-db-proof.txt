@@ -1,0 +1,18 @@
+    section     |                  id                  | status  |     mode     |       started_at       | completed_at 
+----------------+--------------------------------------+---------+--------------+------------------------+--------------
+ latest_session | f70fab32-2462-43e6-a423-ff8d0512e3da | running | checkpointed | 2026-05-06 06:21:45+00 | 
+(1 row)
+
+   section   |                  id                  |              session_id              | checkpoint_run_id | input_mode |              raw_text              |       status       |                                                         metadata                                                          |          created_at           
+-------------+--------------------------------------+--------------------------------------+-------------------+------------+------------------------------------+--------------------+---------------------------------------------------------------------------------------------------------------------------+-------------------------------
+ annotations | 6e9cc169-a390-435b-ab7d-df9a18856817 | f70fab32-2462-43e6-a423-ff8d0512e3da |                   | text       | Checkpoint D05 note from simulator | extraction_pending | {"capture_method": "manual_timer_button", "retrieval_document": {"reason": "extraction_not_available", "created": false}} | 2026-05-06 06:27:05.210102+00
+(1 row)
+
+ section |     event_type      | client_sequence |   client_mutation_id   |                                                                                                       payload                                                                                                       
+---------+---------------------+-----------------+------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ events  | session_started     |              61 | session_started-61     | {"measurement_mode": "checkpointed"}
+ events  | checkpoint_started  |              62 | checkpoint_started-62  | {"label": "Current checkpoint", "source": "timing_launcher", "sequence_order": "2", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint", "checkpoint_run_id": "137f60e1-a780-4fc2-8b15-a5eae1839715"}
+ events  | scope_changed       |              63 | scope_changed-63       | {"label": "Current checkpoint", "sequence_order": "2", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint", "checkpoint_action": "move_current_step", "sequence_integrity": "preserve_order"}
+ events  | annotation_captured |              64 | annotation_captured-64 | {"input_mode": "text", "annotation_id": "6e9cc169-a390-435b-ab7d-df9a18856817"}
+(4 rows)
+

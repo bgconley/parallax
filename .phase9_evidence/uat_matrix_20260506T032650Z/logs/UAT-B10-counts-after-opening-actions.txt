@@ -1,0 +1,15 @@
+     object     | count 
+----------------+-------
+ timing_session |     3
+(1 row)
+
+       object        | count 
+---------------------+-------
+ review_saved_events |     1
+(1 row)
+
+    object     | count 
+---------------+-------
+ query_answers |     5
+(1 row)
+

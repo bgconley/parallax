@@ -2,6 +2,27 @@ import ParallaxCore
 import ParallaxDesignSystem
 import SwiftUI
 
+public enum TimingLauncherSheetLayout {
+    public static let bottomSheetUsesOverlayAttachment = true
+    public static let bottomSheetExtendsThroughBottomSafeArea = true
+    public static let directActionsUseBalancedHeights = true
+    public static let directActionHeight: CGFloat = TimingInstrumentLayout.primaryButtonHeight
+    public static let directActionCornerRadius: CGFloat = 18
+
+    public static func bottomSheetSafeAreaExtension(for safeAreaBottom: CGFloat) -> CGFloat {
+        TimingInstrumentLayout.bottomDockSafeAreaExtension(for: safeAreaBottom)
+    }
+
+    public static func bottomSheetAttachmentOffset(for safeAreaBottom: CGFloat) -> CGFloat {
+        bottomSheetSafeAreaExtension(for: safeAreaBottom)
+    }
+
+    public static func bottomSheetBottomPadding(for safeAreaBottom: CGFloat) -> CGFloat {
+        ParallaxBottomSheetLayout.bottomContentPadding
+            + bottomSheetSafeAreaExtension(for: safeAreaBottom) * 2
+    }
+}
+
 struct TimingLauncherSheet: View {
     let activityName: String
     let startTiming: (MeasurementMode) async -> Void
@@ -9,77 +30,121 @@ struct TimingLauncherSheet: View {
     @State private var selectedMode: MeasurementMode = .wholeTask
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            Color.black.opacity(0.42)
-                .ignoresSafeArea()
-                .onTapGesture(perform: dismiss)
-            VStack(spacing: 9) {
-                Capsule()
-                    .fill(Color(parallax: .separatorLight))
-                    .frame(width: 72, height: 5)
-                    .padding(.top, 8)
-                VStack(spacing: 2) {
-                    Text("Calibrate timing")
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
-                    Text("Choose a low-friction way to learn how this really goes.")
-                        .font(.system(size: 11.5, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color(parallax: .textSecondaryLight))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
-                }
-                ActivitySummaryRow(
-                    title: activityName,
-                    subtitle: "No reviewed range yet",
-                    detail: "Start a run to build evidence",
-                    icon: "sparkles"
-                )
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("How should we measure this?")
-                        .font(.system(size: 11.5, weight: .medium, design: .rounded))
-                        .padding(.horizontal, 4)
-                        .padding(.bottom, 4)
-                    MeasurementOption(selected: selectedMode == .estimateOnly, icon: "clock", title: "Estimate only", detail: "Use what I know already") {
-                        selectedMode = .estimateOnly
-                    }
-                    Divider()
-                    MeasurementOption(selected: selectedMode == .wholeTask, icon: "stopwatch", title: "Time once", detail: "Quick start and stop") {
-                        selectedMode = .wholeTask
-                    }
-                    Divider()
-                    MeasurementOption(selected: selectedMode == .checkpointed, icon: "chart.line.uptrend.xyaxis", title: "Checkpointed timing", detail: "Learn the steps inside this workflow") {
-                        selectedMode = .checkpointed
-                    }
-                    Divider()
-                    MeasurementOption(selected: selectedMode == .routine, icon: "list.bullet", title: "Routine run", detail: "Follow a saved sequence") {
-                        selectedMode = .routine
-                    }
-                    Divider()
-                    MeasurementOption(selected: selectedMode == .calibration, icon: "scope", title: "Calibration run", detail: "Guess first, compare after") {
-                        selectedMode = .calibration
-                    }
-                }
-                .padding(8)
-                .background(Color(parallax: .cardLight))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(parallax: .separatorLight), lineWidth: 1))
+        GeometryReader { proxy in
+            ZStack(alignment: .bottom) {
+                Color.black.opacity(0.42)
+                    .ignoresSafeArea()
+                    .onTapGesture(perform: dismiss)
+                launcherSheetContent(safeAreaBottom: proxy.safeAreaInsets.bottom)
+                    .ignoresSafeArea(.container, edges: .bottom)
+            }
+        }
+    }
 
-                HStack(spacing: 10) {
-                    PrimaryButton(title: "Start timing", systemName: nil) {
-                        Task { await startTiming(selectedMode) }
-                    }
-                    Button(action: dismiss) {
-                        Text("Not now")
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                            .frame(maxWidth: .infinity, minHeight: 42)
-                    }
-                    .buttonStyle(.bordered)
+    private func launcherSheetContent(safeAreaBottom: CGFloat) -> some View {
+        let attachmentOffset = TimingLauncherSheetLayout.bottomSheetAttachmentOffset(for: safeAreaBottom)
+        return VStack(spacing: 9) {
+            Capsule()
+                .fill(Color(parallax: .separatorLight))
+                .frame(
+                    width: ParallaxBottomSheetLayout.handleWidth,
+                    height: ParallaxBottomSheetLayout.handleHeight
+                )
+                .padding(.top, 8)
+            VStack(spacing: 2) {
+                Text("Calibrate timing")
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                Text("Choose how Parallax should observe this run.")
+                    .font(.system(size: 11.5, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color(parallax: .textSecondaryLight))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+            ActivitySummaryRow(
+                title: activityName,
+                subtitle: "No reviewed range yet",
+                detail: "Start a run to build evidence",
+                icon: "sparkles"
+            )
+            VStack(alignment: .leading, spacing: 0) {
+                Text("How should we measure this?")
+                    .font(.system(size: 11.5, weight: .medium, design: .rounded))
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, 4)
+                MeasurementOption(selected: selectedMode == .estimateOnly, icon: "clock", title: "Estimate only", detail: "Use what I know already") {
+                    selectedMode = .estimateOnly
+                }
+                Divider()
+                MeasurementOption(selected: selectedMode == .wholeTask, icon: "stopwatch", title: "Time once", detail: "Quick start and stop") {
+                    selectedMode = .wholeTask
+                }
+                Divider()
+                MeasurementOption(selected: selectedMode == .checkpointed, icon: "chart.line.uptrend.xyaxis", title: "Checkpointed timing", detail: "Compare timing by phase") {
+                    selectedMode = .checkpointed
+                }
+                Divider()
+                MeasurementOption(selected: selectedMode == .routine, icon: "list.bullet", title: "Repeated timing", detail: "Use a saved timing pattern") {
+                    selectedMode = .routine
+                }
+                Divider()
+                MeasurementOption(selected: selectedMode == .calibration, icon: "scope", title: "Calibration run", detail: "Guess first, compare after") {
+                    selectedMode = .calibration
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.bottom, 26)
+            .padding(8)
             .background(Color(parallax: .cardLight))
-            .clipShape(RoundedRectangle(cornerRadius: 26))
-            .ignoresSafeArea(edges: .bottom)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(parallax: .separatorLight), lineWidth: 1))
+
+            HStack(spacing: 10) {
+                LauncherSheetButton(title: "Start timing", isPrimary: true) {
+                    Task { await startTiming(selectedMode) }
+                }
+                LauncherSheetButton(title: "Not now", isPrimary: false, action: dismiss)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, TimingLauncherSheetLayout.bottomSheetBottomPadding(for: safeAreaBottom))
+        .parallaxBottomAttachedSheet(
+            topCornerRadius: 26,
+            fill: Color(parallax: .cardLight),
+            shadowOpacity: 0.12,
+            shadowRadius: 20,
+            shadowY: -7
+        )
+        .offset(y: attachmentOffset)
+    }
+}
+
+private struct LauncherSheetButton: View {
+    let title: String
+    let isPrimary: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+                .frame(maxWidth: .infinity, minHeight: TimingLauncherSheetLayout.directActionHeight)
+                .foregroundStyle(isPrimary ? Color.white : Color(parallax: .active))
+                .background(background)
+                .overlay(border)
+                .clipShape(RoundedRectangle(cornerRadius: TimingLauncherSheetLayout.directActionCornerRadius))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var background: Color {
+        isPrimary ? Color(parallax: .active) : Color(parallax: .elevatedLight)
+    }
+
+    @ViewBuilder
+    private var border: some View {
+        if !isPrimary {
+            RoundedRectangle(cornerRadius: TimingLauncherSheetLayout.directActionCornerRadius)
+                .stroke(Color(parallax: .separatorLight), lineWidth: 1)
         }
     }
 }

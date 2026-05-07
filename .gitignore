@@ -2,6 +2,7 @@
 .env
 .firecrawl/
 .release-gate-proofs/
+.phase*_evidence/secrets/
 .venv/
 __pycache__/
 .pytest_cache/
@@ -10,4 +11,5 @@ __pycache__/
 .build/
 apps/ios/.build/
 apps/ios/DerivedData/
+apps/ios/DerivedDataUAT/
 *.pyc

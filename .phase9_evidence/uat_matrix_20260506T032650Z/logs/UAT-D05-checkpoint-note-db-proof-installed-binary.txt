@@ -1,0 +1,22 @@
+    section     |                  id                  | status  |     mode     |       started_at       | completed_at 
+----------------+--------------------------------------+---------+--------------+------------------------+--------------
+ latest_session | 74573bd0-9c4c-42a0-9281-1679c9f0ff39 | running | checkpointed | 2026-05-06 06:44:27+00 | 
+(1 row)
+
+  section   |                  id                  |              session_id              |          checkpoint_run_id           | input_mode |               raw_text               | timer_elapsed_seconds | timer_active_seconds |       status       |                                                                                                                                         metadata                                                                                                                                         |          created_at           
+------------+--------------------------------------+--------------------------------------+--------------------------------------+------------+--------------------------------------+-----------------------+----------------------+--------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------
+ annotation | c96d8850-2329-49cf-97c4-ff9fd85d424e | 74573bd0-9c4c-42a0-9281-1679c9f0ff39 | ff7793df-e4ad-4ef3-b32d-0acfe117f01e | text       | Checkpoint D05 installed binary note |                    93 |                   93 | extraction_pending | {"label": "Current checkpoint", "source": "timing_session_step_note", "capture_method": "manual_timer_button", "sequence_order": "2", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint", "retrieval_document": {"reason": "extraction_not_available", "created": false}} | 2026-05-06 06:46:00.854469+00
+(1 row)
+
+    section     |                  id                  |              session_id              | sequence_order |       label        | status  |       started_at       | completed_at 
+----------------+--------------------------------------+--------------------------------------+----------------+--------------------+---------+------------------------+--------------
+ checkpoint_run | ff7793df-e4ad-4ef3-b32d-0acfe117f01e | 74573bd0-9c4c-42a0-9281-1679c9f0ff39 |              2 | Current checkpoint | running | 2026-05-06 06:44:27+00 | 
+(1 row)
+
+ section |     event_type      | client_sequence |  client_mutation_id   |                                                                                                                                                   payload                                                                                                                                                   
+---------+---------------------+-----------------+-----------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ events  | session_started     |               3 | session_started-3     | {"measurement_mode": "checkpointed"}
+ events  | checkpoint_started  |               4 | checkpoint_started-4  | {"label": "Current checkpoint", "source": "timing_launcher", "sequence_order": "2", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint", "checkpoint_run_id": "ff7793df-e4ad-4ef3-b32d-0acfe117f01e"}
+ events  | annotation_captured |               5 | annotation_captured-5 | {"label": "Current checkpoint", "source": "timing_session_step_note", "input_mode": "text", "annotation_id": "c96d8850-2329-49cf-97c4-ff9fd85d424e", "sequence_order": "2", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint", "checkpoint_run_id": "ff7793df-e4ad-4ef3-b32d-0acfe117f01e"}
+(3 rows)
+

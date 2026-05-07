@@ -1,0 +1,12 @@
+  section   |                  id                  |              session_id              | checkpoint_run_id | input_mode |             raw_text              | timer_elapsed_seconds | timer_active_seconds |       status       |                                                         metadata                                                          |          created_at           
+------------+--------------------------------------+--------------------------------------+-------------------+------------+-----------------------------------+-----------------------+----------------------+--------------------+---------------------------------------------------------------------------------------------------------------------------+-------------------------------
+ annotation | 7be57107-d86d-4a9e-9823-4c1ecc1c142d | 2ccc8475-2b52-46a8-b73f-47db83389317 |                   | text       | Checkpoint D05 typed linkage note |                       |                      | extraction_pending | {"capture_method": "manual_timer_button", "retrieval_document": {"reason": "extraction_not_available", "created": false}} | 2026-05-06 06:41:49.656284+00
+(1 row)
+
+ section |     event_type      | client_sequence |  client_mutation_id   |                                                                                                       payload                                                                                                       
+---------+---------------------+-----------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ events  | session_started     |               3 | session_started-3     | {"measurement_mode": "checkpointed"}
+ events  | checkpoint_started  |               4 | checkpoint_started-4  | {"label": "Current checkpoint", "source": "timing_launcher", "sequence_order": "2", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint", "checkpoint_run_id": "920e9578-2658-4f93-ae12-9f4ec8917d66"}
+ events  | annotation_captured |               5 | annotation_captured-5 | {"input_mode": "text", "annotation_id": "7be57107-d86d-4a9e-9823-4c1ecc1c142d"}
+(3 rows)
+

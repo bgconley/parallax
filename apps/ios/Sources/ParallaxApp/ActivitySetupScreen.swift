@@ -41,7 +41,7 @@ struct ActivitySetupScreen: View {
                                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.bold))
+                                    .font(.system(size: 12, weight: .bold))
                                     .foregroundStyle(Color(parallax: .textTertiaryLight))
                             }
                             .frame(maxWidth: .infinity, minHeight: 40)

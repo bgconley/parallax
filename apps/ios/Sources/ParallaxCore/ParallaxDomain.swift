@@ -176,6 +176,243 @@ public enum TimingReviewFlagStatus: String, Codable, CaseIterable, Sendable {
     case dismissed
 }
 
+public enum ParallaxDisplayText {
+    public static func humanizeIdentifier(_ value: String?, fallback: String = "Unknown") -> String {
+        guard let value else { return fallback }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return fallback }
+
+        if let known = knownIdentifierCopy[trimmed] {
+            return known
+        }
+
+        let words = trimmed
+            .replacingOccurrences(of: "-", with: "_")
+            .split(separator: "_")
+            .map { String($0).lowercased() }
+        guard !words.isEmpty else { return fallback }
+
+        return words.enumerated().map { index, word in
+            switch word {
+            case "ai":
+                return "AI"
+            case "api":
+                return "API"
+            case "id":
+                return "ID"
+            default:
+                return index == 0 ? word.capitalized : word
+            }
+        }.joined(separator: " ")
+    }
+
+    private static let knownIdentifierCopy: [String: String] = [
+        "possible_forgotten_timer": "Possible forgotten timer",
+        "place_transition": "Place transition",
+        "long_idle_gap": "Long idle gap",
+        "impossible_sequence": "Impossible sequence",
+        "low_context_quality": "Low context quality",
+        "privacy_review_required": "Privacy review required",
+        "manual_review_requested": "Manual review requested",
+        "place_changed_after_long_idle_gap": "Place changed after a long idle gap",
+        "review_prompt": "Review prompt",
+        "resource_dependency": "Repeated resource friction",
+        "needs_attention": "Needs attention",
+        "active_duration_only": "Active duration only",
+        "wall_envelope_only": "Wall envelope only",
+        "friction_patterns_only": "Friction patterns only",
+        "query_evidence_only": "Answer evidence only",
+        "not_reviewed": "Not reviewed",
+        "wall_only": "Wall time only",
+        "do_not_count": "Do not count",
+    ]
+}
+
+public extension TimingSessionStatus {
+    var displayText: String {
+        switch self {
+        case .draft:
+            return "Ready"
+        case .intentRecorded:
+            return "Intent saved"
+        case .running:
+            return "Running"
+        case .paused:
+            return "Paused"
+        case .completedUnreviewed:
+            return "Needs review"
+        case .reviewed:
+            return "Reviewed"
+        case .discarded:
+            return "Discarded"
+        case .abandoned:
+            return "Abandoned"
+        }
+    }
+}
+
+public extension TimingEventType {
+    var displayText: String {
+        switch self {
+        case .intentRecorded:
+            return "Intent saved"
+        case .sessionStarted:
+            return "Timer started"
+        case .sessionPaused:
+            return "Timer paused"
+        case .sessionResumed:
+            return "Timer resumed"
+        case .sessionCompleted:
+            return "Timer finished"
+        case .sessionAbandoned:
+            return "Timer abandoned"
+        case .checkpointStarted:
+            return "Checkpoint started"
+        case .checkpointCompleted:
+            return "Checkpoint completed"
+        case .checkpointSkipped:
+            return "Checkpoint skipped"
+        case .annotationCaptured:
+            return "Note captured"
+        case .extractedEventCreated:
+            return "Evidence confirmed"
+        case .activeWorkStarted:
+            return "Active work started"
+        case .activeWorkCompleted:
+            return "Active work finished"
+        case .setupStarted:
+            return "Setup started"
+        case .setupCompleted:
+            return "Setup finished"
+        case .resourceDetourStarted:
+            return "Friction started"
+        case .resourceDetourCompleted:
+            return "Friction finished"
+        case .interruptionStarted:
+            return "Interruption started"
+        case .interruptionCompleted:
+            return "Interruption finished"
+        case .waitingStarted:
+            return "Waiting started"
+        case .waitingCompleted:
+            return "Waiting finished"
+        case .sideQuestStarted:
+            return "Side quest started"
+        case .sideQuestCompleted:
+            return "Side quest finished"
+        case .transitionStarted:
+            return "Transition started"
+        case .transitionCompleted:
+            return "Transition finished"
+        case .badTimerMarked:
+            return "Timer marked for review"
+        case .scopeChanged:
+            return "Scope changed"
+        case .userCorrectionApplied:
+            return "Correction applied"
+        case .reviewSaved:
+            return "Review saved"
+        case .syncReconciled:
+            return "Sync reconciled"
+        }
+    }
+}
+
+public extension ModelUpdateDecision {
+    var displayText: String {
+        switch self {
+        case .saveUsefulRun:
+            return "Useful normal run"
+        case .markUnusual:
+            return "Unusual but useful"
+        case .savePartial:
+            return "Useful partial run"
+        case .activeOnly:
+            return "Active time only"
+        case .frictionOnly:
+            return "Friction evidence only"
+        case .queryEvidenceOnly:
+            return "Answer evidence only"
+        case .discardTimingKeepNote:
+            return "Discard timing, keep note"
+        case .discardAll:
+            return "Discard all"
+        }
+    }
+}
+
+public extension MeasurementMode {
+    var displayText: String {
+        switch self {
+        case .estimateOnly:
+            return "Estimate-only timing"
+        case .wholeTask:
+            return "Whole-task timing"
+        case .checkpointed:
+            return "Checkpointed timing"
+        case .routine:
+            return "Repeated timing"
+        case .calibration:
+            return "Calibration timing"
+        case .passive:
+            return "Passive timing"
+        }
+    }
+}
+
+public extension PreflightCheckDecision {
+    var displayText: String {
+        switch self {
+        case .accept:
+            return "Keep active"
+        case .hide:
+            return "Hide"
+        case .snooze:
+            return "Snooze"
+        case .retire:
+            return "Retire"
+        }
+    }
+}
+
+public extension TimingReviewFlagStatus {
+    var displayText: String {
+        switch self {
+        case .open:
+            return "Open"
+        case .snoozed:
+            return "Snoozed"
+        case .resolved:
+            return "Resolved"
+        case .dismissed:
+            return "Dismissed"
+        }
+    }
+}
+
+public extension TemporalSemanticRole {
+    var displayText: String {
+        switch self {
+        case .active:
+            return "Active"
+        case .wall:
+            return "Wall"
+        case .checkpoint:
+            return "Checkpoint"
+        case .detour:
+            return "Detour"
+        case .interruption:
+            return "Review"
+        case .waiting:
+            return "Waiting"
+        case .startLatency:
+            return "Starting"
+        case .privacy:
+            return "Private"
+        }
+    }
+}
+
 public enum UIProjectionState: String, Codable, CaseIterable, Sendable {
     case defaultReady = "default"
     case empty

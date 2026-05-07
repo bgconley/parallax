@@ -1,0 +1,10 @@
+             activity_id              |                   display_name                    | sessions | timing_events 
+--------------------------------------+---------------------------------------------------+----------+---------------
+ b3c89f4d-628a-499a-a9de-4bc4c3129992 | Phase 9 UAT Matrix Empty Created 20260506T193500Z |        1 |             1
+(1 row)
+
+    check_name     | count 
+-------------------+-------
+ fixture_like_rows |     0
+(1 row)
+

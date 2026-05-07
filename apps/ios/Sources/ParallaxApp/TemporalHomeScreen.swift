@@ -24,7 +24,14 @@ struct TemporalHomeScreen: View {
     }
 
     var body: some View {
-        CanonicalScreen(title: title, subtitle: subtitle, leadingIcon: "line.3.horizontal") {
+        CanonicalScreen(
+            title: title,
+            subtitle: subtitle,
+            leadingIcon: "line.3.horizontal",
+            leadingAction: {
+                temporalViewModel.activeDrawer = .temporalNavigation
+            }
+        ) {
             switch temporalViewModel.surfaceState {
             case .defaultHome:
                 defaultHome
@@ -66,10 +73,35 @@ struct TemporalHomeScreen: View {
                 temporalViewModel.activeDrawer = .phase8(drawer)
             }
         }
+        .task(id: ObjectIdentifier(timingViewModel)) {
+            temporalViewModel.attachTimingViewModel(timingViewModel)
+        }
+        .task(id: projectionRefreshKey) {
+            temporalViewModel.refreshSurfaceFromTimingProjection()
+        }
+        .task(id: temporalViewModel.surfaceState) {
+            if temporalViewModel.surfaceState == .needsReview {
+                await timingViewModel.refreshForgottenTimerEvidence()
+            }
+        }
+        .task {
+            await refreshTimerWhileVisible()
+        }
+    }
+
+    private func refreshTimerWhileVisible() async {
+        while !Task.isCancelled {
+            timingViewModel.refreshTimer()
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+        }
     }
 
     private var title: String {
         temporalViewModel.surfaceState == .groundedAnswer ? "Ask Time" : "Today"
+    }
+
+    private var projectionRefreshKey: String {
+        "\(timingViewModel.status.rawValue)-\(timingViewModel.pendingEventCount)-\(timingViewModel.reviewDecision?.rawValue ?? "none")"
     }
 
     private var focusDetail: String {
@@ -81,7 +113,10 @@ struct TemporalHomeScreen: View {
         case .completedUnreviewed:
             return "Finished · review decides what this teaches"
         case .reviewed:
-            return "Reviewed · \(timingViewModel.reviewDecision?.rawValue ?? "decision saved")"
+            let decision = timingViewModel.reviewDecision
+                .map { ReviewDecisionDisplayFactory.option(for: $0).title }
+                ?? "Decision saved"
+            return "Reviewed · \(decision)"
         default:
             return "Ready to time this activity"
         }
@@ -95,8 +130,23 @@ struct TemporalHomeScreen: View {
 
     private var evidenceDetail: String {
         timingViewModel.pendingEventCount > 0
-            ? "\(timingViewModel.pendingEventCount) local mutation\(timingViewModel.pendingEventCount == 1 ? "" : "s")"
-            : "no local queue"
+            ? pendingChangeCountText
+            : "no local changes"
+    }
+
+    private var pendingChangeCountText: String {
+        timingViewModel.pendingEventCount == 1
+            ? "1 pending change"
+            : "\(timingViewModel.pendingEventCount) pending changes"
+    }
+
+    private var pendingSyncSummary: String {
+        guard timingViewModel.pendingEventCount > 0 else {
+            return "All changes saved"
+        }
+        return timingViewModel.pendingEventCount == 1
+            ? "1 change waiting to sync"
+            : "\(timingViewModel.pendingEventCount) changes waiting to sync"
     }
 
     private var subtitle: String {
@@ -104,9 +154,9 @@ struct TemporalHomeScreen: View {
         case .defaultHome:
             return "Temporal focus"
         case .needsReview:
-            return "\(timingViewModel.pendingEventCount) local mutation\(timingViewModel.pendingEventCount == 1 ? "" : "s") pending"
+            return pendingSyncSummary
         case .syncPending:
-            return "4 local mutations pending"
+            return pendingSyncSummary
         case .expandedTimingRun:
             return "Timing run evidence"
         case .groundedAnswer:
@@ -129,7 +179,7 @@ struct TemporalHomeScreen: View {
                 title: timingViewModel.activityName,
                 detail: focusDetail,
                 role: .active,
-                action: canStart ? .startAgainExpandedRun : .currentFocusDefault
+                action: .currentFocusDefault
             )
             temporalInsightCard(
                 title: "Timing intelligence",
@@ -137,7 +187,7 @@ struct TemporalHomeScreen: View {
                 action: .preflightInsightDefault
             )
             timelineCard(rows: [
-                .button(timingViewModel.activityName, runStatusDetail, .active, canStart ? .startAgainExpandedRun : .runningRowDefault),
+                .button(timingViewModel.activityName, runStatusDetail, .active, .runningRowDefault),
                 .button("Preflight check", "only after real evidence", .detour, .preflightRowDefault),
                 .button("Waiting or pause", "wall time stays separate", .waiting, .waitingRowDefault),
                 .button("Personal range", "ask when evidence exists", .checkpoint, .baselineRowDefault),
@@ -147,7 +197,7 @@ struct TemporalHomeScreen: View {
             quickCapture(action: .quickCaptureDefault, label: "Capture timing evidence")
             bottomActions(
                 left: canStart
-                    ? ("Start timer", "begin run", .startAgainExpandedRun)
+                    ? ("Start timer", "begin run", .startTimerDefault)
                     : ("Review run", "approve learning", .reviewRunDefault),
                 right: ("Ask time", "grounded answer", .askTimeDefault)
             )
@@ -170,11 +220,16 @@ struct TemporalHomeScreen: View {
             )
             timelineCard(rows: [
                 .button("Run review", "choose scopes", .checkpoint, .runReviewRowNeedsReview),
-                .button("Evening reset correct", "possible forgotten timer", .interruption, .eveningCorrectRowNeedsReview),
+                .button(
+                    timingViewModel.forgottenTimerEvidence.homeRowTitle,
+                    timingViewModel.forgottenTimerEvidence.homeRowDetail,
+                    .interruption,
+                    .eveningCorrectRowNeedsReview
+                ),
                 .button("Baseline sample", "review before learning", .active, .baselineSampleRowNeedsReview),
                 .button("Preflight check", "candidate needs evidence", .detour, .preflightCheckRowNeedsReview),
                 .button("Sample support", "ask impact", .wall, .sampleSupportRowNeedsReview),
-                .button("Queue ready", "local mutations safe", .waiting, .queueReadyRowNeedsReview),
+                .button("Queue ready", "pending changes safe", .waiting, .queueReadyRowNeedsReview),
             ])
             quickCapture(action: .quickCaptureNeedsReview, label: "Add review context")
             bottomActions(left: ("Review all", "choose scopes", .reviewAllNeedsReview), right: ("Ask impact", "what changes", .askImpactNeedsReview))
@@ -186,29 +241,40 @@ struct TemporalHomeScreen: View {
             temporalFocusCard(
                 eyebrow: "SYNC PENDING",
                 title: "Backend unavailable",
-                detail: "\(timingViewModel.pendingEventCount) local mutations pending · retry is safe",
+                detail: "\(pendingSyncSummary) · retry is safe",
                 role: .waiting,
                 action: .syncFocusSyncPending
             )
             temporalInsightCard(
                 title: "Local-first sync behavior",
-                detail: "Mutation order and idempotency keys are preserved.",
+                detail: "Sync order is protected and duplicate retries are ignored.",
                 action: .syncBehaviorSyncPending
             )
-            timelineCard(rows: [
-                .button("session_started queued", "sequence 1", .active, .sessionStartedRowSyncPending),
-                .button("resource_detour queued", "sequence 2", .detour, .resourceDetourRowSyncPending),
-                .button("review_saved queued", "sequence 3", .checkpoint, .reviewSavedRowSyncPending),
-                .button("preflight decision queued", "sequence 4", .waiting, .preflightDecisionRowSyncPending),
-                .button("Bearer retry", "retry", .interruption, .bearerRetryRowSyncPending),
-                .display("Mutation sequence safe", "idempotency preserved", .wall),
-            ])
+            timelineCard(rows: syncQueueTimelineRows)
             quickCapture(action: .quickCaptureSyncPending, label: "Capture while offline")
             bottomActions(left: ("Retry sync", "local queue", .retrySyncPending), right: ("View queue", "pending events", .viewQueueSyncPending))
         }
     }
 
+    private var syncQueueTimelineRows: [TemporalTimelineRowModel] {
+        let rows = timingViewModel.pendingSyncRows.map { row in
+            TemporalTimelineRowModel.button(row.title, row.detail, row.role, .viewQueueSyncPending)
+        }
+        guard !rows.isEmpty else {
+            return [
+                .display("No local changes", "queue is clear", .active),
+                .display("Sync order protected", "retry prevents duplicates", .wall),
+            ]
+        }
+        return rows + [
+            .button("Retry sync", "retry", .interruption, .bearerRetryRowSyncPending),
+            .display("Sync order protected", "retry prevents duplicates", .wall),
+        ]
+    }
+
+    @ViewBuilder
     private var expandedTimingRun: some View {
+        let reviewProjection = timingViewModel.expandedRunReviewProjection
         VStack(spacing: 8) {
             temporalFocusCard(
                 eyebrow: "TIMING RUN EVIDENCE",
@@ -221,7 +287,7 @@ struct TemporalHomeScreen: View {
                 .display("Started", "manual timer", .active),
                 .display("Friction", timingViewModel.detourNote ?? "none captured", .detour),
                 .display("Checkpoint", timingViewModel.currentCheckpointLabel, .checkpoint),
-                .display("Review ready", "model inclusion pending", .waiting),
+                .display(reviewProjection.title, reviewProjection.detail, reviewProjection.role),
             ])
             bottomActions(left: ("Open review", "choose scopes", .openReviewExpandedRun), right: ("Ask similar time", "grounded", .askSimilarTimeExpandedRun))
             wideAction(title: "Start this again", subtitle: "open timing launcher", action: .startAgainExpandedRun)
@@ -234,7 +300,7 @@ struct TemporalHomeScreen: View {
         let question = temporalViewModel.lastTemporalQuestion
             ?? answer?.question
             ?? "How long does \(timingViewModel.activityName) take?"
-        let answerTitle = answer?.answerText == nil ? "Answer pending evidence" : "Grounded answer"
+        let answerTitle = answer == nil ? "Answer pending evidence" : "Grounded answer"
         let answerDetail = answer?.answerText
             ?? answer?.limitations?.first
             ?? "Parallax will use reviewed runs, sample size, confidence, and limitations."
@@ -292,6 +358,7 @@ struct TemporalHomeScreen: View {
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(Color(parallax: .textTertiaryLight))
                 }
             }
@@ -322,7 +389,7 @@ struct TemporalHomeScreen: View {
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.caption.weight(.bold))
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(Color(parallax: .textTertiaryLight))
                 }
             }
@@ -339,7 +406,7 @@ struct TemporalHomeScreen: View {
                 Text("Temporal timeline")
                     .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                 Spacer()
-                SoftBadge(text: temporalViewModel.surfaceState.rawValue, systemName: nil, role: .active)
+                SoftBadge(text: temporalViewModel.surfaceState.displayText, systemName: nil, role: .active)
             }
             ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                 if index > 0 { Divider() }
@@ -377,23 +444,25 @@ struct TemporalHomeScreen: View {
             )
             VStack(alignment: .leading, spacing: 2) {
                 Text(row.title)
-                    .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 Text(row.detail)
-                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(Color(parallax: .textSecondaryLight))
                     .lineLimit(1)
             }
             Spacer()
-            SoftBadge(text: row.role.rawValue, systemName: nil, role: row.role)
+            SoftBadge(text: row.role.displayText, systemName: nil, role: row.role)
             if case .button = row.kind {
                 Image(systemName: "chevron.right")
-                    .font(.caption2.weight(.bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(Color(parallax: .textTertiaryLight))
             }
         }
         .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     private func quickCapture(action: TemporalHomeAction, label: String) -> some View {
@@ -419,11 +488,11 @@ struct TemporalHomeScreen: View {
                     CircleIcon(systemName: "arrow.up.right", tint: Color(parallax: DesignTokenMapper.colorToken(for: role)), fill: Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)), size: 30, symbolSize: 12)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(title)
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .font(.system(size: 12.2, weight: .bold, design: .rounded))
                             .lineLimit(1)
                             .minimumScaleFactor(0.65)
                         Text(subtitle)
-                            .font(.system(size: 9, weight: .medium, design: .rounded))
+                            .font(.system(size: 10.2, weight: .medium, design: .rounded))
                             .foregroundStyle(Color(parallax: .textSecondaryLight))
                             .lineLimit(1)
                             .minimumScaleFactor(0.65)
@@ -453,7 +522,7 @@ struct TemporalHomeScreen: View {
                     }
                     Spacer()
                     Image(systemName: "mic")
-                        .font(.title3)
+                        .font(.system(size: 22, weight: .medium))
                         .foregroundStyle(Color(parallax: .textSecondaryLight))
                 }
             }
@@ -477,9 +546,14 @@ struct TemporalHomeScreen: View {
     private func drawerOverlay(_ drawer: TemporalHomeDrawerKind) -> some View {
         switch drawer {
         case .temporalNavigation:
-            TemporalNavigationDrawerView { surface in
-                temporalViewModel.setSurface(surface)
+            TemporalNavigationDrawerView { destination in
+                temporalViewModel.performTemporalNavigation(destination)
+            } dismiss: {
                 temporalViewModel.dismissDrawer()
+            }
+        case .askTime:
+            AskTimeDrawerView(activityName: timingViewModel.activityName) { question in
+                Task { await temporalViewModel.submitTemporalQuestion(question) }
             } dismiss: {
                 temporalViewModel.dismissDrawer()
             }
@@ -490,7 +564,7 @@ struct TemporalHomeScreen: View {
                 temporalViewModel.dismissDrawer()
             }
         case .syncQueue:
-            SyncQueueDrawerView(pendingCount: timingViewModel.pendingEventCount) {
+            SyncQueueDrawerView(rows: timingViewModel.pendingSyncRows, pendingCount: timingViewModel.pendingEventCount) {
                 Task { await temporalViewModel.retrySync() }
             } dismiss: {
                 temporalViewModel.dismissDrawer()
@@ -502,10 +576,15 @@ struct TemporalHomeScreen: View {
                 perform(.askSimilarTimeExpandedRun)
             } startAgain: {
                 perform(.startAgainExpandedRun)
+            } dismiss: {
+                temporalViewModel.dismissDrawer()
             }
         case .temporalAnswerEvidence:
             TemporalAnswerEvidenceDrawerView {
-                temporalViewModel.activeDrawer = .phase8(.preflightEvidence)
+                Task {
+                    await timingViewModel.refreshPreflightEvidence()
+                    temporalViewModel.activeDrawer = .phase8(.preflightEvidence)
+                }
             } dismiss: {
                 temporalViewModel.dismissDrawer()
             }
@@ -518,16 +597,22 @@ struct TemporalHomeScreen: View {
     private func phase8Drawer(_ workflow: Phase8DrawerWorkflow) -> some View {
         switch workflow {
         case .stepDetail:
-            StepDetailDrawerView { action in
+            StepDetailDrawerView(detail: timingViewModel.stepDetail) { action in
                 Task { await temporalViewModel.performDrawerAction(action) }
+            } dismiss: {
+                temporalViewModel.dismissDrawer()
             }
         case .frictionEvidence:
-            FrictionEvidenceDrawerView { action in
+            FrictionEvidenceDrawerView(evidence: timingViewModel.frictionEvidence) { action in
                 Task { await temporalViewModel.performDrawerAction(action) }
+            } dismiss: {
+                temporalViewModel.dismissDrawer()
             }
         case .forgottenTimer:
-            ForgottenTimerDrawerView { action in
+            ForgottenTimerDrawerView(evidence: timingViewModel.forgottenTimerEvidence) { action in
                 Task { await temporalViewModel.performDrawerAction(action) }
+            } dismiss: {
+                temporalViewModel.dismissDrawer()
             }
         case .reviewDecision:
             ReviewDecisionDrawerView(selectedDecision: timingViewModel.reviewDecision ?? .saveUsefulRun) { decision in
@@ -535,14 +620,20 @@ struct TemporalHomeScreen: View {
                     await timingViewModel.saveReviewDecision(decision)
                     temporalViewModel.dismissDrawer()
                 }
+            } dismiss: {
+                temporalViewModel.dismissDrawer()
             }
         case .preflightEvidence:
-            PreflightEvidenceDrawerView { action in
+            PreflightEvidenceDrawerView(evidence: timingViewModel.preflightEvidence) { action in
                 Task { await temporalViewModel.performDrawerAction(action) }
+            } dismiss: {
+                temporalViewModel.dismissDrawer()
             }
         case .checkpointSetup:
             CheckpointSetupDrawerView { action in
                 Task { await temporalViewModel.performDrawerAction(action) }
+            } dismiss: {
+                temporalViewModel.dismissDrawer()
             }
         }
     }

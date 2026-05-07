@@ -1,0 +1,31 @@
+    section     |                  id                  | status  |          source_device_id           |       started_at       
+----------------+--------------------------------------+---------+-------------------------------------+------------------------
+ latest_session | ad72464f-868c-46a6-a2fe-ae528cd20675 | running | ios-uat-matrix-20260506t032650z-f02 | 2026-05-06 06:55:00+00
+(1 row)
+
+   section   |                  id                  |                   raw_text                   | input_mode  |                                                                             metadata                                                                              
+-------------+--------------------------------------+----------------------------------------------+-------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ annotations | 045b26de-54ce-46e3-a7f8-621549cd8840 | Dynamic F02 friction note for drawer actions | text        | {"source": "timing_session_friction", "capture_method": "manual_timer_button", "retrieval_document": {"reason": "extraction_not_available", "created": false}}
+ annotations | a3b7d627-190b-4c7b-9465-d907f5a638f6 | Keep this note as context only.              | review_note | {"source": "friction_evidence_drawer", "capture_method": "review_reconstruction", "retrieval_document": {"reason": "extraction_not_available", "created": false}}
+(2 rows)
+
+ section |       event_type        | client_sequence |    client_mutation_id     |          client_device_id           |                                                                                    payload                                                                                     
+---------+-------------------------+-----------------+---------------------------+-------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ events  | session_started         |               3 | session_started-3         | ios-uat-matrix-20260506t032650z-f02 | {"measurement_mode": "whole_task"}
+ events  | annotation_captured     |               4 | annotation_captured-4     | ios-uat-matrix-20260506t032650z-f02 | {"source": "timing_session_friction", "input_mode": "text", "annotation_id": "045b26de-54ce-46e3-a7f8-621549cd8840"}
+ events  | resource_detour_started |               5 | resource_detour_started-5 | ios-uat-matrix-20260506t032650z-f02 | {"count_policy": "wall_only", "resource_name": "Dynamic F02 blocker"}
+ events  | user_correction_applied |               6 | user_correction_applied-6 | ios-uat-matrix-20260506t032650z-f02 | {"span_type": "resource_detour", "count_policy": "wall_only", "correction_type": "extracted_event_corrected", "friction_category": "resource"}
+ events  | user_correction_applied |               7 | user_correction_applied-7 | ios-uat-matrix-20260506t032650z-f02 | {"count_policy": "do_not_count", "correction_type": "extracted_event_ignored", "confirmation_state": "ignored"}
+ events  | annotation_captured     |               8 | annotation_captured-8     | ios-uat-matrix-20260506t032650z-f02 | {"source": "friction_evidence_drawer", "input_mode": "review_note", "annotation_id": "a3b7d627-190b-4c7b-9465-d907f5a638f6"}
+ events  | extracted_event_created |               9 | extracted_event_created-9 | ios-uat-matrix-20260506t032650z-f02 | {"span_type": "resource_detour", "count_policy": "wall_only", "resource_name": "Dynamic F02 blocker", "friction_category": "resource", "confirmation_state": "user_confirmed"}
+(7 rows)
+
+   section    |       event_type        | count 
+--------------+-------------------------+-------
+ event_counts | session_started         |     1
+ event_counts | annotation_captured     |     2
+ event_counts | extracted_event_created |     1
+ event_counts | resource_detour_started |     1
+ event_counts | user_correction_applied |     2
+(5 rows)
+

@@ -1,0 +1,25 @@
+-[ RECORD 1 ]---+------------------------------------------
+id              | 158de6c6-e0cb-4879-af16-b9d2af1e9767
+check_text      | UAT hide preflight check 20260506T171542Z
+state           | hidden
+snoozed_until   | 
+last_decided_at | 2026-05-06 17:16:33.155601+00
+decision_reason | 
+
+-[ RECORD 1 ]------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+client_device_id   | ios-uat-matrix-20260506t163437z-jforgotten3
+client_mutation_id | decide_preflight_check-10
+mutation_type      | decide_preflight_check
+entity_type        | preflight_check
+entity_id          | 158de6c6-e0cb-4879-af16-b9d2af1e9767
+result_json        | {"id": "158de6c6-e0cb-4879-af16-b9d2af1e9767", "state": "hidden", "source": "resource_dependency", "user_id": "d98ba7a5-1db4-43e0-9063-4b534cb060e9", "check_text": "UAT hide preflight check 20260506T171542Z", "confidence": 0.58, "created_at": "2026-05-06T17:15:42.343798Z", "updated_at": "2026-05-06T17:16:33.155601Z", "activity_id": "198c9dc7-d424-4b78-858e-31d52f0b3472", "failure_count": 4, "snoozed_until": null, "evidence_count": 4, "decision_reason": null, "last_decided_at": "2026-05-06T17:16:33.155601Z", "source_event_id": null, "evidence_summary": "Four UAT detours make this a hide decision candidate.", "last_triggered_at": null, "source_dependency_id": null}
+received_at        | 2026-05-06 17:16:33.155601+00
+
+-[ RECORD 1 ]--------------------------------------------------------
+id          | 8927a2e8-e6b2-4d39-b800-2123d803d3c8
+event_name  | preflight.check_decided
+entity_type | preflight_check
+entity_id   | 158de6c6-e0cb-4879-af16-b9d2af1e9767
+metadata    | {"state": "hidden", "reason": null, "decision": "hide"}
+occurred_at | 2026-05-06 17:16:33.155601+00
+

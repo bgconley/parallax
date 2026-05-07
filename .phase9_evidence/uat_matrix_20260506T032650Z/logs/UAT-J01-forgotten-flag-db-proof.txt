@@ -1,0 +1,11 @@
+-[ RECORD 1 ]+-----------------------------------------------------------------------------------------------------------------------------
+id           | e31d71f0-71ee-4a69-ac9f-00966aa701d2
+session_id   | d3bb38c4-fb61-46de-9736-08b3a8954df2
+flag_type    | possible_forgotten_timer
+status       | open
+severity     | high
+confidence   | 0.880
+reason_code  | place_changed_after_long_idle_gap
+user_message | Timer may have kept running after the place changed.
+evidence     | {"case": "surface_row", "source": "uat_matrix", "source_workflow": "DetectForgottenTimerWorkflow", "idle_gap_seconds": 2400}
+

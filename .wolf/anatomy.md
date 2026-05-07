@@ -290,6 +290,11 @@
 - `figma_canonical_allocation/` — current QA screenshot evidence for active Figma page `118:2` / board `118:3`, including after-fix captures used for visual scrutiny (~80 tok)
 - `figma_scope_rebuild/` — superseded scratch screenshot evidence from the deleted `106:2` temporal scope draft; do not use as active implementation source (~60 tok)
 
+## .phase9_evidence/
+
+- `uat_matrix_20260506T032650Z/` — Phase 9 dynamic app UAT screenshots/logs with simulator plus GPU-node backend proof for temporal workflows (~120 tok)
+- `presentation_quality_20260506T174000Z/` — Phase 9 native iOS presentation-quality screenshots, Figma reference captures, and bottom-sheet/copy-polish evidence including PQ50-PQ55 (~120 tok)
+
 ## tests/
 
 - `test_phase9_optional_extension_hardening.py` — Phase 9 structural tests for optional profile placement, Makefile wiring, k3s manifest contracts, PostGIS preservation, and re-embedding docs (~360 tok)

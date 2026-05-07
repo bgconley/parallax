@@ -1,0 +1,4 @@
+before_activities=1
+before_client_mutations=1
+before_timing_events=0
+before_sessions=0

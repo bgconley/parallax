@@ -2,12 +2,12 @@ import Combine
 import Foundation
 import ParallaxCore
 
-public struct ParallaxActivitySummary: Equatable, Identifiable, Sendable {
+public struct ParallaxActivitySummary: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
     public let displayName: String
     public let source: Source
 
-    public enum Source: String, Sendable {
+    public enum Source: String, Codable, Sendable {
         case local
         case backend
         case uatSeed = "uat_seed"
@@ -17,6 +17,46 @@ public struct ParallaxActivitySummary: Equatable, Identifiable, Sendable {
         self.id = id
         self.displayName = displayName
         self.source = source
+    }
+}
+
+public struct ParallaxAppState: Codable, Equatable, Sendable {
+    public let activities: [ParallaxActivitySummary]
+    public let selectedActivityId: UUID?
+
+    public init(activities: [ParallaxActivitySummary] = [], selectedActivityId: UUID? = nil) {
+        self.activities = activities
+        self.selectedActivityId = selectedActivityId
+    }
+}
+
+public protocol ParallaxAppStateStore: Sendable {
+    func load() throws -> ParallaxAppState
+    func save(_ state: ParallaxAppState) throws
+}
+
+public final class FileParallaxAppStateStore: ParallaxAppStateStore, @unchecked Sendable {
+    private let fileURL: URL
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+
+    public init(fileURL: URL) {
+        self.fileURL = fileURL
+    }
+
+    public func load() throws -> ParallaxAppState {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return ParallaxAppState()
+        }
+        let data = try Data(contentsOf: fileURL)
+        return try decoder.decode(ParallaxAppState.self, from: data)
+    }
+
+    public func save(_ state: ParallaxAppState) throws {
+        let directory = fileURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let data = try encoder.encode(state)
+        try data.write(to: fileURL, options: [.atomic])
     }
 }
 
@@ -32,7 +72,9 @@ public final class ParallaxAppStore: ObservableObject {
     private let eventStoreFactory: @Sendable (UUID) -> any PendingTimingEventStore
     private let preflightStoreFactory: @Sendable (UUID) -> any PendingPreflightDecisionStore
     private let sequenceStore: (any MutationSequenceStore)?
+    private let appStateStore: (any ParallaxAppStateStore)?
     private let selectedActivityDefaultsKey: String
+    private let localStorageRoot: URL?
     private var appMutationFactory: MutationEnvelopeFactory
 
     public init(
@@ -43,7 +85,9 @@ public final class ParallaxAppStore: ObservableObject {
         timingViewModel: TimingSliceViewModel? = nil,
         eventStoreFactory: @escaping @Sendable (UUID) -> any PendingTimingEventStore = { _ in InMemoryPendingTimingEventStore() },
         preflightStoreFactory: @escaping @Sendable (UUID) -> any PendingPreflightDecisionStore = { _ in InMemoryPendingPreflightDecisionStore() },
-        sequenceStore: (any MutationSequenceStore)? = nil
+        sequenceStore: (any MutationSequenceStore)? = nil,
+        appStateStore: (any ParallaxAppStateStore)? = nil,
+        localStorageRoot: URL? = nil
     ) {
         self.config = config
         self.apiClient = apiClient ?? config.map { ParallaxAPIClient(baseURL: $0.apiBaseURL, auth: $0.auth) }
@@ -52,7 +96,9 @@ public final class ParallaxAppStore: ObservableObject {
         self.eventStoreFactory = eventStoreFactory
         self.preflightStoreFactory = preflightStoreFactory
         self.sequenceStore = sequenceStore
-        self.selectedActivityDefaultsKey = "parallax.selectedActivityId.\(config?.deviceId ?? "ios-local-device")"
+        self.appStateStore = appStateStore
+        self.localStorageRoot = localStorageRoot
+        self.selectedActivityDefaultsKey = "parallax.selectedActivityId.\(Self.localStorageScope(config))"
         self.appMutationFactory = MutationEnvelopeFactory(clientDeviceId: config?.deviceId ?? "ios-local-device")
         if let timingViewModel {
             self.timingViewModel = timingViewModel
@@ -63,7 +109,8 @@ public final class ParallaxAppStore: ObservableObject {
                 apiClient: self.apiClient,
                 eventStore: eventStoreFactory(selectedActivity.id),
                 preflightStore: preflightStoreFactory(selectedActivity.id),
-                sequenceStore: sequenceStore
+                sequenceStore: sequenceStore,
+                localStorageRoot: localStorageRoot
             )
         }
     }
@@ -75,7 +122,10 @@ public final class ParallaxAppStore: ObservableObject {
     public static func live(config: ParallaxRuntimeConfig?) -> ParallaxAppStore {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
-        let root = support.appendingPathComponent("Parallax", isDirectory: true)
+        let root = localStorageRoot(
+            base: support.appendingPathComponent("Parallax", isDirectory: true),
+            config: config
+        )
         let sequenceStore = FileMutationSequenceStore(
             fileURL: root.appendingPathComponent("mutation-sequences.json")
         )
@@ -91,13 +141,23 @@ public final class ParallaxAppStore: ObservableObject {
                     fileURL: root.appendingPathComponent("\(activityId.uuidString)-pending-preflight.json")
                 )
             },
-            sequenceStore: sequenceStore
+            sequenceStore: sequenceStore,
+            appStateStore: FileParallaxAppStateStore(
+                fileURL: root.appendingPathComponent("app-state.json")
+            ),
+            localStorageRoot: root
         )
     }
 
+    public static func localStorageRoot(base: URL, config: ParallaxRuntimeConfig?) -> URL {
+        base.appendingPathComponent(localStorageScope(config), isDirectory: true)
+    }
+
     public func bootstrap() async {
-        guard selectedActivity == nil else { return }
-        if let seedName = config?.activityName {
+        if selectedActivity == nil {
+            loadCachedState()
+        }
+        if selectedActivity == nil, let seedName = config?.activityName {
             await bootstrapSeedActivity(named: seedName)
             return
         }
@@ -128,7 +188,7 @@ public final class ParallaxAppStore: ObservableObject {
         }
 
         let activity = ParallaxActivitySummary(id: UUID(), displayName: name, source: .local)
-        activities.append(activity)
+        upsertActivity(activity)
         selectActivity(activity)
     }
 
@@ -142,8 +202,10 @@ public final class ParallaxAppStore: ObservableObject {
             apiClient: apiClient,
             eventStore: eventStoreFactory(activity.id),
             preflightStore: preflightStoreFactory(activity.id),
-            sequenceStore: sequenceStore
+            sequenceStore: sequenceStore,
+            localStorageRoot: localStorageRoot
         )
+        persistAppState()
     }
 
     private func bootstrapSeedActivity(named seedName: String) async {
@@ -193,9 +255,11 @@ public final class ParallaxAppStore: ObservableObject {
             let summaries = remoteActivities.map {
                 ParallaxActivitySummary(id: $0.id, displayName: $0.displayName, source: .backend)
             }
-            activities = summaries
-            if let activity = preferredActivity(from: summaries) {
+            activities = mergedActivities(activities + summaries)
+            if let activity = preferredActivity(from: activities) {
                 selectActivity(activity)
+            } else {
+                persistAppState()
             }
             errorMessage = nil
         } catch {
@@ -229,6 +293,7 @@ public final class ParallaxAppStore: ObservableObject {
     private func upsertActivity(_ activity: ParallaxActivitySummary) {
         activities.removeAll { $0.id == activity.id }
         activities.append(activity)
+        activities = mergedActivities(activities)
     }
 
     private func preferredActivity(from activities: [ParallaxActivitySummary]) -> ParallaxActivitySummary? {
@@ -240,20 +305,61 @@ public final class ParallaxAppStore: ObservableObject {
         return activities.count == 1 ? activities.first : nil
     }
 
+    private func loadCachedState() {
+        guard let appStateStore else { return }
+        do {
+            let state = try appStateStore.load()
+            activities = mergedActivities(activities + state.activities)
+            if let selectedActivityId = state.selectedActivityId,
+               let selected = activities.first(where: { $0.id == selectedActivityId }) {
+                selectActivity(selected)
+            }
+            errorMessage = nil
+        } catch {
+            errorMessage = "Unable to load saved activities."
+        }
+    }
+
+    private func persistAppState() {
+        guard let appStateStore else { return }
+        do {
+            try appStateStore.save(
+                ParallaxAppState(
+                    activities: mergedActivities(activities),
+                    selectedActivityId: selectedActivity?.id
+                )
+            )
+        } catch {
+            errorMessage = "Unable to save local app state."
+        }
+    }
+
+    private func mergedActivities(_ candidates: [ParallaxActivitySummary]) -> [ParallaxActivitySummary] {
+        var seen: Set<UUID> = []
+        var merged: [ParallaxActivitySummary] = []
+        for activity in candidates where !seen.contains(activity.id) {
+            seen.insert(activity.id)
+            merged.append(activity)
+        }
+        return merged
+    }
+
     private static func makeTimingViewModel(
         activity: ParallaxActivitySummary,
         config: ParallaxRuntimeConfig?,
         apiClient: ParallaxAPIClient?,
         eventStore: any PendingTimingEventStore,
         preflightStore: any PendingPreflightDecisionStore,
-        sequenceStore: (any MutationSequenceStore)?
+        sequenceStore: (any MutationSequenceStore)?,
+        localStorageRoot: URL?
     ) -> TimingSliceViewModel {
         let deviceId = config?.deviceId ?? "ios-local-device"
         var pendingSyncService: PendingSyncService?
         var pendingSyncContext: PendingSyncContext?
         if let config, let client = apiClient {
             let syncStateStore = FilePendingSyncStateStore(
-                fileURL: appSupportRoot().appendingPathComponent("pending-sync-state.json")
+                fileURL: (localStorageRoot ?? appSupportRoot(config: config))
+                    .appendingPathComponent("pending-sync-state.json")
             )
             pendingSyncService = PendingSyncService(
                 client: client,
@@ -281,9 +387,16 @@ public final class ParallaxAppStore: ObservableObject {
         )
     }
 
-    private static func appSupportRoot() -> URL {
+    private static func appSupportRoot(config: ParallaxRuntimeConfig?) -> URL {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
-        return support.appendingPathComponent("Parallax", isDirectory: true)
+        return localStorageRoot(
+            base: support.appendingPathComponent("Parallax", isDirectory: true),
+            config: config
+        )
+    }
+
+    private static func localStorageScope(_ config: ParallaxRuntimeConfig?) -> String {
+        config?.localStorageScope ?? "local"
     }
 }

@@ -129,9 +129,6 @@ def derive_timing_spans(
         explicit_active_spans = explicit_active_spans or span.span_type == "active_work"
         spans.append(span)
 
-    if pause_started_at is not None:
-        paused_intervals.append((pause_started_at, session_completed))
-
     if bad_timer_started_at is not None and bad_timer_started_at < session_completed:
         spans.append(
             TimingEventSpanDraft(
@@ -147,6 +144,16 @@ def derive_timing_spans(
             )
         )
         session_completed = bad_timer_started_at
+
+    if pause_started_at is not None:
+        paused_intervals.append((pause_started_at, session_completed))
+
+    for stem, start_event in open_events.items():
+        span = _span_from_open_event(stem, start_event, session_completed)
+        if span is None:
+            continue
+        explicit_active_spans = explicit_active_spans or span.span_type == "active_work"
+        spans.append(span)
 
     if not explicit_active_spans:
         active_blockers = [
@@ -185,9 +192,12 @@ def summarize_timing_spans(
     session: TimingSession,
     spans: list[TimingEventSpanDraft],
 ) -> TimingSpanTotals:
+    explicit_completion_active_seconds = _explicit_completion_active_seconds(session)
     return TimingSpanTotals(
         wall_seconds=session.wall_seconds,
-        active_seconds=_sum_seconds(spans, count_in_active_time=True)
+        active_seconds=explicit_completion_active_seconds
+        if explicit_completion_active_seconds is not None
+        else _sum_seconds(spans, count_in_active_time=True)
         if spans
         else session.active_seconds,
         setup_seconds=_sum_seconds(spans, span_type="setup"),
@@ -207,6 +217,33 @@ def _span_from_pair(
 ) -> TimingEventSpanDraft | None:
     if end_event.client_time < start_event.client_time:
         return None
+    return _span_draft(
+        stem,
+        start_event,
+        end_event.client_time,
+        end_event_id=end_event.id,
+        end_payload=end_event.payload,
+    )
+
+
+def _span_from_open_event(
+    stem: str,
+    start_event: TimingEvent,
+    ended_at: datetime,
+) -> TimingEventSpanDraft | None:
+    if ended_at <= start_event.client_time:
+        return None
+    return _span_draft(stem, start_event, ended_at, end_event_id=None, end_payload={})
+
+
+def _span_draft(
+    stem: str,
+    start_event: TimingEvent,
+    ended_at: datetime,
+    *,
+    end_event_id: UUID | None,
+    end_payload: dict[str, object],
+) -> TimingEventSpanDraft:
     span_type, friction_category, count_policy, count_wall, count_active = _SPAN_PAIRS[stem]
     if stem == "checkpoint":
         scopes = ["active_duration", "wall_duration", "checkpoint_phase"]
@@ -218,15 +255,15 @@ def _span_from_pair(
         span_type=span_type,
         friction_category=friction_category,
         started_at=start_event.client_time,
-        ended_at=end_event.client_time,
-        duration_seconds=_non_negative_seconds(start_event.client_time, end_event.client_time),
+        ended_at=ended_at,
+        duration_seconds=_non_negative_seconds(start_event.client_time, ended_at),
         count_policy=count_policy,
         count_in_wall_time=count_wall,
         count_in_active_time=count_active,
         model_update_scopes=scopes,
         start_event_id=start_event.id,
-        end_event_id=end_event.id,
-        checkpoint_run_id=_checkpoint_run_id(start_event, end_event)
+        end_event_id=end_event_id,
+        checkpoint_run_id=_checkpoint_run_id(start_event.payload, end_payload)
         if stem == "checkpoint"
         else None,
     )
@@ -249,10 +286,12 @@ def _first_event_time(events: list[TimingEvent], event_type: str) -> datetime | 
     return None
 
 
-def _checkpoint_run_id(start_event: TimingEvent, end_event: TimingEvent) -> UUID | None:
-    return _payload_uuid(start_event.payload, "checkpoint_run_id") or _payload_uuid(
-        end_event.payload,
-        "checkpoint_run_id",
+def _checkpoint_run_id(
+    start_payload: dict[str, object],
+    end_payload: dict[str, object],
+) -> UUID | None:
+    return _payload_uuid(start_payload, "checkpoint_run_id") or _payload_uuid(
+        end_payload, "checkpoint_run_id"
     )
 
 
@@ -306,6 +345,13 @@ def _sum_seconds(
         total += span.duration_seconds
         matched = True
     return total if matched else None
+
+
+def _explicit_completion_active_seconds(session: TimingSession) -> int | None:
+    for event in session.events:
+        if event.event_type == "session_completed" and event.timer_active_seconds is not None:
+            return event.timer_active_seconds
+    return None
 
 
 def _non_negative_seconds(start: datetime, end: datetime) -> int:

@@ -35,7 +35,7 @@ def annotation_source_event(
         timer_active_seconds=request.timer_active_seconds,
         capture_context_snapshot_id=annotation.capture_context_snapshot_id,
         capture_context_snapshot_ref=request.capture_context_snapshot_ref,
-        payload={"annotation_id": str(annotation.id), "input_mode": request.input_mode},
+        payload=annotation_event_payload(request, annotation),
     )
     return TimingEvent(
         id=uuid4(),
@@ -54,6 +54,23 @@ def annotation_source_event(
         capture_context_snapshot_ref=event_request.capture_context_snapshot_ref,
         payload=event_request.payload,
     )
+
+
+def annotation_event_payload(
+    request: CreateAnnotationRequest,
+    annotation: TemporalContextAnnotation,
+) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "annotation_id": str(annotation.id),
+        "input_mode": request.input_mode,
+    }
+    if annotation.checkpoint_run_id is not None:
+        payload["checkpoint_run_id"] = str(annotation.checkpoint_run_id)
+    for key in ("source", "sequence_order", "label", "checkpoint_index", "checkpoint_label"):
+        value = request.metadata.get(key)
+        if value is not None:
+            payload[key] = value
+    return payload
 
 
 def resolve_annotation_snapshot_link(

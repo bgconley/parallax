@@ -57,6 +57,9 @@ public struct ParallaxRootView: View {
                         finishAndReview: {
                             await viewModel.finishRun()
                             screen = .timingReview
+                        },
+                        goBack: {
+                            screen = .today
                         }
                     )
                 case .timingReview:

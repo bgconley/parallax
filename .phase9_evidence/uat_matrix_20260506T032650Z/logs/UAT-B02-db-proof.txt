@@ -1,0 +1,15 @@
+                  id                  |              session_id              |                raw_text                 | input_mode |       status       |        client_device_id         |                                                     metadata                                                     
+--------------------------------------+--------------------------------------+-----------------------------------------+------------+--------------------+---------------------------------+------------------------------------------------------------------------------------------------------------------
+ 73d86386-784c-467e-a3e3-8671deb0aa78 | d9217584-f81a-4293-85ec-390969cc1c10 | UAT quick capture note 20260506T032650Z | quick_chip | extraction_pending | ios-uat-matrix-20260506t032650z | {"capture_method": "quick_chip", "retrieval_document": {"reason": "extraction_not_available", "created": false}}
+(1 row)
+
+                  id                  |     event_type      |        client_device_id         |                                        payload                                        
+--------------------------------------+---------------------+---------------------------------+---------------------------------------------------------------------------------------
+ a058e115-ab76-40c5-b49d-a0d7c10643f0 | annotation_captured | ios-uat-matrix-20260506t032650z | {"input_mode": "quick_chip", "annotation_id": "73d86386-784c-467e-a3e3-8671deb0aa78"}
+(1 row)
+
+                  id                  | status |             activity_id              
+--------------------------------------+--------+--------------------------------------
+ d9217584-f81a-4293-85ec-390969cc1c10 | draft  | fc1eb943-5255-4ca0-b3bf-49da97bf9bd2
+(1 row)
+

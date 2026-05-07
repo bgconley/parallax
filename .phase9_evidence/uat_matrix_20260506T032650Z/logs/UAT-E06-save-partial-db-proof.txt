@@ -1,0 +1,5 @@
+                  id                  |  status  | run_quality |   model_inclusion    |   decision   |  decision_inclusion  |      scopes       | review_saved_events 
+--------------------------------------+----------+-------------+----------------------+--------------+----------------------+-------------------+---------------------
+ 6483ebb8-272e-41c3-9d01-ca165e400493 | reviewed | partial     | active_duration_only | save_partial | active_duration_only | {active_duration} |                   1
+(1 row)
+

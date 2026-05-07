@@ -1,0 +1,17 @@
+                  id                  |  status   | run_quality  | model_inclusion | wall_seconds | active_seconds | detour_seconds |          created_at           |          updated_at          
+--------------------------------------+-----------+--------------+-----------------+--------------+----------------+----------------+-------------------------------+------------------------------
+ 0c1071f4-4f33-4992-a7ee-67548a2fdc8d | discarded | do_not_train | exclude         |           12 |             12 |                | 2026-05-06 04:59:00.223135+00 | 2026-05-06 04:59:24.43862+00
+(1 row)
+
+                  id                  |         decision         | model_inclusion | scopes |                                                                   payload                                                                   |         reviewed_at          
+--------------------------------------+--------------------------+-----------------+--------+---------------------------------------------------------------------------------------------------------------------------------------------+------------------------------
+ d52accbc-7e82-4e8b-adfb-103be836a7f9 | discard_timing_keep_note | exclude         | {}     | {"span_overrides": [], "reviewed_totals": {"wall_seconds": 12, "active_seconds": 12, "detour_seconds": null, "interruption_seconds": null}} | 2026-05-06 04:59:24.43862+00
+(1 row)
+
+    event_type     |        client_device_id         | timer_elapsed_seconds | timer_active_seconds |                                                                         payload                                                                          |          created_at           
+-------------------+---------------------------------+-----------------------+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------
+ session_started   | ios-uat-matrix-20260506t032650z |                     0 |                    0 | {"measurement_mode": "whole_task"}                                                                                                                       | 2026-05-06 04:59:00.266193+00
+ session_completed | ios-uat-matrix-20260506t032650z |                    12 |                   12 | {}                                                                                                                                                       | 2026-05-06 04:59:12.651322+00
+ review_saved      | ios-uat-matrix-20260506t032650z |                    12 |                   12 | {"scopes": [], "decision": "discard_timing_keep_note", "model_inclusion": "exclude", "model_update_decision_id": "d52accbc-7e82-4e8b-adfb-103be836a7f9"} | 2026-05-06 04:59:24.43862+00
+(3 rows)
+

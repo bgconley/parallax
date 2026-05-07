@@ -1,0 +1,25 @@
+ table_name | fixture_like_rows 
+------------+-------------------
+ activity   |                 0
+(1 row)
+
+         table_name          | fixture_like_rows 
+-----------------------------+-------------------
+ temporal_context_annotation |                 0
+(1 row)
+
+   table_name    | fixture_like_rows 
+-----------------+-------------------
+ preflight_check |                 0
+(1 row)
+
+     table_name      | fixture_like_rows 
+---------------------+-------------------
+ resource_dependency |                 0
+(1 row)
+
+      table_name       | fixture_like_rows 
+-----------------------+-------------------
+ temporal_query_answer |                 0
+(1 row)
+

@@ -1,0 +1,19 @@
+    section     |                  id                  | status  |     mode     |       started_at       | completed_at 
+----------------+--------------------------------------+---------+--------------+------------------------+--------------
+ latest_session | 2ccc8475-2b52-46a8-b73f-47db83389317 | running | checkpointed | 2026-05-06 06:38:17+00 | 
+(1 row)
+
+ section | id | session_id | checkpoint_run_id | input_mode | raw_text | timer_elapsed_seconds | timer_active_seconds | status | metadata | created_at 
+---------+----+------------+-------------------+------------+----------+-----------------------+----------------------+--------+----------+------------
+(0 rows)
+
+ section | id | session_id | sequence_order | label | status | started_at | completed_at 
+---------+----+------------+----------------+-------+--------+------------+--------------
+(0 rows)
+
+ section |     event_type     | client_sequence |  client_mutation_id  |                                                                                                       payload                                                                                                       
+---------+--------------------+-----------------+----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ events  | session_started    |               3 | session_started-3    | {"measurement_mode": "checkpointed"}
+ events  | checkpoint_started |               4 | checkpoint_started-4 | {"label": "Current checkpoint", "source": "timing_launcher", "sequence_order": "2", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint", "checkpoint_run_id": "920e9578-2658-4f93-ae12-9f4ec8917d66"}
+(2 rows)
+

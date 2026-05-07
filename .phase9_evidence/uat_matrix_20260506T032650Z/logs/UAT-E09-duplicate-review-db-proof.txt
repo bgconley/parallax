@@ -1,0 +1,22 @@
+    section     |                  id                  |  status  | model_inclusion |  run_quality   |                                                               review_payload                                                                |          source_device_id           |       started_at       |      completed_at      
+----------------+--------------------------------------+----------+-----------------+----------------+---------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------+------------------------+------------------------
+ latest_session | 3a66bfb2-38fd-4ea5-9de6-437547ea9fa1 | reviewed | full            | useful_unusual | {"span_overrides": [], "reviewed_totals": {"wall_seconds": 10, "active_seconds": 10, "detour_seconds": null, "interruption_seconds": null}} | ios-uat-matrix-20260506t032650z-e09 | 2026-05-06 06:52:43+00 | 2026-05-06 06:52:54+00
+(1 row)
+
+    section    |   decision   | model_inclusion |                      scopes                       |         reviewed_at         
+---------------+--------------+-----------------+---------------------------------------------------+-----------------------------
+ decision_rows | mark_unusual | full            | {active_duration,wall_duration,friction_patterns} | 2026-05-06 06:53:02.7849+00
+(1 row)
+
+ section |    event_type     | client_sequence | client_mutation_id  |          client_device_id           |                                                                                             payload                                                                                              
+---------+-------------------+-----------------+---------------------+-------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ events  | session_started   |               3 | session_started-3   | ios-uat-matrix-20260506t032650z-e09 | {"measurement_mode": "whole_task"}
+ events  | session_completed |               4 | session_completed-4 | ios-uat-matrix-20260506t032650z-e09 | {}
+ events  | review_saved      |               5 | review_saved-5      | ios-uat-matrix-20260506t032650z-e09 | {"scopes": ["active_duration", "wall_duration", "friction_patterns"], "decision": "mark_unusual", "model_inclusion": "full", "model_update_decision_id": "eee5f88d-ddf2-4e74-bcee-524caad188f4"}
+(3 rows)
+
+      section       | count 
+--------------------+-------
+ review_saved_count |     1
+(1 row)
+

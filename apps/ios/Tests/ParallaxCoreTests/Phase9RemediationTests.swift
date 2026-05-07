@@ -57,6 +57,8 @@ import Testing
         "Laundry",
         "NC2",
         "Alex",
+        "Done 3:12",
+        "Running 12:14",
     ]
     let allowedFilenames: Set<String> = [
         "PreviewFixtures.swift",
@@ -65,6 +67,44 @@ import Testing
     let swiftFiles = runtimeRoots.flatMap { root in
         swiftFilesUnder(root).filter { !allowedFilenames.contains($0.lastPathComponent) }
     }
+    var violations: [String] = []
+    for file in swiftFiles {
+        let source = try String(contentsOf: file, encoding: .utf8)
+        for string in banned where source.localizedCaseInsensitiveContains(string) {
+            violations.append("\(file.path): \(string)")
+        }
+    }
+
+    #expect(violations == [])
+}
+
+@Test func runtimeSwiftSourcesDoNotUseExpandedTaskManagementCopy() throws {
+    let packageRoot = try iosPackageRoot()
+    let runtimeRoots = [
+        packageRoot.appending(path: "App"),
+        packageRoot.appending(path: "Sources/ParallaxApp"),
+        packageRoot.appending(path: "Sources/ParallaxCore"),
+    ]
+    let banned = [
+        "Break it down",
+        "Start first step",
+        "Steps in order",
+        "Step breakdown",
+        "Show all steps",
+        "Done with this step",
+        "Split into smaller steps",
+        "Start from this step",
+        "Routine run",
+        "Learning how this workflow",
+        "step plan",
+        "step changes",
+        "active step",
+        "What this step is showing",
+        "No active timing step",
+        "Waiting step detail",
+    ]
+
+    let swiftFiles = runtimeRoots.flatMap(swiftFilesUnder)
     var violations: [String] = []
     for file in swiftFiles {
         let source = try String(contentsOf: file, encoding: .utf8)

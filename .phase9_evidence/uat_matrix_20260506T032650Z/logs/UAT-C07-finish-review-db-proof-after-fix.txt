@@ -1,0 +1,24 @@
+                  id                  |             activity_id              |    mode    |        status        |       started_at       |      completed_at      | wall_seconds | active_seconds | detour_seconds |          client_session_id           |          updated_at           
+--------------------------------------+--------------------------------------+------------+----------------------+------------------------+------------------------+--------------+----------------+----------------+--------------------------------------+-------------------------------
+ bf0fb25c-19cb-4b34-b642-72f90de301fc | fc1eb943-5255-4ca0-b3bf-49da97bf9bd2 | whole_task | completed_unreviewed | 2026-05-06 04:30:39+00 | 2026-05-06 04:31:36+00 |           57 |             48 |             10 | 9486B3BC-B59D-41DE-BE76-CB55B381D4EC | 2026-05-06 04:31:36.252447+00
+(1 row)
+
+       event_type        |        client_device_id         | timer_elapsed_seconds | timer_active_seconds |                                     payload                                     |          created_at           
+-------------------------+---------------------------------+-----------------------+----------------------+---------------------------------------------------------------------------------+-------------------------------
+ session_started         | ios-uat-matrix-20260506t032650z |                     0 |                    0 | {"measurement_mode": "whole_task"}                                              | 2026-05-06 04:30:39.27567+00
+ annotation_captured     | ios-uat-matrix-20260506t032650z |                       |                      | {"input_mode": "text", "annotation_id": "314b7b69-baac-4c2a-835e-efdc9d0345a0"} | 2026-05-06 04:31:26.753205+00
+ resource_detour_started | ios-uat-matrix-20260506t032650z |                    48 |                   48 | {"count_policy": "wall_only", "resource_name": "UAT C07 span proof blocker"}    | 2026-05-06 04:31:26.840534+00
+ session_completed       | ios-uat-matrix-20260506t032650z |                    57 |                   48 | {}                                                                              | 2026-05-06 04:31:36.252447+00
+(4 rows)
+
+    span_type    | duration_seconds |  count_policy   | count_in_wall_time | count_in_active_time | friction_category |       started_at       |        ended_at        |            start_event_id            | end_event_id | linked_annotation_id 
+-----------------+------------------+-----------------+--------------------+----------------------+-------------------+------------------------+------------------------+--------------------------------------+--------------+----------------------
+ active_work     |               47 | wall_and_active | t                  | t                    | none              | 2026-05-06 04:30:39+00 | 2026-05-06 04:31:26+00 |                                      |              | 
+ resource_detour |               10 | wall_only       | t                  | f                    | resource          | 2026-05-06 04:31:26+00 | 2026-05-06 04:31:36+00 | c6d43687-1b74-4418-8b26-cfa2db8d8da7 |              | 
+(2 rows)
+
+                  id                  |                   raw_text                   |                                                         metadata                                                          |        client_device_id         |          created_at           
+--------------------------------------+----------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+---------------------------------+-------------------------------
+ 314b7b69-baac-4c2a-835e-efdc9d0345a0 | UAT C07 verifies spans persist at completion | {"capture_method": "manual_timer_button", "retrieval_document": {"reason": "extraction_not_available", "created": false}} | ios-uat-matrix-20260506t032650z | 2026-05-06 04:31:26.753205+00
+(1 row)
+

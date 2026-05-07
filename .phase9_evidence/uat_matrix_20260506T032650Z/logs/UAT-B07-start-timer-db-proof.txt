@@ -1,0 +1,19 @@
+                  id                  |             activity_id              | status  |    mode    |          client_session_id           |          created_at           
+--------------------------------------+--------------------------------------+---------+------------+--------------------------------------+-------------------------------
+ 2d9cd219-bba4-4dc0-9cb2-758e5c80280c | fc1eb943-5255-4ca0-b3bf-49da97bf9bd2 | running | whole_task | 56785AB3-854F-4BCE-857B-3BBD98EB9BEE | 2026-05-06 04:16:04.646314+00
+ d9217584-f81a-4293-85ec-390969cc1c10 | fc1eb943-5255-4ca0-b3bf-49da97bf9bd2 | draft   | whole_task | 39B0F4C6-A327-48DE-BF82-5FF93EE5CDE0 | 2026-05-06 03:41:14.587269+00
+(2 rows)
+
+                  id                  |              session_id              |     event_type      |        client_device_id         | timer_elapsed_seconds | timer_active_seconds |                                        payload                                        |          created_at           
+--------------------------------------+--------------------------------------+---------------------+---------------------------------+-----------------------+----------------------+---------------------------------------------------------------------------------------+-------------------------------
+ 9450d098-9878-4896-a831-d96e6e9df71c | 2d9cd219-bba4-4dc0-9cb2-758e5c80280c | session_started     | ios-uat-matrix-20260506t032650z |                     0 |                    0 | {"measurement_mode": "whole_task"}                                                    | 2026-05-06 04:16:04.691994+00
+ a058e115-ab76-40c5-b49d-a0d7c10643f0 | d9217584-f81a-4293-85ec-390969cc1c10 | annotation_captured | ios-uat-matrix-20260506t032650z |                       |                      | {"input_mode": "quick_chip", "annotation_id": "73d86386-784c-467e-a3e3-8671deb0aa78"} | 2026-05-06 03:41:14.626747+00
+(2 rows)
+
+                       client_mutation_id                        |     mutation_type     |  entity_type   |              entity_id               |          received_at          
+-----------------------------------------------------------------+-----------------------+----------------+--------------------------------------+-------------------------------
+ session_started-6                                               | append_timing_event   | timing_event   | 9450d098-9878-4896-a831-d96e6e9df71c | 2026-05-06 04:16:04.691994+00
+ sync_create_timing_session_56785ab3-854f-4bce-857b-3bbd98eb9bee | create_timing_session | timing_session | 2d9cd219-bba4-4dc0-9cb2-758e5c80280c | 2026-05-06 04:16:04.646314+00
+ sync_create_timing_session_39b0f4c6-a327-48de-bf82-5ff93ee5cde0 | create_timing_session | timing_session | d9217584-f81a-4293-85ec-390969cc1c10 | 2026-05-06 03:41:14.587269+00
+(3 rows)
+

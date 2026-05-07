@@ -101,6 +101,10 @@ public struct PreflightCheckDTO: Codable, Equatable, Identifiable, Sendable {
     public let checkText: String
     public let state: String?
     public let source: String?
+    public let confidence: Double?
+    public let failureCount: Int?
+    public let evidenceCount: Int?
+    public let evidenceSummary: String?
 }
 
 public struct CheckpointTemplateDTO: Codable, Equatable, Identifiable, Sendable {
@@ -151,5 +155,9 @@ public struct TimingReviewFlagDTO: Codable, Equatable, Identifiable, Sendable {
     public let sessionId: UUID
     public let status: TimingReviewFlagStatus?
     public let flagType: String?
-    public let explanation: String?
+    public let severity: String?
+    public let confidence: Double?
+    public let reasonCode: String?
+    public let userMessage: String?
+    public let resolutionNote: String?
 }

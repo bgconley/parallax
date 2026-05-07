@@ -1,0 +1,5 @@
+                  id                  |        status        | model_inclusion | decision_rows | review_saved_events 
+--------------------------------------+----------------------+-----------------+---------------+---------------------
+ c273a0f2-1ab2-4662-97de-47efb347b575 | completed_unreviewed | not_reviewed    |             0 |                   0
+(1 row)
+

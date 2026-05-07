@@ -1,0 +1,5 @@
+                  id                  |  status   | run_quality | model_inclusion |  decision   | decision_inclusion | scopes | review_saved_events 
+--------------------------------------+-----------+-------------+-----------------+-------------+--------------------+--------+---------------------
+ 0fba876c-a8a6-4845-9971-19b9ef6ec3fa | discarded | bad_timer   | exclude         | discard_all | exclude            | {}     |                   1
+(1 row)
+

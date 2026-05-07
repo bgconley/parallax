@@ -1,0 +1,63 @@
+{
+  "clientMutationId": "session_started-1",
+  "clientSequence": 1,
+  "eventType": "session_started",
+  "sessionId": "C68987AE-B5DA-4D45-833E-CC826E0E09B9",
+  "timerElapsedSeconds": 0,
+  "timerActiveSeconds": 0,
+  "notePreview": null,
+  "payload": {
+    "measurement_mode": "whole_task"
+  }
+}
+{
+  "clientMutationId": "annotation_captured-2",
+  "clientSequence": 2,
+  "eventType": "annotation_captured",
+  "sessionId": "C68987AE-B5DA-4D45-833E-CC826E0E09B9",
+  "timerElapsedSeconds": 98,
+  "timerActiveSeconds": 98,
+  "notePreview": "Offline UAT detour typed while backend unavailable 20260506T172100Z",
+  "payload": {
+    "input_mode": "text",
+    "source": "timing_session_friction"
+  }
+}
+{
+  "clientMutationId": "resource_detour_started-3",
+  "clientSequence": 3,
+  "eventType": "resource_detour_started",
+  "sessionId": "C68987AE-B5DA-4D45-833E-CC826E0E09B9",
+  "timerElapsedSeconds": 98,
+  "timerActiveSeconds": 98,
+  "notePreview": "Offline UAT detour typed while backend unavailable 20260506T172100Z",
+  "payload": {
+    "count_policy": "wall_only",
+    "resource_name": "Offline UAT blocker"
+  }
+}
+{
+  "clientMutationId": "annotation_captured-4",
+  "clientSequence": 4,
+  "eventType": "annotation_captured",
+  "sessionId": "C68987AE-B5DA-4D45-833E-CC826E0E09B9",
+  "timerElapsedSeconds": 295,
+  "timerActiveSeconds": 98,
+  "notePreview": "Offline UAT quick note saved locally 20260506T172100Z",
+  "payload": {
+    "source": "timing_session_step_note",
+    "input_mode": "text"
+  }
+}
+{
+  "clientMutationId": "session_completed-5",
+  "clientSequence": 5,
+  "eventType": "session_completed",
+  "sessionId": "C68987AE-B5DA-4D45-833E-CC826E0E09B9",
+  "timerElapsedSeconds": 373,
+  "timerActiveSeconds": 98,
+  "notePreview": null,
+  "payload": {
+    "source": "first_vertical_slice"
+  }
+}

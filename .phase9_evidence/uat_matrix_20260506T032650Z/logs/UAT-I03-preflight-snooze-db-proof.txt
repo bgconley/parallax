@@ -1,0 +1,25 @@
+-[ RECORD 1 ]---+--------------------------------------------
+id              | bb640cb5-1c1e-43c1-9f1b-da0c27de359b
+check_text      | UAT snooze preflight check 20260506T171135Z
+state           | snoozed
+snoozed_until   | 2026-05-07 17:14:52+00
+last_decided_at | 2026-05-06 17:14:52.440316+00
+decision_reason | 
+
+-[ RECORD 1 ]------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+client_device_id   | ios-uat-matrix-20260506t163437z-jforgotten3
+client_mutation_id | decide_preflight_check-9
+mutation_type      | decide_preflight_check
+entity_type        | preflight_check
+entity_id          | bb640cb5-1c1e-43c1-9f1b-da0c27de359b
+result_json        | {"id": "bb640cb5-1c1e-43c1-9f1b-da0c27de359b", "state": "snoozed", "source": "resource_dependency", "user_id": "d98ba7a5-1db4-43e0-9063-4b534cb060e9", "check_text": "UAT snooze preflight check 20260506T171135Z", "confidence": 0.66, "created_at": "2026-05-06T17:11:35.627964Z", "updated_at": "2026-05-06T17:14:52.440316Z", "activity_id": "198c9dc7-d424-4b78-858e-31d52f0b3472", "failure_count": 3, "snoozed_until": "2026-05-07T17:14:52Z", "evidence_count": 3, "decision_reason": null, "last_decided_at": "2026-05-06T17:14:52.440316Z", "source_event_id": null, "evidence_summary": "Three UAT detours make this a snooze decision candidate.", "last_triggered_at": null, "source_dependency_id": null}
+received_at        | 2026-05-06 17:14:52.440316+00
+
+-[ RECORD 1 ]-----------------------------------------------------------
+id          | ebbb753d-931b-46bb-83ae-5ec32d39dfa0
+event_name  | preflight.check_decided
+entity_type | preflight_check
+entity_id   | bb640cb5-1c1e-43c1-9f1b-da0c27de359b
+metadata    | {"state": "snoozed", "reason": null, "decision": "snooze"}
+occurred_at | 2026-05-06 17:14:52.440316+00
+

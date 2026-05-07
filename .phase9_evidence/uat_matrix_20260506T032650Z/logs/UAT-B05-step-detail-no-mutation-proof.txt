@@ -1,0 +1,10 @@
+     event_type      | count 
+---------------------+-------
+ annotation_captured |     1
+(1 row)
+
+ step_mutations 
+----------------
+              0
+(1 row)
+

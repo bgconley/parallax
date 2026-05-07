@@ -1,0 +1,11 @@
+[
+  {
+    "eventType": "intent_recorded",
+    "notePreview": "Will this offline ask recover when the backend returns?",
+    "workflow": "answer_temporal_query",
+    "api_path": "/v1/temporal/query",
+    "include_raw_quotes": "false",
+    "clientMutationId": "intent_recorded-2",
+    "clientSequence": 2
+  }
+]

@@ -171,6 +171,70 @@ def test_review_derives_wall_only_friction_spans_and_updates_profile() -> None:
     assert "Only 1 reviewed run is available." in body["limitations"]
 
 
+def test_review_closes_open_resource_detour_at_completion() -> None:
+    client = TestClient(make_app())
+    activity_id = create_activity(client, name="Open detour review")
+    created = client.post(
+        "/v1/timing/sessions",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={
+            "mutation": mutation("open-detour-session", 1),
+            "activity_id": activity_id,
+            "client_session_id": "phase2-open-detour",
+            "mode": "whole_task",
+        },
+    )
+    assert created.status_code == 201
+    session_id = created.json()["id"]
+
+    events = [
+        ("start", 2, "session_started", "2026-04-28T12:00:00Z"),
+        ("detour-start", 3, "resource_detour_started", "2026-04-28T12:05:00Z"),
+    ]
+    for mutation_id, sequence, event_type, client_time in events:
+        response = client.post(
+            f"/v1/timing/sessions/{session_id}/events",
+            headers={"X-Parallax-User-Id": USER_ID},
+            json={
+                "mutation": mutation(f"open-detour-{mutation_id}", sequence),
+                "event_type": event_type,
+                "client_time": client_time,
+            },
+        )
+        assert response.status_code == 201
+
+    completed = client.post(
+        f"/v1/timing/sessions/{session_id}/complete",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={
+            "mutation": mutation("open-detour-complete", 4),
+            "completed_at": "2026-04-28T12:30:00Z",
+            "timer_elapsed_seconds": 1800,
+            "timer_active_seconds": 300,
+        },
+    )
+    assert completed.status_code == 200
+
+    reviewed = client.post(
+        f"/v1/timing/sessions/{session_id}/review",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json=review_payload("open-detour-review", sequence=5),
+    )
+    assert reviewed.status_code == 200
+
+    fetched = client.get(
+        f"/v1/timing/sessions/{session_id}",
+        headers={"X-Parallax-User-Id": USER_ID},
+    ).json()
+    assert fetched["wall_seconds"] == 1800
+    assert fetched["active_seconds"] == 300
+    assert fetched["detour_seconds"] == 1500
+    spans_by_type = {span["span_type"]: span for span in fetched["spans"]}
+    assert spans_by_type["resource_detour"]["duration_seconds"] == 1500
+    assert spans_by_type["resource_detour"]["count_in_active_time"] is False
+    assert spans_by_type["active_work"]["duration_seconds"] == 300
+
+
 @pytest.mark.parametrize(
     ("decision", "model_inclusion", "expected_status", "expected_run_quality"),
     [

@@ -1,0 +1,10 @@
+-[ RECORD 1 ]-------------------
+table_name | timing_event
+count      | 113
+-[ RECORD 2 ]-------------------
+table_name | client_mutation_log
+count      | 172
+-[ RECORD 3 ]-------------------
+table_name | preflight_check
+count      | 6
+

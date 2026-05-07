@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import overload
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 
@@ -12,6 +12,7 @@ from ..domain.latency_observations import (
 from ..domain.review_decisions import is_discard_decision, is_model_inclusion_allowed
 from ..domain.timing_spans import derive_timing_spans, summarize_timing_spans
 from ..repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
+from ..schemas.extraction import ExtractedContextEvent
 from ..schemas.timing import (
     AppendTimingEventRequest,
     CompleteTimingSessionRequest,
@@ -151,6 +152,7 @@ def append_event_in_uow(
 
     def apply() -> tuple[UUID, TimingEvent]:
         event = uow.timing.append_event(user_id, session_id, resolved_request)
+        _materialize_client_extracted_event_if_needed(uow, user_id, event)
         return event.id, event
 
     return mutations.replay_or_apply(
@@ -161,6 +163,134 @@ def append_event_in_uow(
         result_type=TimingEvent,
         apply=apply,
     )
+
+
+def _materialize_client_extracted_event_if_needed(
+    uow: UnitOfWork,
+    user_id: UUID,
+    event: TimingEvent,
+) -> None:
+    if event.event_type != "extracted_event_created":
+        return
+
+    annotation_id = _payload_uuid(event.payload, "annotation_id")
+    if annotation_id is None:
+        return
+    annotation = uow.contexts.get_annotation(user_id, annotation_id)
+    if annotation is None or annotation.session_id != event.session_id:
+        raise HTTPException(status_code=400, detail="extracted event annotation scope mismatch")
+
+    count_policy = str(event.payload.get("count_policy") or "review_required")
+    extracted = ExtractedContextEvent(
+        id=uuid4(),
+        user_id=user_id,
+        annotation_id=annotation.id,
+        session_id=event.session_id,
+        checkpoint_run_id=annotation.checkpoint_run_id,
+        span_type=str(event.payload.get("span_type") or "other"),
+        friction_category=str(event.payload.get("friction_category") or "unknown"),
+        friction_subtype=_payload_string(event.payload, "friction_subtype"),
+        resource_name=_payload_string(event.payload, "resource_name"),
+        location_from=_payload_string(event.payload, "location_from"),
+        location_to=_payload_string(event.payload, "location_to"),
+        duration_seconds=_payload_int(event.payload, "duration_seconds"),
+        count_policy=count_policy,
+        count_in_wall_time=_count_in_wall_time(count_policy),
+        count_in_active_time=_count_in_active_time(count_policy),
+        model_update_scopes=_payload_scopes(event.payload),
+        suggested_preflight_text=_payload_string(event.payload, "suggested_preflight_text"),
+        confidence=_payload_float(event.payload, "confidence") or 0.82,
+        confirmation_state=_confirmation_state(event.payload),
+        sensitive_data_detected=False,
+        model_invocation_id=None,
+        source_json={
+            "source": "client_confirmed_extracted_event",
+            "source_timing_event_id": str(event.id),
+            "payload": event.payload,
+        },
+        user_correction_json={},
+    )
+    created = uow.contexts.create_extracted_event(extracted)
+    if created.confirmation_state == "confirmed":
+        uow.timing.upsert_extracted_event_span(user_id, created, user_corrected=False)
+        if created.suggested_preflight_text or created.resource_name:
+            session = uow.timing.get_session(user_id, created.session_id)
+            if session is None:
+                raise HTTPException(status_code=404, detail="timing session not found")
+            uow.contexts.create_preflight_check(user_id, session.activity_id, created)
+            uow.profiles.recompute_activity_stats(user_id, session.activity_id)
+
+
+def _payload_uuid(payload: dict[str, object], key: str) -> UUID | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    try:
+        return UUID(str(value))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"invalid {key}") from exc
+
+
+def _payload_string(payload: dict[str, object], key: str) -> str | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _payload_int(payload: dict[str, object], key: str) -> int | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    try:
+        return int(str(value))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"invalid {key}") from exc
+
+
+def _payload_float(payload: dict[str, object], key: str) -> float | None:
+    value = payload.get(key)
+    if value is None:
+        return None
+    try:
+        return float(str(value))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"invalid {key}") from exc
+
+
+def _payload_scopes(payload: dict[str, object]) -> list[str]:
+    raw = payload.get("model_update_scopes")
+    if raw is None:
+        if payload.get("friction_category") == "resource":
+            return ["friction_patterns", "preflight_suggestions"]
+        return []
+    if isinstance(raw, list):
+        return [str(item) for item in raw if str(item).strip()]
+    return [scope.strip() for scope in str(raw).split(",") if scope.strip()]
+
+
+def _confirmation_state(payload: dict[str, object]) -> str:
+    value = str(payload.get("confirmation_state") or "confirmed")
+    if value == "user_confirmed":
+        return "confirmed"
+    if value in {"confirmed", "ignored", "needs_confirmation", "deferred_to_review"}:
+        return value
+    return "confirmed"
+
+
+def _count_in_wall_time(count_policy: str) -> bool:
+    return count_policy in {
+        "wall_and_active",
+        "wall_only",
+        "separate_start_latency",
+        "separate_transition",
+        "review_required",
+    }
+
+
+def _count_in_active_time(count_policy: str) -> bool:
+    return count_policy in {"wall_and_active", "active_only"}
 
 
 def create_or_correct_span_in_uow(
@@ -202,7 +332,16 @@ def complete_session_in_uow(
 
     def apply() -> tuple[UUID, TimingSession]:
         session = uow.timing.complete_session(user_id, session_id, resolved_request)
-        return session.id, session
+        span_drafts = derive_timing_spans(session, session.events)
+        totals = summarize_timing_spans(session, span_drafts)
+        uow.timing.replace_derived_spans_and_totals(
+            user_id,
+            session_id,
+            span_drafts,
+            totals,
+        )
+        finalized_session = uow.timing.get_session(user_id, session_id) or session
+        return finalized_session.id, finalized_session
 
     return mutations.replay_or_apply(
         user_id=user_id,

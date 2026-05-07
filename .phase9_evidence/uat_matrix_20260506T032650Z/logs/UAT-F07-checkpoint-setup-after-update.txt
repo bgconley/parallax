@@ -1,0 +1,5 @@
+-[ RECORD 1 ]----+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+event_type       | intent_recorded
+payload          | {"checkpoint_label": "Next checkpoint", "measurement_mode": "checkpointed", "checkpoint_action": "update_checkpoint_plan", "sequence_integrity": "preserve_order"}
+client_device_id | ios-uat-matrix-20260506t184500z-checkpointsetup
+

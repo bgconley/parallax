@@ -1,0 +1,5 @@
+                  id                  | status  |    mode    | event_count |    event_types    
+--------------------------------------+---------+------------+-------------+-------------------
+ 2d9cd219-bba4-4dc0-9cb2-758e5c80280c | running | whole_task |           1 | {session_started}
+(1 row)
+

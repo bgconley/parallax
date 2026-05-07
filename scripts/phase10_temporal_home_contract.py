@@ -18,7 +18,7 @@ PHASE8_DRAWER_VIEWS_PATH = ROOT / "apps/ios/Sources/ParallaxApp/Phase8DrawerView
 API_CLIENT_PATH = ROOT / "apps/ios/Sources/ParallaxCore/ParallaxAPIClient.swift"
 MAKEFILE_PATH = ROOT / "Makefile"
 
-REQUIRED_CLASSIFICATIONS = {"drawer", "navigation", "local_queue", "api_workflow", "display_only"}
+REQUIRED_CLASSIFICATIONS = {"drawer", "navigation", "local_queue", "display_only"}
 REQUIRED_SCREEN_NODES = {"118:9", "118:104", "118:199", "118:294", "118:346"}
 REQUIRED_PHASE8_ACTIONS = {
     "complete_step",
@@ -73,7 +73,7 @@ def main() -> int:
     actions = action_map["actions"]
     action_ids = [action["id"] for action in actions]
     _expect(len(action_ids) == len(set(action_ids)), "duplicate Phase 10 action ids")
-    _expect(len(action_ids) == 55, "Phase 10 action map must cover 55 selectable/display rows")
+    _expect(len(action_ids) == 56, "Phase 10 action map must cover 56 selectable/display rows")
     _expect(
         {action["screen_node"] for action in actions} == REQUIRED_SCREEN_NODES,
         "Phase 10 action map screen-node coverage drift",

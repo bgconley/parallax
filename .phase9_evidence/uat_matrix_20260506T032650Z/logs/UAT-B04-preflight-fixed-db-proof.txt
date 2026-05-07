@@ -1,0 +1,15 @@
+ preflight_checks 
+------------------
+                0
+(1 row)
+
+ resource_dependencies 
+-----------------------
+                     0
+(1 row)
+
+ preflight_decided_events 
+--------------------------
+                        0
+(1 row)
+

@@ -1,0 +1,16 @@
+                  id                  | status  |     mode     |        source_device_id         |          created_at           |       started_at       
+--------------------------------------+---------+--------------+---------------------------------+-------------------------------+------------------------
+ be4b6efe-8892-489f-9ae5-6a035fa6feb0 | running | checkpointed | ios-uat-matrix-20260506t032650z | 2026-05-06 06:03:10.718374+00 | 2026-05-06 06:03:10+00
+(1 row)
+
+      event_type      |   client_mutation_id    |        client_device_id         | timer_elapsed_seconds | timer_active_seconds |                                                                                                                 payload                                                                                                                 
+----------------------+-------------------------+---------------------------------+-----------------------+----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ session_started      | session_started-50      | ios-uat-matrix-20260506t032650z |                     0 |                    0 | {"measurement_mode": "checkpointed"}
+ checkpoint_completed | checkpoint_completed-51 | ios-uat-matrix-20260506t032650z |                    18 |                   18 | {"label": "Current checkpoint", "active_seconds": "18", "sequence_order": "2", "elapsed_seconds": "18", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint", "checkpoint_run_id": "da209acf-1fcf-4e6f-ba9d-d5aa028f73dc"}
+(2 rows)
+
+                  id                  |       label        | sequence_order |  status   |       started_at       |      completed_at      | active_seconds | wall_seconds |                          metadata                           
+--------------------------------------+--------------------+----------------+-----------+------------------------+------------------------+----------------+--------------+-------------------------------------------------------------
+ da209acf-1fcf-4e6f-ba9d-d5aa028f73dc | Current checkpoint |              2 | completed | 2026-05-06 06:03:28+00 | 2026-05-06 06:03:28+00 |              0 |            0 | {"ad_hoc": true, "last_event_type": "checkpoint_completed"}
+(1 row)
+

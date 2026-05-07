@@ -4,6 +4,7 @@ public struct PendingPreflightDecision: Codable, Equatable, Identifiable, Sendab
     public let id: UUID
     public let activityId: UUID
     public let checkId: UUID
+    public let remoteCheckId: UUID?
     public let mutation: MutationEnvelope
     public let decision: PreflightCheckDecision
     public let decidedAt: Date
@@ -14,6 +15,7 @@ public struct PendingPreflightDecision: Codable, Equatable, Identifiable, Sendab
         id: UUID = UUID(),
         activityId: UUID,
         checkId: UUID,
+        remoteCheckId: UUID? = nil,
         mutation: MutationEnvelope,
         decision: PreflightCheckDecision,
         decidedAt: Date,
@@ -23,6 +25,7 @@ public struct PendingPreflightDecision: Codable, Equatable, Identifiable, Sendab
         self.id = id
         self.activityId = activityId
         self.checkId = checkId
+        self.remoteCheckId = remoteCheckId
         self.mutation = mutation
         self.decision = decision
         self.decidedAt = decidedAt

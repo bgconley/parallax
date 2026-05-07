@@ -199,6 +199,200 @@ def test_annotation_capture_persists_private_note_and_creates_source_event_witho
     assert annotation_events[0]["payload"]["annotation_id"] == annotation["id"]
 
 
+def test_confirmed_extracted_event_source_materializes_extracted_event_and_span() -> None:
+    app, store = make_app_and_store()
+    client = TestClient(app)
+    activity_id = create_activity(client, "Phase 9 dynamic friction")
+    session_id = create_session(client, activity_id, "dynamic-friction")
+    append_started_event(client, session_id)
+
+    annotation_response = client.post(
+        f"/v1/timing/sessions/{session_id}/annotations",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={
+            "mutation": mutation("annotation-dynamic-friction", 3),
+            "input_mode": "text",
+            "raw_text": "Dynamic blocker note.",
+            "timer_elapsed_seconds": 42,
+            "timer_active_seconds": 40,
+            "occurred_at": "2026-04-28T12:00:42Z",
+            "privacy_class": "normal",
+            "metadata": {"source": "timing_session_friction"},
+        },
+    )
+    assert annotation_response.status_code == 201
+    annotation_id = annotation_response.json()["id"]
+
+    event_response = client.post(
+        f"/v1/timing/sessions/{session_id}/events",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={
+            "mutation": mutation("event-confirmed-dynamic-friction", 4),
+            "event_type": "extracted_event_created",
+            "client_time": "2026-04-28T12:00:50Z",
+            "timer_elapsed_seconds": 50,
+            "timer_active_seconds": 40,
+            "payload": {
+                "annotation_id": annotation_id,
+                "span_type": "resource_detour",
+                "friction_category": "resource",
+                "resource_name": "Dynamic blocker",
+                "count_policy": "wall_only",
+                "confirmation_state": "user_confirmed",
+            },
+        },
+    )
+
+    assert event_response.status_code == 201
+    extracted_events = [
+        event
+        for event in store.extracted_events.values()
+        if event.annotation_id == UUID(annotation_id)
+    ]
+    assert len(extracted_events) == 1
+    extracted = extracted_events[0]
+    assert extracted.session_id == UUID(session_id)
+    assert extracted.resource_name == "Dynamic blocker"
+    assert extracted.count_policy == "wall_only"
+    assert extracted.confirmation_state == "confirmed"
+    spans = store.session_spans[UUID(session_id)]
+    assert len(spans) == 1
+    assert spans[0].linked_annotation_id == UUID(annotation_id)
+    assert spans[0].linked_extracted_event_id == extracted.id
+    assert spans[0].count_in_wall_time is True
+    assert spans[0].count_in_active_time is False
+
+
+def test_client_confirmed_resource_detours_feed_preflight_learning() -> None:
+    app, _store = make_app_and_store()
+    client = TestClient(app)
+    headers = {"X-Parallax-User-Id": USER_ID}
+    activity_id = create_activity(client, "Phase 9 dynamic resource learning")
+
+    for index in (1, 2):
+        session_id = create_session(client, activity_id, f"dynamic-resource-{index}")
+        append_started_event(client, session_id, f"dynamic-resource-start-{index}")
+        annotation_response = client.post(
+            f"/v1/timing/sessions/{session_id}/annotations",
+            headers=headers,
+            json={
+                "mutation": mutation(f"annotation-dynamic-resource-{index}", 3 + index),
+                "input_mode": "text",
+                "raw_text": "Had to stop and find the dynamic resource blocker.",
+                "timer_elapsed_seconds": 42,
+                "timer_active_seconds": 40,
+                "occurred_at": "2026-04-28T12:00:42Z",
+                "privacy_class": "normal",
+                "metadata": {"source": "timing_session_friction"},
+            },
+        )
+        assert annotation_response.status_code == 201
+        annotation_id = annotation_response.json()["id"]
+
+        event_response = client.post(
+            f"/v1/timing/sessions/{session_id}/events",
+            headers=headers,
+            json={
+                "mutation": mutation(f"event-confirmed-dynamic-resource-{index}", 20 + index),
+                "event_type": "extracted_event_created",
+                "client_time": "2026-04-28T12:00:50Z",
+                "timer_elapsed_seconds": 50,
+                "timer_active_seconds": 40,
+                "payload": {
+                    "annotation_id": annotation_id,
+                    "span_type": "resource_detour",
+                    "friction_category": "resource",
+                    "resource_name": "dynamic resource blocker",
+                    "count_policy": "wall_only",
+                    "confirmation_state": "user_confirmed",
+                },
+            },
+        )
+        assert event_response.status_code == 201
+
+    dependencies = client.get(f"/v1/activities/{activity_id}/resource-dependencies", headers=headers)
+    assert dependencies.status_code == 200
+    assert dependencies.json()[0]["resource_name"] == "dynamic resource blocker"
+    assert dependencies.json()[0]["failure_count"] == 2
+    assert dependencies.json()[0]["suggest_precheck"] is True
+
+    checks = client.get(f"/v1/activities/{activity_id}/preflight-checks", headers=headers)
+    assert checks.status_code == 200
+    resource_check = next(
+        check for check in checks.json() if check["source"] == "resource_dependency"
+    )
+    assert resource_check["state"] == "suggested"
+    assert resource_check["failure_count"] == 2
+    assert resource_check["check_text"] == "Check resources before phase 9 dynamic resource learning."
+
+
+def test_checkpoint_annotation_links_source_event_to_checkpoint_run() -> None:
+    app, _store = make_app_and_store()
+    client = TestClient(app)
+    activity_id = create_activity(client, "Phase 3 checkpoint note")
+    session = client.post(
+        "/v1/timing/sessions",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={
+            "mutation": mutation("session-checkpoint-note", 1),
+            "activity_id": activity_id,
+            "client_session_id": "phase3-checkpoint-note",
+            "mode": "checkpointed",
+        },
+    )
+    assert session.status_code == 201
+    session_id = session.json()["id"]
+    checkpoint = client.post(
+        f"/v1/timing/sessions/{session_id}/events",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={
+            "mutation": mutation("checkpoint-note-start", 2),
+            "event_type": "checkpoint_started",
+            "client_time": "2026-04-28T12:00:00Z",
+            "payload": {
+                "sequence_order": 2,
+                "checkpoint_label": "Current checkpoint",
+            },
+        },
+    )
+    assert checkpoint.status_code == 201
+    checkpoint_run_id = checkpoint.json()["payload"]["checkpoint_run_id"]
+
+    created = client.post(
+        f"/v1/timing/sessions/{session_id}/annotations",
+        headers={"X-Parallax-User-Id": USER_ID},
+        json={
+            "mutation": mutation("annotation-checkpoint-note", 3),
+            "checkpoint_run_id": checkpoint_run_id,
+            "input_mode": "text",
+            "raw_text": "Checkpoint note must reference its step.",
+            "timer_elapsed_seconds": 90,
+            "timer_active_seconds": 75,
+            "occurred_at": "2026-04-28T12:01:30Z",
+            "privacy_class": "normal",
+            "metadata": {
+                "source": "timing_session_step_note",
+                "checkpoint_label": "Current checkpoint",
+            },
+        },
+    )
+
+    assert created.status_code == 201
+    annotation = created.json()
+    assert annotation["checkpoint_run_id"] == checkpoint_run_id
+    session_view = client.get(
+        f"/v1/timing/sessions/{session_id}",
+        headers={"X-Parallax-User-Id": USER_ID},
+    ).json()
+    annotation_events = [
+        event for event in session_view["events"] if event["event_type"] == "annotation_captured"
+    ]
+    assert len(annotation_events) == 1
+    assert annotation_events[0]["payload"]["annotation_id"] == annotation["id"]
+    assert annotation_events[0]["payload"]["checkpoint_run_id"] == checkpoint_run_id
+    assert annotation_events[0]["payload"]["source"] == "timing_session_step_note"
+
+
 def test_context_policy_disables_sensor_payloads_and_denied_capture_keeps_timing_totals() -> None:
     app, _store = make_app_and_store()
     client = TestClient(app)

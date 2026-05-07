@@ -1,0 +1,80 @@
+-[ RECORD 1 ]---+-----------------------------------------
+id              | 6426151b-8b31-4777-b5b5-e5bd31fa5f8e
+check_text      | A UAT keep active check 20260506T163437Z
+state           | active
+snoozed_until   | 
+last_decided_at | 2026-05-06 17:08:28.83117+00
+decision_reason | 
+-[ RECORD 2 ]---+-----------------------------------------
+id              | 795a6bf4-5cc3-4303-9663-f630f93b1301
+check_text      | Review this preflight check
+state           | active
+snoozed_until   | 
+last_decided_at | 2026-05-06 17:03:23.63521+00
+decision_reason | 
+
+-[ RECORD 1 ]------+-----------------------------------------------------------------
+client_device_id   | ios-uat-matrix-20260506t163437z-jforgotten3
+client_mutation_id | decide_preflight_check-8
+mutation_type      | decide_preflight_check
+entity_type        | preflight_check
+entity_id          | 6426151b-8b31-4777-b5b5-e5bd31fa5f8e
+received_at        | 2026-05-06 17:08:28.83117+00
+-[ RECORD 2 ]------+-----------------------------------------------------------------
+client_device_id   | ios-uat-matrix-20260506t163437z-jforgotten3
+client_mutation_id | decide_preflight_check-7
+mutation_type      | decide_preflight_check
+entity_type        | preflight_check
+entity_id          | 795a6bf4-5cc3-4303-9663-f630f93b1301
+received_at        | 2026-05-06 17:03:23.63521+00
+-[ RECORD 3 ]------+-----------------------------------------------------------------
+client_device_id   | ios-uat-matrix-20260506t163437z-jforgotten3
+client_mutation_id | decide_preflight_check-6
+mutation_type      | decide_preflight_check
+entity_type        | preflight_check
+entity_id          | 795a6bf4-5cc3-4303-9663-f630f93b1301
+received_at        | 2026-05-06 16:54:39.054497+00
+-[ RECORD 4 ]------+-----------------------------------------------------------------
+client_device_id   | ios-uat-matrix-20260506t163437z-jforgotten3
+client_mutation_id | decide_preflight_check-5
+mutation_type      | decide_preflight_check
+entity_type        | preflight_check
+entity_id          | 795a6bf4-5cc3-4303-9663-f630f93b1301
+received_at        | 2026-05-06 16:49:19.697186+00
+-[ RECORD 5 ]------+-----------------------------------------------------------------
+client_device_id   | ios-uat-matrix-20260506t163437z-jforgotten3
+client_mutation_id | sync_create_preflight_check_6426151b-8b31-4777-b5b5-e5bd31fa5f8e
+mutation_type      | create_preflight_check
+entity_type        | preflight_check
+entity_id          | 795a6bf4-5cc3-4303-9663-f630f93b1301
+received_at        | 2026-05-06 16:49:19.642535+00
+
+-[ RECORD 1 ]----------------------------------------------------------
+id          | bf148062-7fd1-4c7e-b835-7326d7f20260
+event_name  | preflight.check_decided
+entity_type | preflight_check
+entity_id   | 6426151b-8b31-4777-b5b5-e5bd31fa5f8e
+metadata    | {"state": "active", "reason": null, "decision": "accept"}
+occurred_at | 2026-05-06 17:08:28.83117+00
+-[ RECORD 2 ]----------------------------------------------------------
+id          | 1ca72944-dee1-498a-8572-5fc44951883f
+event_name  | preflight.check_decided
+entity_type | preflight_check
+entity_id   | 795a6bf4-5cc3-4303-9663-f630f93b1301
+metadata    | {"state": "active", "reason": null, "decision": "accept"}
+occurred_at | 2026-05-06 17:03:23.63521+00
+-[ RECORD 3 ]----------------------------------------------------------
+id          | 9fbfbd32-b3d3-45a6-b6e5-1a7261438663
+event_name  | preflight.check_decided
+entity_type | preflight_check
+entity_id   | 795a6bf4-5cc3-4303-9663-f630f93b1301
+metadata    | {"state": "active", "reason": null, "decision": "accept"}
+occurred_at | 2026-05-06 16:54:39.054497+00
+-[ RECORD 4 ]----------------------------------------------------------
+id          | 7ce3e78e-4756-4078-bd8b-f3aa641e9043
+event_name  | preflight.check_decided
+entity_type | preflight_check
+entity_id   | 795a6bf4-5cc3-4303-9663-f630f93b1301
+metadata    | {"state": "active", "reason": null, "decision": "accept"}
+occurred_at | 2026-05-06 16:49:19.697186+00
+

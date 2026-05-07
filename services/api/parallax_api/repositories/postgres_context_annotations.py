@@ -9,6 +9,7 @@ from psycopg.types.json import Jsonb
 
 from ..schemas.context import CreateAnnotationRequest, TemporalContextAnnotation
 from ..schemas.timing import AppendTimingEventRequest
+from .context_annotation_state import annotation_event_payload
 from .postgres_context_common import initial_annotation_status
 from .postgres_context_snapshots import PostgresContextSnapshotRepository
 from .postgres_identity import ensure_app_user
@@ -130,7 +131,7 @@ class PostgresContextAnnotationRepository:
             timer_active_seconds=request.timer_active_seconds,
             capture_context_snapshot_id=annotation.capture_context_snapshot_id,
             capture_context_snapshot_ref=annotation.capture_context_snapshot_ref,
-            payload={"annotation_id": str(annotation.id), "input_mode": request.input_mode},
+            payload=annotation_event_payload(request, annotation),
         )
         cursor.execute(
             """

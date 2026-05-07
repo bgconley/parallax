@@ -1,0 +1,44 @@
+-[ RECORD 1 ]---+-------------------------------------------------------------------------------------------------------------------------
+id              | e6def2f0-9b53-4135-960d-236ea0c139d5
+status          | snoozed
+resolution_note | User deferred forgotten timer decision.
+resolved_at     | 
+evidence        | {"case": "not_sure", "source": "uat_matrix", "source_workflow": "DetectForgottenTimerWorkflow", "idle_gap_seconds": 900}
+
+-[ RECORD 1 ]---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+event_type            | session_started
+client_sequence       | 3
+timer_elapsed_seconds | 0
+timer_active_seconds  | 0
+payload               | {"measurement_mode": "whole_task"}
+-[ RECORD 2 ]---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+event_type            | session_completed
+client_sequence       | 4
+timer_elapsed_seconds | 44
+timer_active_seconds  | 44
+payload               | {}
+-[ RECORD 3 ]---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+event_type            | user_correction_applied
+client_sequence       | 5
+timer_elapsed_seconds | 44
+timer_active_seconds  | 44
+payload               | {"reason_code": "place_changed_after_long_idle_gap", "correction_type": "forgotten_timer_place_change", "privacy_display": "human_explanation_only", "idle_gap_seconds": "2700", "start_place_category": "start_area", "trimmed_active_seconds": "44", "original_active_seconds": "44", "trimmed_elapsed_seconds": "44", "original_elapsed_seconds": "44", "completion_place_category": "later_area"}
+-[ RECORD 4 ]---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+event_type            | review_saved
+client_sequence       | 7
+timer_elapsed_seconds | 44
+timer_active_seconds  | 44
+payload               | {"decision": "timer_kept_running", "reason_code": "place_change_reviewed", "model_inclusion": "not_reviewed"}
+-[ RECORD 5 ]---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+event_type            | review_saved
+client_sequence       | 9
+timer_elapsed_seconds | 44
+timer_active_seconds  | 44
+payload               | {"decision": "forgotten_timer_not_sure", "reason_code": "needs_later_review", "model_inclusion": "not_reviewed"}
+
+-[ RECORD 1 ]--+-------------------------------------
+id             | a6b4f8f1-6fed-4937-8e04-2dfa2a7c709a
+status         | completed_unreviewed
+active_seconds | 44
+wall_seconds   | 44
+

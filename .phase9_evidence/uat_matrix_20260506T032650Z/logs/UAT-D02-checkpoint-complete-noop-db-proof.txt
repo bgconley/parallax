@@ -1,0 +1,16 @@
+                  id                  | status  |     mode     |        source_device_id         |          updated_at           
+--------------------------------------+---------+--------------+---------------------------------+-------------------------------
+ 33922e5c-cea4-42e8-b26d-dd30db6fb192 | running | checkpointed | ios-uat-matrix-20260506t032650z | 2026-05-06 05:57:56.309889+00
+(1 row)
+
+      event_type      |   client_mutation_id    |        client_device_id         | timer_elapsed_seconds | timer_active_seconds |                                                       payload                                                        
+----------------------+-------------------------+---------------------------------+-----------------------+----------------------+----------------------------------------------------------------------------------------------------------------------
+ session_started      | session_started-47      | ios-uat-matrix-20260506t032650z |                     0 |                    0 | {"measurement_mode": "checkpointed"}
+ checkpoint_completed | checkpoint_completed-48 | ios-uat-matrix-20260506t032650z |                    85 |                   85 | {"active_seconds": "85", "elapsed_seconds": "85", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint"}
+ checkpoint_completed | checkpoint_completed-49 | ios-uat-matrix-20260506t032650z |                    94 |                   94 | {"active_seconds": "94", "elapsed_seconds": "94", "checkpoint_index": "2", "checkpoint_label": "Current checkpoint"}
+(3 rows)
+
+ id | checkpoint_template_id | label | status | started_at | completed_at | active_seconds | wall_seconds | sequence_order 
+----+------------------------+-------+--------+------------+--------------+----------------+--------------+----------------
+(0 rows)
+

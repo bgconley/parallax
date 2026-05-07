@@ -1,0 +1,12 @@
+-[ RECORD 1 ]-+--
+timing_events | 6
+
+-[ RECORD 1 ]--
+annotations | 2
+
+-[ RECORD 1 ]
+reviews | 1
+
+-[ RECORD 1 ]-----+--
+mutation_log_rows | 8
+

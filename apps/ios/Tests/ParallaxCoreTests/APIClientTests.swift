@@ -149,6 +149,45 @@ import Testing
     #expect(manualMetadata["capture_method"] as? String == "manual_timer_button")
 }
 
+@Test func annotationRequestCarriesCheckpointTimerAndSourceContext() throws {
+    let userId = UUID(uuidString: "33333333-3333-3333-3333-333333333333")!
+    let sessionId = UUID(uuidString: "44444444-4444-4444-4444-444444444444")!
+    let checkpointRunId = UUID(uuidString: "55555555-5555-4555-8555-555555555555")!
+    let client = ParallaxAPIClient(baseURL: URL(string: "http://127.0.0.1:18000")!, userId: userId)
+    let mutation = MutationEnvelope(
+        idempotencyKey: "device-1:13",
+        clientMutationId: "mutation-13",
+        clientDeviceId: "device-1",
+        clientSequence: 13,
+        clientTimestamp: Date(timeIntervalSince1970: 1_775_000_000)
+    )
+
+    let request = try client.createAnnotationRequest(
+        sessionId: sessionId,
+        mutation: mutation,
+        checkpointRunId: checkpointRunId,
+        rawText: "This checkpoint needed extra setup.",
+        occurredAt: Date(timeIntervalSince1970: 1_775_000_013),
+        timerElapsedSeconds: 180,
+        timerActiveSeconds: 120,
+        captureMethod: .manualButton,
+        metadata: [
+            "source": "timing_session_step_note",
+            "checkpoint_label": "Current checkpoint",
+        ]
+    )
+    let json = try #require(request.httpBody.flatMap { body in
+        try JSONSerialization.jsonObject(with: body) as? [String: Any]
+    })
+    let metadata = try #require(json["metadata"] as? [String: Any])
+
+    #expect(json["checkpoint_run_id"] as? String == checkpointRunId.uuidString.uppercased())
+    #expect(json["timer_elapsed_seconds"] as? Int == 180)
+    #expect(json["timer_active_seconds"] as? Int == 120)
+    #expect(metadata["source"] as? String == "timing_session_step_note")
+    #expect(metadata["checkpoint_label"] as? String == "Current checkpoint")
+}
+
 @Test func sessionLifecycleRequestsUseCanonicalPathsAndReviewScopes() throws {
     let userId = UUID(uuidString: "55555555-5555-5555-5555-555555555555")!
     let activityId = UUID(uuidString: "66666666-6666-6666-6666-666666666666")!

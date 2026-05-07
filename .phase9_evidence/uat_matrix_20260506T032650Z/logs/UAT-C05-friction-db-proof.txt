@@ -1,0 +1,14 @@
+       event_type        |        client_device_id         | timer_elapsed_seconds | timer_active_seconds |                                              payload                                               |          created_at           
+-------------------------+---------------------------------+-----------------------+----------------------+----------------------------------------------------------------------------------------------------+-------------------------------
+ session_started         | ios-uat-matrix-20260506t032650z |                     0 |                    0 | {"measurement_mode": "whole_task"}                                                                 | 2026-05-06 04:16:04.691994+00
+ session_paused          | ios-uat-matrix-20260506t032650z |                    90 |                   90 | {"pause_reason": "user_paused_step", "checkpoint_label": "Phase 9 UAT Matrix 20260506T032650Z"}    | 2026-05-06 04:17:35.137418+00
+ session_resumed         | ios-uat-matrix-20260506t032650z |                   121 |                   90 | {"resume_reason": "user_resumed_timer", "checkpoint_label": "Phase 9 UAT Matrix 20260506T032650Z"} | 2026-05-06 04:18:05.416015+00
+ annotation_captured     | ios-uat-matrix-20260506t032650z |                       |                      | {"input_mode": "text", "annotation_id": "613b2a14-e0d1-42dd-973f-3e8a336cb438"}                    | 2026-05-06 04:19:28.843598+00
+ resource_detour_started | ios-uat-matrix-20260506t032650z |                   204 |                  173 | {"count_policy": "wall_only", "resource_name": "UAT drying rack unavailable"}                      | 2026-05-06 04:19:28.89665+00
+(5 rows)
+
+                  id                  |              session_id              | input_mode |                   raw_text                   | redacted_text | timer_elapsed_seconds | timer_active_seconds |  client_mutation_id   |        client_device_id         |                                                         metadata                                                          |          created_at           
+--------------------------------------+--------------------------------------+------------+----------------------------------------------+---------------+-----------------------+----------------------+-----------------------+---------------------------------+---------------------------------------------------------------------------------------------------------------------------+-------------------------------
+ 613b2a14-e0d1-42dd-973f-3e8a336cb438 | 2d9cd219-bba4-4dc0-9cb2-758e5c80280c | text       | UAT friction note typed during simulator run |               |                       |                      | annotation_captured-9 | ios-uat-matrix-20260506t032650z | {"capture_method": "manual_timer_button", "retrieval_document": {"reason": "extraction_not_available", "created": false}} | 2026-05-06 04:19:28.843598+00
+(1 row)
+

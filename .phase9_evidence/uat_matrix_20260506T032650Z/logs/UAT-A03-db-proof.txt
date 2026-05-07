@@ -1,0 +1,5 @@
+ activity_count |         selected_activity_id         |            display_name             
+----------------+--------------------------------------+-------------------------------------
+              1 | fc1eb943-5255-4ca0-b3bf-49da97bf9bd2 | Phase 9 UAT Matrix 20260506T032650Z
+(1 row)
+

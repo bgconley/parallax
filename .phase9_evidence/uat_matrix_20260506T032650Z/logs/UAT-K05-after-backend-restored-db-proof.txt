@@ -1,0 +1,5 @@
+             activity_id              |                      display_name                      |              session_id              |     status      |   event_type    | client_mutation_id |              idempotency_key               |       workflow        |      api_path      
+--------------------------------------+--------------------------------------------------------+--------------------------------------+-----------------+-----------------+--------------------+--------------------------------------------+-----------------------+--------------------
+ 18bf0a0f-99e2-4aee-9126-c3af0e90bba0 | Phase 9 UAT Matrix API Error Recovery 20260506T194200Z | 0bf6f24b-f40f-4b10-87d6-199e308ccb63 | intent_recorded | intent_recorded | intent_recorded-2  | ios-uat-matrix-20260506t194200z-apierror:2 | answer_temporal_query | /v1/temporal/query
+(1 row)
+

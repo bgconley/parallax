@@ -1,0 +1,5 @@
+ timing_sessions | timing_events | annotations 
+-----------------+---------------+-------------
+               0 |             0 |           0
+(1 row)
+

@@ -16,6 +16,10 @@ public struct ParallaxRuntimeConfig: Equatable, Sendable {
     public let deviceId: String
     public let preflightCheckText: String?
 
+    public var localStorageScope: String {
+        "\(auth.localStorageIdentity).\(Self.pathSafe(deviceId))"
+    }
+
     public init(
         apiBaseURL: URL,
         auth: ParallaxAPIAuth,
@@ -77,5 +81,12 @@ public struct ParallaxRuntimeConfig: Equatable, Sendable {
             return nil
         }
         return trimmed
+    }
+
+    private static func pathSafe(_ value: String) -> String {
+        let allowed = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.")
+        let sanitized = value.map { allowed.contains($0) ? $0 : "_" }
+        let result = String(sanitized).trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        return result.isEmpty ? "device" : result
     }
 }

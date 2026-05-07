@@ -1,0 +1,135 @@
+-[ RECORD 1 ]-------+-------------------------------------------------
+activity_id         | fce0e0dd-0155-4812-8db6-42e2440435af
+display_name        | Phase 9 UAT Matrix Offline Sync 20260506T172100Z
+default_timing_mode | whole_task
+
+-[ RECORD 1 ]-----+----------------------------------------
+session_id        | 5d95f31c-10f6-4d1e-8c17-60b113b8ca83
+status            | reviewed
+model_inclusion   | full
+source_device_id  | ios-uat-matrix-20260506t172100z-offline
+client_session_id | C68987AE-B5DA-4D45-833E-CC826E0E09B9
+wall_seconds      | 373
+active_seconds    | 98
+detour_seconds    | 274
+
+-[ RECORD 1 ]---------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+client_sequence       | 1
+client_mutation_id    | session_started-1
+event_type            | session_started
+timer_elapsed_seconds | 0
+timer_active_seconds  | 0
+client_device_id      | ios-uat-matrix-20260506t172100z-offline
+payload               | {"measurement_mode": "whole_task"}
+-[ RECORD 2 ]---------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+client_sequence       | 2
+client_mutation_id    | annotation_captured-2
+event_type            | annotation_captured
+timer_elapsed_seconds | 98
+timer_active_seconds  | 98
+client_device_id      | ios-uat-matrix-20260506t172100z-offline
+payload               | {"source": "timing_session_friction", "input_mode": "text", "annotation_id": "81af72bf-724a-49d9-8299-96601457a6b5"}
+-[ RECORD 3 ]---------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+client_sequence       | 3
+client_mutation_id    | resource_detour_started-3
+event_type            | resource_detour_started
+timer_elapsed_seconds | 98
+timer_active_seconds  | 98
+client_device_id      | ios-uat-matrix-20260506t172100z-offline
+payload               | {"count_policy": "wall_only", "resource_name": "Offline UAT blocker"}
+-[ RECORD 4 ]---------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+client_sequence       | 4
+client_mutation_id    | annotation_captured-4
+event_type            | annotation_captured
+timer_elapsed_seconds | 295
+timer_active_seconds  | 98
+client_device_id      | ios-uat-matrix-20260506t172100z-offline
+payload               | {"source": "timing_session_step_note", "input_mode": "text", "annotation_id": "de09e4a0-c6a9-4978-a50e-8f22236c8949"}
+-[ RECORD 5 ]---------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+client_sequence       | 5
+client_mutation_id    | session_completed-5
+event_type            | session_completed
+timer_elapsed_seconds | 373
+timer_active_seconds  | 98
+client_device_id      | ios-uat-matrix-20260506t172100z-offline
+payload               | {}
+-[ RECORD 6 ]---------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+client_sequence       | 6
+client_mutation_id    | review_saved-6
+event_type            | review_saved
+timer_elapsed_seconds | 373
+timer_active_seconds  | 98
+client_device_id      | ios-uat-matrix-20260506t172100z-offline
+payload               | {"scopes": ["active_duration", "wall_duration", "friction_patterns", "preflight_suggestions"], "decision": "save_useful_run", "model_inclusion": "full", "model_update_decision_id": "92030f7d-7184-49a1-af70-5c21987de68c"}
+
+-[ RECORD 1 ]---------+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+client_mutation_id    | annotation_captured-2
+client_device_id      | ios-uat-matrix-20260506t172100z-offline
+timer_elapsed_seconds | 98
+timer_active_seconds  | 98
+raw_text              | Offline UAT detour typed while backend unavailable 20260506T172100Z
+status                | extraction_pending
+metadata              | {"source": "timing_session_friction", "capture_method": "manual_timer_button", "retrieval_document": {"reason": "extraction_not_available", "created": false}}
+-[ RECORD 2 ]---------+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+client_mutation_id    | annotation_captured-4
+client_device_id      | ios-uat-matrix-20260506t172100z-offline
+timer_elapsed_seconds | 295
+timer_active_seconds  | 98
+raw_text              | Offline UAT quick note saved locally 20260506T172100Z
+status                | extraction_pending
+metadata              | {"source": "timing_session_step_note", "capture_method": "manual_timer_button", "retrieval_document": {"reason": "extraction_not_available", "created": false}}
+
+-[ RECORD 1 ]---+------------------------------------------------------------------------
+decision        | save_useful_run
+model_inclusion | full
+scopes          | {active_duration,wall_duration,friction_patterns,preflight_suggestions}
+
+-[ RECORD 1 ]------+----------------------------------------------------------------
+client_sequence    | 1
+client_mutation_id | session_started-1
+mutation_type      | append_timing_event
+entity_type        | timing_event
+entity_id          | 175f8490-b6d3-46ed-ac29-b0462f1d537c
+-[ RECORD 2 ]------+----------------------------------------------------------------
+client_sequence    | 2
+client_mutation_id | annotation_captured-2
+mutation_type      | create_context_annotation
+entity_type        | temporal_context_annotation
+entity_id          | 81af72bf-724a-49d9-8299-96601457a6b5
+-[ RECORD 3 ]------+----------------------------------------------------------------
+client_sequence    | 3
+client_mutation_id | resource_detour_started-3
+mutation_type      | append_timing_event
+entity_type        | timing_event
+entity_id          | 854b124f-aa37-4e08-9436-c62a2a09ec30
+-[ RECORD 4 ]------+----------------------------------------------------------------
+client_sequence    | 4
+client_mutation_id | annotation_captured-4
+mutation_type      | create_context_annotation
+entity_type        | temporal_context_annotation
+entity_id          | de09e4a0-c6a9-4978-a50e-8f22236c8949
+-[ RECORD 5 ]------+----------------------------------------------------------------
+client_sequence    | 5
+client_mutation_id | session_completed-5
+mutation_type      | complete_timing_session
+entity_type        | timing_session
+entity_id          | 5d95f31c-10f6-4d1e-8c17-60b113b8ca83
+-[ RECORD 6 ]------+----------------------------------------------------------------
+client_sequence    | 6
+client_mutation_id | review_saved-6
+mutation_type      | review_timing_session
+entity_type        | model_update_decision
+entity_id          | 92030f7d-7184-49a1-af70-5c21987de68c
+-[ RECORD 7 ]------+----------------------------------------------------------------
+client_sequence    | 
+client_mutation_id | sync_create_activity_b0ea783b-8574-4c1f-9c99-f6bce5fb68d3
+mutation_type      | create_activity
+entity_type        | activity
+entity_id          | fce0e0dd-0155-4812-8db6-42e2440435af
+-[ RECORD 8 ]------+----------------------------------------------------------------
+client_sequence    | 
+client_mutation_id | sync_create_timing_session_c68987ae-b5da-4d45-833e-cc826e0e09b9
+mutation_type      | create_timing_session
+entity_type        | timing_session
+entity_id          | 5d95f31c-10f6-4d1e-8c17-60b113b8ca83
+

@@ -2,6 +2,11 @@ import ParallaxCore
 import ParallaxDesignSystem
 import SwiftUI
 
+public enum CheckpointSetupPolishLayout {
+    public static let contextBadgeImpliesAction = false
+    public static let contextBadgeUsesInformationalCopy = true
+}
+
 struct CheckpointSetupScreen: View {
     @ObservedObject var viewModel: TimingSliceViewModel
     let initialDrawer: String?
@@ -10,15 +15,21 @@ struct CheckpointSetupScreen: View {
 
     var body: some View {
         CanonicalScreen(
-            title: "Break it down",
-            subtitle: "You only need to start the first step.",
+            title: "Checkpoint timing",
+            subtitle: "Optional timing markers for a run.",
             leadingIcon: "chevron.left"
         ) {
-            taskHeader
+            activityHeader
             contextCard
             guidanceCard
             stepsCard
+        }
+        .safeAreaInset(edge: .bottom) {
             actionRail
+                .padding(.horizontal, 14)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
+                .background(Color(parallax: .canvasLight).opacity(0.96))
         }
         .overlay {
             if activeDrawer == .checkpointSetup {
@@ -27,6 +38,8 @@ struct CheckpointSetupScreen: View {
                         await perform(action)
                         activeDrawer = nil
                     }
+                } dismiss: {
+                    activeDrawer = nil
                 }
             }
         }
@@ -50,18 +63,19 @@ struct CheckpointSetupScreen: View {
         case .completeStep, .pauseStep, .skipStep, .moveStep, .addStepNote,
              .confirmFrictionEvidence, .correctFrictionEvidence, .ignoreFrictionEvidence,
              .keepFrictionNoteOnly, .trimForgottenTimer, .timerKeptRunning,
-             .forgottenTimerNotSure, .saveUsefulRun, .markUnusual, .activeTimeOnly,
-             .frictionEvidenceOnly, .discardTimingKeepNote, .keepPreflightActive,
+             .forgottenTimerNotSure, .saveUsefulRun, .markUnusual, .savePartial,
+             .activeTimeOnly, .frictionEvidenceOnly, .queryEvidenceOnly,
+             .discardTimingKeepNote, .discardAll, .keepPreflightActive,
              .snoozePreflight, .hidePreflight, .retirePreflight, .viewPreflightRuns:
             break
         }
     }
 
-    private var taskHeader: some View {
+    private var activityHeader: some View {
         ActivitySummaryRow(
             title: viewModel.activityName,
             subtitle: "Optional checkpoints",
-            detail: "Timing remains valid without a saved step plan",
+            detail: "Whole-run timing works without checkpoints",
             icon: "timer"
         )
     }
@@ -77,16 +91,16 @@ struct CheckpointSetupScreen: View {
                     symbolSize: 16
                 )
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Additional context")
+                    Text("Timing context")
                         .font(.system(size: 15, weight: .bold, design: .rounded))
-                    Text("Anything important I should factor in?")
+                    Text("Only what explains timing variance.")
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(Color(parallax: .textSecondaryLight))
                 }
                 Spacer()
-                SoftBadge(text: "Add context", systemName: "plus", role: .checkpoint)
+                SoftBadge(text: "Optional", systemName: nil, role: .checkpoint)
             }
-            Text("Add only the context that should be attached to this run.")
+            Text("Attach context only when it should explain this run's timing.")
                 .font(.system(size: 13.5, weight: .regular, design: .rounded))
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -100,10 +114,10 @@ struct CheckpointSetupScreen: View {
             HStack(spacing: 10) {
                 CircleIcon(systemName: "leaf", tint: Color(parallax: .detourText), fill: Color(parallax: .detourSoft), size: 42, symbolSize: 18)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Starting counts.")
+                    Text("Whole-run timing still works.")
                         .font(.system(size: 14.5, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(parallax: .detourText))
-                    Text("Doing step 1 is enough for now.")
+                    Text("Checkpoints are optional timing markers.")
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(Color(parallax: .textSecondaryLight))
                 }
@@ -117,24 +131,24 @@ struct CheckpointSetupScreen: View {
     private var stepsCard: some View {
         Card {
             HStack {
-                Text("Steps in order")
+                Text("Timing checkpoints")
                     .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                 Spacer()
-                Text("Editable before timing")
+                Text("Optional before timing")
                     .font(.system(size: 10.5, weight: .medium, design: .rounded))
                     .foregroundStyle(Color(parallax: .textSecondaryLight))
             }
-            StepRow(index: 1, title: "Start activity", estimate: "timed now", tag: "source event", status: .running)
+            StepRow(index: 1, title: "Start timer", estimate: "timed now", tag: "source event", status: .running)
             Divider()
             StepRow(index: 2, title: viewModel.currentCheckpointLabel, estimate: "optional", tag: "current", status: .pending)
             Divider()
             StepRow(index: 3, title: viewModel.nextCheckpointLabel, estimate: "optional", tag: "next", status: .pending)
             Divider()
-            StepRow(index: 4, title: "Write a short opening", estimate: "4 min", tag: "Core step", status: .pending)
+            StepRow(index: 4, title: "Later checkpoint", estimate: "optional", tag: "timing", status: .pending)
             Button {
                 activeDrawer = .checkpointSetup
             } label: {
-                Text("Open checkpoint details")
+                Text("Open checkpoint timing")
                     .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                     .frame(maxWidth: .infinity, minHeight: 30)
             }
@@ -144,7 +158,7 @@ struct CheckpointSetupScreen: View {
 
     private var actionRail: some View {
         HStack(spacing: 8) {
-            PrimaryButton(title: "Start first step", systemName: nil) {
+            PrimaryButton(title: "Start checkpointed timer", systemName: nil) {
                 activeDrawer = .checkpointSetup
             }
             Button {

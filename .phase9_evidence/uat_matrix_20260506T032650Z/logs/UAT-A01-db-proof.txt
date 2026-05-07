@@ -1,0 +1,15 @@
+ uat_user_activities 
+---------------------
+                   0
+(1 row)
+
+ fixture_activity_count 
+------------------------
+                      0
+(1 row)
+
+ fixture_annotation_count 
+--------------------------
+                        0
+(1 row)
+

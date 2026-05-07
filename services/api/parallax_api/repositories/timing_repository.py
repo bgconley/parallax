@@ -67,7 +67,11 @@ class TimingRepository:
         events = list(self._store.session_events.get(session_id, []))
         projection = project_timing_session(session, events)
         session_updates = projection.session_updates
-        if session.status in {"reviewed", "discarded"}:
+        spans = list(self._store.session_spans.get(session_id, []))
+        has_persisted_timeline = session.status in {"reviewed", "discarded"} or (
+            session.status == "completed_unreviewed" and bool(spans)
+        )
+        if has_persisted_timeline:
             session_updates = {
                 **session_updates,
                 "status": session.status,
@@ -82,13 +86,14 @@ class TimingRepository:
                 "side_quest_seconds": session.side_quest_seconds,
                 "start_latency_seconds": session.start_latency_seconds,
                 "transition_seconds": session.transition_seconds,
-                "needs_timeline_recompute": session.needs_timeline_recompute,
+                "needs_timeline_recompute": session.needs_timeline_recompute
+                or bool(session_updates["needs_timeline_recompute"]),
             }
         return session.model_copy(
             update={
                 **session_updates,
                 "events": projection.ordered_events,
-                "spans": list(self._store.session_spans.get(session_id, [])),
+                "spans": spans,
             }
         )
 
@@ -175,6 +180,32 @@ class TimingRepository:
             for draft in span_drafts
         ]
         self._store.session_spans[session_id] = spans
+        return spans
+
+    def replace_derived_spans_and_totals(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        span_drafts: list[TimingEventSpanDraft],
+        totals: TimingSpanTotals,
+    ) -> list[TimingEventSpan]:
+        spans = self.replace_derived_spans(user_id, session_id, span_drafts)
+        session = self._store.sessions.get(session_id)
+        if session is not None and session.user_id == user_id:
+            self._store.sessions[session_id] = session.model_copy(
+                update={
+                    "active_seconds": totals.active_seconds,
+                    "wall_seconds": totals.wall_seconds,
+                    "setup_seconds": totals.setup_seconds,
+                    "detour_seconds": totals.detour_seconds,
+                    "interruption_seconds": totals.interruption_seconds,
+                    "waiting_seconds": totals.waiting_seconds,
+                    "side_quest_seconds": totals.side_quest_seconds,
+                    "start_latency_seconds": totals.start_latency_seconds,
+                    "transition_seconds": totals.transition_seconds,
+                    "needs_timeline_recompute": False,
+                }
+            )
         return spans
 
     def upsert_extracted_event_span(

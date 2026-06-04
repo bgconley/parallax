@@ -185,6 +185,14 @@ def test_release_preflight_formats_local_checkout_parity() -> None:
         actual_sha="abc123",
         dirty_status=" M services/api/example.py",
     ) == {"status": "blocked", "detail": "GPU checkout is dirty"}
+    assert script.checkout_parity_status(
+        expected_sha="abc123",
+        actual_sha="def456",
+        dirty_status=" M services/api/example.py",
+    ) == {
+        "status": "blocked",
+        "detail": "GPU checkout mismatch: expected abc123, got def456; GPU checkout is dirty",
+    }
 
 
 def test_release_proof_defaults_are_repo_root_relative() -> None:

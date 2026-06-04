@@ -120,13 +120,13 @@ def checkout_parity_status(
     actual_sha: str,
     dirty_status: str,
 ) -> dict[str, str]:
+    problems: list[str] = []
     if actual_sha != expected_sha:
-        return {
-            "status": "blocked",
-            "detail": f"GPU checkout mismatch: expected {expected_sha}, got {actual_sha}",
-        }
+        problems.append(f"GPU checkout mismatch: expected {expected_sha}, got {actual_sha}")
     if dirty_status:
-        return {"status": "blocked", "detail": "GPU checkout is dirty"}
+        problems.append("GPU checkout is dirty")
+    if problems:
+        return {"status": "blocked", "detail": "; ".join(problems)}
     return {"status": "ready", "detail": "GPU deployment checkout matches release SHA"}
 
 

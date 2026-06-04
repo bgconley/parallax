@@ -12,13 +12,21 @@ remote_sha="$(
 actual_sha="$(printf '%s\n' "$remote_sha" | sed -n '1p')"
 dirty="$(printf '%s\n' "$remote_sha" | sed '1d')"
 
+problems=()
 if [[ "$actual_sha" != "$EXPECTED_SHA" ]]; then
-  printf 'GPU checkout mismatch: expected %s, got %s\n' "$EXPECTED_SHA" "$actual_sha" >&2
-  exit 1
+  problems+=("GPU checkout mismatch: expected $EXPECTED_SHA, got $actual_sha")
 fi
 
 if [[ -n "$dirty" ]]; then
-  printf 'GPU checkout is dirty:\n%s\n' "$dirty" >&2
+  problems+=("GPU checkout is dirty")
+fi
+
+if (( ${#problems[@]} )); then
+  printf '%s' "${problems[0]}" >&2
+  for problem in "${problems[@]:1}"; do
+    printf '; %s' "$problem" >&2
+  done
+  printf '\n' >&2
   exit 1
 fi
 

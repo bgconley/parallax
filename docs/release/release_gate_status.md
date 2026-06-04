@@ -35,10 +35,16 @@ silently absent at the API boundary.
 Before release handoff, run these from the exact commit being released:
 
 ```bash
+make release-snapshot-deployment
 make release-preflight
 make release-gate
 uv run python scripts/release_gate_status.py --summary
 ```
+
+`make release-snapshot-deployment` is a non-mutating preservation step for the
+GPU deployment checkout. It records the current HEAD, status, tracked diff, and
+a sanitized archive of untracked files while excluding `.env`, JWTs, keys,
+tokens, PEM files, and `secrets/` directories from the archive.
 
 `make release-preflight` is a read-only prerequisite check. It reports missing
 release secrets by environment variable name only, checks the deployed GPU

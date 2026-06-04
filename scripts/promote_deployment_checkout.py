@@ -4,10 +4,14 @@ import argparse
 import hashlib
 import shutil
 import subprocess  # nosec B404
+import tarfile
 from dataclasses import dataclass
 from pathlib import Path
 
 DEFAULT_REPO = Path("/tank/repos/parallax")
+SECRET_SUFFIXES = (".jwt", ".key", ".pem", ".token")
+SECRET_NAMES = {".env"}
+SECRET_PARTS = {"secrets"}
 
 
 @dataclass(frozen=True)
@@ -115,7 +119,44 @@ def verify_snapshot_matches(*, repo: Path, snapshot: Path) -> PromotionResult:
     current_patch_sha = hashlib.sha256(_git(repo, "diff", "--binary").stdout.encode()).hexdigest()
     if expected_patch_sha != current_patch_sha:
         return PromotionResult("blocked", "tracked patch checksum differs from snapshot")
+    untracked_result = _verify_untracked_snapshot(repo=repo, snapshot=snapshot, manifest=manifest)
+    if untracked_result.status != "ready":
+        return untracked_result
     return PromotionResult("ready", "snapshot matches current checkout")
+
+
+def _verify_untracked_snapshot(
+    *,
+    repo: Path,
+    snapshot: Path,
+    manifest: dict[str, str],
+) -> PromotionResult:
+    snapshot_excluded = _manifest_int(manifest, "excluded_untracked_files")
+    current_untracked = _git(repo, "ls-files", "--others", "--exclude-standard").stdout.splitlines()
+    current_safe = [path for path in current_untracked if not _is_secret_path(path)]
+    current_excluded = len(current_untracked) - len(current_safe)
+    if snapshot_excluded or current_excluded:
+        return PromotionResult(
+            "blocked",
+            "unpreserved secret-like untracked files must be moved or ignored before promotion",
+        )
+
+    expected_safe = (snapshot / "untracked_sanitized_files.txt").read_text().splitlines()
+    if sorted(expected_safe) != sorted(current_safe):
+        return PromotionResult("blocked", "untracked evidence differs from snapshot")
+
+    archived_files = _read_untracked_archive(snapshot / "untracked_sanitized.tgz")
+    if sorted(archived_files) != sorted(expected_safe):
+        return PromotionResult("blocked", "untracked evidence differs from snapshot")
+
+    for path in current_safe:
+        current_path = repo / path
+        if not current_path.is_file():
+            return PromotionResult("blocked", "untracked evidence differs from snapshot")
+        current_digest = hashlib.sha256(current_path.read_bytes()).digest()
+        if current_digest != archived_files[path]:
+            return PromotionResult("blocked", "untracked evidence differs from snapshot")
+    return PromotionResult("ready", "untracked evidence matches snapshot")
 
 
 def _target_exists(repo: Path, target: str) -> PromotionResult:
@@ -162,6 +203,37 @@ def _read_checksums(path: Path) -> dict[str, str]:
         if separator:
             checksums[filename] = digest
     return checksums
+
+
+def _read_untracked_archive(path: Path) -> dict[str, bytes]:
+    archived: dict[str, bytes] = {}
+    try:
+        with tarfile.open(path, "r:gz") as archive:
+            for member in archive.getmembers():
+                if not member.isfile():
+                    continue
+                extracted = archive.extractfile(member)
+                if extracted is None:
+                    continue
+                archived[member.name] = hashlib.sha256(extracted.read()).digest()
+    except (OSError, tarfile.TarError):
+        return {}
+    return archived
+
+
+def _manifest_int(manifest: dict[str, str], key: str) -> int:
+    try:
+        return int(manifest.get(key, "0"))
+    except ValueError:
+        return 0
+
+
+def _is_secret_path(path: str) -> bool:
+    candidate = Path(path)
+    parts = {part.casefold() for part in candidate.parts}
+    name = candidate.name.casefold()
+    suffix = candidate.suffix.casefold()
+    return bool(SECRET_PARTS & parts) or name in SECRET_NAMES or suffix in SECRET_SUFFIXES
 
 
 def _first_line(value: str) -> str:

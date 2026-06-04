@@ -7,6 +7,7 @@ import subprocess  # nosec B404
 from collections.abc import Mapping
 from pathlib import Path
 
+from promote_deployment_checkout import dry_run_deployment_checkout
 from release_gate_status import REPO_ROOT, _current_git_sha
 
 CheckMap = dict[str, dict[str, str]]
@@ -28,14 +29,19 @@ def main() -> int:
     parser.add_argument(
         "--skip-gpu",
         action="store_true",
-        help="Skip the read-only deployed commit parity check.",
+        help="Skip read-only deployed checkout checks.",
     )
     args = parser.parse_args()
 
+    expected_sha = args.expected_sha or _current_git_sha()
     checks = evaluate_environment(os.environ)
     if not args.skip_gpu:
+        checks["deployment_promotion_guard"] = check_deployment_promotion_guard(
+            os.environ,
+            expected_sha=expected_sha,
+        )
         checks["deployed_commit_parity"] = check_deployed_commit_parity(
-            args.expected_sha or _current_git_sha()
+            expected_sha,
         )
     print(render_checks(checks))
     return 1 if any(check["status"] == "blocked" for check in checks.values()) else 0
@@ -128,6 +134,39 @@ def checkout_parity_status(
     if problems:
         return {"status": "blocked", "detail": "; ".join(problems)}
     return {"status": "ready", "detail": "GPU deployment checkout matches release SHA"}
+
+
+def check_deployment_promotion_guard(
+    environ: Mapping[str, str],
+    *,
+    expected_sha: str,
+) -> dict[str, str]:
+    snapshot_value = environ.get("RELEASE_DEPLOYMENT_SNAPSHOT")
+    if not snapshot_value:
+        return {
+            "status": "warning",
+            "detail": "RELEASE_DEPLOYMENT_SNAPSHOT is unset; promotion dry-run is skipped",
+        }
+
+    gpu_repo = Path(environ.get("PARALLAX_GPU_REPO", str(DEFAULT_GPU_REPO)))
+    snapshot = Path(snapshot_value)
+    if not (gpu_repo / ".git").exists():
+        return {
+            "status": "warning",
+            "detail": "PARALLAX_GPU_REPO is not a local checkout; promotion dry-run is skipped",
+        }
+    if not snapshot.exists():
+        return {
+            "status": "blocked",
+            "detail": f"RELEASE_DEPLOYMENT_SNAPSHOT does not exist: {snapshot}",
+        }
+
+    result = dry_run_deployment_checkout(
+        repo=gpu_repo,
+        target=expected_sha,
+        snapshot=snapshot,
+    )
+    return {"status": result.status, "detail": result.detail}
 
 
 def render_checks(checks: CheckMap) -> str:

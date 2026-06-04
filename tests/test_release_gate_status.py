@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -70,6 +71,14 @@ def test_release_gate_commands_are_available_from_makefile() -> None:
     assert "scripts/release_log_privacy_scan.py" in release_gate_section
     assert "scripts/release_backup_restore_drill.py" in release_gate_section
     assert "scripts/write_release_gate_evidence.py" in release_gate_section
+
+
+def test_release_preflight_make_target_accepts_operator_args() -> None:
+    makefile = (REPO_ROOT / "Makefile").read_text()
+    release_preflight_section = makefile.split("release-preflight:", 1)[1].split("\n\n", 1)[0]
+
+    assert "RELEASE_PREFLIGHT_ARGS ?=" in makefile
+    assert "scripts/release_preflight.py $(RELEASE_PREFLIGHT_ARGS)" in release_preflight_section
 
 
 def test_release_status_summary_command_reads_machine_status() -> None:
@@ -197,6 +206,110 @@ def test_release_preflight_formats_local_checkout_parity() -> None:
         "status": "blocked",
         "detail": "GPU checkout mismatch: expected abc123, got def456; GPU checkout is dirty",
     }
+
+
+def _git(repo: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout
+
+
+def _repo_with_deployment_snapshot(tmp_path: Path) -> tuple[Path, str, Path]:
+    snapshotter = _load_script("snapshot_gpu_checkout_for_preflight", "snapshot_gpu_checkout.py")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test User")
+    (repo / "tracked.txt").write_text("base\n")
+    _git(repo, "add", "tracked.txt")
+    _git(repo, "commit", "-m", "base")
+    target = _git(repo, "rev-parse", "HEAD").strip()
+    (repo / "untracked.txt").write_text("release handoff evidence\n")
+    snapshot = snapshotter.snapshot_checkout(
+        repo=repo,
+        snapshot_root=tmp_path / "snapshots",
+        label="gpu_dirty",
+        timestamp="20260604T000000Z",
+    )
+    return repo, target, snapshot
+
+
+def test_release_preflight_warns_when_deployment_snapshot_is_unset() -> None:
+    script = _load_script("release_preflight", "release_preflight.py")
+
+    check = script.check_deployment_promotion_guard({}, expected_sha="abc123")
+
+    assert check == {
+        "status": "warning",
+        "detail": "RELEASE_DEPLOYMENT_SNAPSHOT is unset; promotion dry-run is skipped",
+    }
+
+
+def test_release_preflight_checks_deployment_snapshot_when_local_paths_exist(
+    tmp_path: Path,
+) -> None:
+    script = _load_script("release_preflight", "release_preflight.py")
+    repo, target, snapshot = _repo_with_deployment_snapshot(tmp_path)
+
+    check = script.check_deployment_promotion_guard(
+        {
+            "PARALLAX_GPU_REPO": str(repo),
+            "RELEASE_DEPLOYMENT_SNAPSHOT": str(snapshot),
+        },
+        expected_sha=target,
+    )
+
+    assert check["status"] == "ready"
+    assert "snapshot matches current checkout" in check["detail"]
+
+
+def test_release_preflight_blocks_when_deployment_snapshot_guard_fails(
+    tmp_path: Path,
+) -> None:
+    script = _load_script("release_preflight", "release_preflight.py")
+    repo, target, snapshot = _repo_with_deployment_snapshot(tmp_path)
+    (repo / "untracked.txt").write_text("changed after snapshot\n")
+
+    check = script.check_deployment_promotion_guard(
+        {
+            "PARALLAX_GPU_REPO": str(repo),
+            "RELEASE_DEPLOYMENT_SNAPSHOT": str(snapshot),
+        },
+        expected_sha=target,
+    )
+
+    assert check["status"] == "blocked"
+    assert "untracked evidence differs from snapshot" in check["detail"]
+
+
+def test_release_preflight_skip_gpu_skips_deployment_checkout_checks(
+    tmp_path: Path,
+) -> None:
+    repo, _, _ = _repo_with_deployment_snapshot(tmp_path)
+    env = {
+        **os.environ,
+        "PARALLAX_RELEASE_BEARER_TOKEN": "secret-token",
+        "PARALLAX_GPU_REPO": str(repo),
+        "RELEASE_DEPLOYMENT_SNAPSHOT": str(tmp_path / "missing-snapshot"),
+    }
+
+    result = subprocess.run(
+        ["uv", "run", "python", "scripts/release_preflight.py", "--skip-gpu"],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "deployment_promotion_guard" not in result.stdout
+    assert "deployed_commit_parity" not in result.stdout
 
 
 def test_release_proof_defaults_are_repo_root_relative() -> None:

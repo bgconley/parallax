@@ -49,12 +49,24 @@ tokens, PEM files, and `secrets/` directories from the archive.
 
 `make release-promote-deployment-check` is a dry-run guard for deployment parity.
 It verifies that the named snapshot still matches the current dirty deployment
-checkout and that the target release commit is available before any operator runs
-the underlying promotion script with `--apply`.
+checkout, including tracked patch contents and sanitized untracked evidence, and
+that the target release commit is available before any operator runs the
+underlying promotion script with `--apply`. It refuses promotion when secret-like
+untracked files would not be preserved by the sanitized snapshot.
 
 `make release-preflight` is a read-only prerequisite check. It reports missing
 release secrets by environment variable name only, checks the deployed GPU
 checkout parity, and exits non-zero while release-gate prerequisites are missing.
+When `RELEASE_DEPLOYMENT_SNAPSHOT` points at a locally accessible snapshot,
+preflight also runs the same deployment promotion dry-run guard used by
+`make release-promote-deployment-check`; when the checkout or snapshot path is not
+local, preflight reports that the promotion dry-run was skipped instead of
+claiming preservation was checked. Pass `--skip-gpu` to `scripts/release_preflight.py`
+only for local environment diagnostics that intentionally skip both deployed
+commit parity and deployment promotion dry-run checks. The Make target forwards
+operator arguments through `RELEASE_PREFLIGHT_ARGS`, for example
+`PARALLAX_RELEASE_BEARER_TOKEN=<token> make release-preflight RELEASE_PREFLIGHT_ARGS=--skip-gpu`
+for a local auth/env-only diagnostic.
 
 `make release-gate` is intentionally proof-based. It fails if GPU commit parity,
 the live bearer-auth provider probe, privacy lifecycle smoke, SLO smoke, privacy

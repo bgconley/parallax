@@ -3,6 +3,7 @@
 PARALLAX_HOST_DATABASE_URL ?= postgresql://parallax:parallax_dev_password@127.0.0.1:15432/parallax
 PARALLAX_API_URL ?= http://127.0.0.1:18000
 RELEASE_PROOF_DIR ?= .release-gate-proofs
+RELEASE_PREFLIGHT_ARGS ?=
 
 validate:
 	python3 parallax_v1_3_artifact_pack/scripts/validate_pack.py --skip-zip-check
@@ -32,7 +33,7 @@ release-promote-deployment-check:
 	uv run python scripts/promote_deployment_checkout.py --target "$$(git rev-parse HEAD)" --snapshot "$(RELEASE_DEPLOYMENT_SNAPSHOT)"
 
 release-preflight:
-	uv run python scripts/release_preflight.py
+	uv run python scripts/release_preflight.py $(RELEASE_PREFLIGHT_ARGS)
 
 release-gate:
 	uv run python scripts/clear_release_gate_proofs.py --proof-dir "$(RELEASE_PROOF_DIR)"

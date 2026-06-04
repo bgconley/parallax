@@ -8,9 +8,9 @@ import subprocess  # nosec B404
 from datetime import UTC, datetime
 from pathlib import Path
 
-from release_gate_status import RELEASE_GATES, _current_git_sha
+from release_gate_status import RELEASE_GATES, REPO_ROOT, _current_git_sha
 
-DEFAULT_PROOF_DIR = Path(os.getenv("PARALLAX_RELEASE_PROOF_DIR", ".release-gate-proofs"))
+DEFAULT_PROOF_DIR = REPO_ROOT / os.getenv("PARALLAX_RELEASE_PROOF_DIR", ".release-gate-proofs")
 SENSITIVE_FLAGS = {
     "--app-check-token",
     "--bearer-token",

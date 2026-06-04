@@ -35,9 +35,14 @@ silently absent at the API boundary.
 Before release handoff, run these from the exact commit being released:
 
 ```bash
+make release-preflight
 make release-gate
 uv run python scripts/release_gate_status.py --summary
 ```
+
+`make release-preflight` is a read-only prerequisite check. It reports missing
+release secrets by environment variable name only, checks the deployed GPU
+checkout parity, and exits non-zero while release-gate prerequisites are missing.
 
 `make release-gate` is intentionally proof-based. It fails if GPU commit parity,
 the live bearer-auth provider probe, privacy lifecycle smoke, SLO smoke, privacy

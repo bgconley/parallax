@@ -54,6 +54,8 @@ def test_release_gate_commands_are_available_from_makefile() -> None:
     makefile = (REPO_ROOT / "Makefile").read_text()
 
     assert "release-status:" in makefile
+    assert "release-preflight:" in makefile
+    assert "scripts/release_preflight.py" in makefile
     assert "release-gate:" in makefile
     assert "scripts/release_gate_status.py --summary" in makefile
     release_gate_section = makefile.split("release-gate:", 1)[1].split("\n\n", 1)[0]
@@ -122,16 +124,58 @@ def test_release_evidence_writer_requires_per_gate_proofs(tmp_path: Path) -> Non
         raise AssertionError("expected release evidence writer to reject missing proofs")
 
 
+def test_release_preflight_requires_release_auth_inputs_without_leaking_values() -> None:
+    script = _load_script("release_preflight", "release_preflight.py")
+
+    missing = script.evaluate_environment({})
+    rendered_missing = script.render_checks(missing)
+
+    assert missing["production_auth_provider"]["status"] == "blocked"
+    assert "PARALLAX_RELEASE_BEARER_TOKEN" in rendered_missing
+    assert "PARALLAX_FIREBASE_WEB_API_KEY" in rendered_missing
+    assert "PARALLAX_RELEASE_FIREBASE_EMAIL" in rendered_missing
+    assert "PARALLAX_RELEASE_FIREBASE_PASSWORD" in rendered_missing
+    assert "parallax_dev_password" not in rendered_missing
+
+    ready = script.evaluate_environment({"PARALLAX_RELEASE_BEARER_TOKEN": "secret-token"})
+    rendered_ready = script.render_checks(ready)
+
+    assert ready["production_auth_provider"]["status"] == "ready"
+    assert "secret-token" not in rendered_ready
+
+
+def test_release_preflight_requires_app_check_token_when_enforced() -> None:
+    script = _load_script("release_preflight", "release_preflight.py")
+
+    checks = script.evaluate_environment(
+        {
+            "PARALLAX_RELEASE_BEARER_TOKEN": "secret-token",
+            "PARALLAX_FIREBASE_APP_CHECK_MODE": "enforce",
+        }
+    )
+
+    assert checks["release_app_check"]["status"] == "blocked"
+    assert "PARALLAX_RELEASE_APP_CHECK_TOKEN" in script.render_checks(checks)
+
+
+def test_release_preflight_uses_repo_root_parity_script() -> None:
+    script = _load_script("release_preflight", "release_preflight.py")
+
+    assert script.PARITY_SCRIPT == REPO_ROOT / "scripts/verify_gpu_commit_parity.sh"
+
+
 def test_release_proof_defaults_are_repo_root_relative() -> None:
     status = _load_script("release_gate_status", "release_gate_status.py")
     writer = _load_script("write_release_gate_evidence", "write_release_gate_evidence.py")
     cleaner = _load_script("clear_release_gate_proofs", "clear_release_gate_proofs.py")
+    recorder = _load_script("record_release_gate", "record_release_gate.py")
 
     expected = REPO_ROOT / ".release-gate-proofs"
 
     assert status.DEFAULT_PROOF_DIR == expected
     assert writer.DEFAULT_PROOF_DIR == expected
     assert cleaner.DEFAULT_PROOF_DIR == expected
+    assert recorder.DEFAULT_PROOF_DIR == expected
 
 
 def test_release_evidence_writer_builds_from_structured_proofs(tmp_path: Path) -> None:

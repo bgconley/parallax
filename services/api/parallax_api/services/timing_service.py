@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import overload
+from typing import cast, get_args, overload
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException
@@ -12,14 +12,17 @@ from ..domain.latency_observations import (
 from ..domain.review_decisions import is_discard_decision, is_model_inclusion_allowed
 from ..domain.timing_spans import derive_timing_spans, summarize_timing_spans
 from ..repositories.unit_of_work import UnitOfWork, UnitOfWorkFactory
-from ..schemas.extraction import ExtractedContextEvent
+from ..schemas.extraction import ConfirmationState, ExtractedContextEvent
 from ..schemas.timing import (
     AppendTimingEventRequest,
     CompleteTimingSessionRequest,
+    CountPolicy,
     CreateTimingEventSpanRequest,
     CreateTimingSessionRequest,
+    FrictionCategory,
     ModelUpdateDecision,
     ReviewTimingSessionRequest,
+    TemporalSpanType,
     TimingEvent,
     TimingEventSpan,
     TimingSession,
@@ -180,15 +183,36 @@ def _materialize_client_extracted_event_if_needed(
     if annotation is None or annotation.session_id != event.session_id:
         raise HTTPException(status_code=400, detail="extracted event annotation scope mismatch")
 
-    count_policy = str(event.payload.get("count_policy") or "review_required")
+    span_type = cast(
+        TemporalSpanType,
+        _payload_enum(event.payload, "span_type", "other", get_args(TemporalSpanType)),
+    )
+    friction_category = cast(
+        FrictionCategory,
+        _payload_enum(
+            event.payload,
+            "friction_category",
+            "unknown",
+            get_args(FrictionCategory),
+        ),
+    )
+    count_policy = cast(
+        CountPolicy,
+        _payload_enum(
+            event.payload,
+            "count_policy",
+            "review_required",
+            get_args(CountPolicy),
+        ),
+    )
     extracted = ExtractedContextEvent(
         id=uuid4(),
         user_id=user_id,
         annotation_id=annotation.id,
         session_id=event.session_id,
         checkpoint_run_id=annotation.checkpoint_run_id,
-        span_type=str(event.payload.get("span_type") or "other"),
-        friction_category=str(event.payload.get("friction_category") or "unknown"),
+        span_type=span_type,
+        friction_category=friction_category,
         friction_subtype=_payload_string(event.payload, "friction_subtype"),
         resource_name=_payload_string(event.payload, "resource_name"),
         location_from=_payload_string(event.payload, "location_from"),
@@ -259,6 +283,18 @@ def _payload_float(payload: dict[str, object], key: str) -> float | None:
         raise HTTPException(status_code=400, detail=f"invalid {key}") from exc
 
 
+def _payload_enum(
+    payload: dict[str, object],
+    key: str,
+    default: str,
+    allowed_values: tuple[object, ...],
+) -> str:
+    value = str(payload.get(key) or default)
+    if value not in allowed_values:
+        raise HTTPException(status_code=400, detail=f"invalid {key}")
+    return value
+
+
 def _payload_scopes(payload: dict[str, object]) -> list[str]:
     raw = payload.get("model_update_scopes")
     if raw is None:
@@ -270,16 +306,22 @@ def _payload_scopes(payload: dict[str, object]) -> list[str]:
     return [scope.strip() for scope in str(raw).split(",") if scope.strip()]
 
 
-def _confirmation_state(payload: dict[str, object]) -> str:
+def _confirmation_state(payload: dict[str, object]) -> ConfirmationState:
     value = str(payload.get("confirmation_state") or "confirmed")
     if value == "user_confirmed":
         return "confirmed"
-    if value in {"confirmed", "ignored", "needs_confirmation", "deferred_to_review"}:
-        return value
-    return "confirmed"
+    return cast(
+        ConfirmationState,
+        _payload_enum(
+            payload,
+            "confirmation_state",
+            "confirmed",
+            get_args(ConfirmationState),
+        ),
+    )
 
 
-def _count_in_wall_time(count_policy: str) -> bool:
+def _count_in_wall_time(count_policy: CountPolicy) -> bool:
     return count_policy in {
         "wall_and_active",
         "wall_only",
@@ -289,7 +331,7 @@ def _count_in_wall_time(count_policy: str) -> bool:
     }
 
 
-def _count_in_active_time(count_policy: str) -> bool:
+def _count_in_active_time(count_policy: CountPolicy) -> bool:
     return count_policy in {"wall_and_active", "active_only"}
 
 

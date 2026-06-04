@@ -134,6 +134,34 @@ struct TemporalHomeScreen: View {
             : "no local changes"
     }
 
+    private var focusProgress: TemporalFocusProgress {
+        switch timingViewModel.status {
+        case .running:
+            let activeShare = CGFloat(timingViewModel.activeSeconds) / CGFloat(max(timingViewModel.elapsedSeconds, 1))
+            return TemporalFocusProgress(
+                value: min(max(activeShare, 0.08), 1),
+                caption: "\(formatDuration(timingViewModel.activeSeconds)) active captured",
+                role: .active
+            )
+        case .paused:
+            return TemporalFocusProgress(value: 0.46, caption: "Paused span stays separate", role: .waiting)
+        case .completedUnreviewed:
+            return TemporalFocusProgress(value: 0.7, caption: "Review before learning updates", role: .checkpoint)
+        case .reviewed:
+            return TemporalFocusProgress(value: 1, caption: "Reviewed timing evidence saved", role: .detour)
+        default:
+            return TemporalFocusProgress(value: 0.18, caption: "Start a run to build a range", role: .active)
+        }
+    }
+
+    private var syncPendingProgress: TemporalFocusProgress {
+        let value = timingViewModel.pendingEventCount > 0 ? 0.32 : 0.12
+        let caption = timingViewModel.pendingEventCount == 1
+            ? "Retry keeps the queue idempotent"
+            : "Retry keeps \(timingViewModel.pendingEventCount) changes idempotent"
+        return TemporalFocusProgress(value: value, caption: caption, role: .interruption)
+    }
+
     private var pendingChangeCountText: String {
         timingViewModel.pendingEventCount == 1
             ? "1 pending change"
@@ -179,27 +207,29 @@ struct TemporalHomeScreen: View {
                 title: timingViewModel.activityName,
                 detail: focusDetail,
                 role: .active,
-                action: .currentFocusDefault
+                action: .currentFocusDefault,
+                progress: focusProgress
             )
             temporalInsightCard(
                 title: "Timing intelligence",
                 detail: timingViewModel.detourNote ?? "No reviewed runs yet. Start a run to build a personal range.",
                 action: .preflightInsightDefault
             )
-            timelineCard(rows: [
-                .button(timingViewModel.activityName, runStatusDetail, .active, .runningRowDefault),
-                .button("Preflight check", "only after real evidence", .detour, .preflightRowDefault),
-                .button("Waiting or pause", "wall time stays separate", .waiting, .waitingRowDefault),
-                .button("Personal range", "ask when evidence exists", .checkpoint, .baselineRowDefault),
-                .button("Grounded answer", "evidence-backed only", .wall, .groundedRowDefault),
-                .button("Evidence state", evidenceDetail, .active, .evidenceCurrentRowDefault),
-            ])
+            timelineCard(
+                title: "Timing signal",
+                detail: "Evidence-backed",
+                rows: defaultSignalRows,
+                density: .compactSignal
+            )
             quickCapture(action: .quickCaptureDefault, label: "Capture timing evidence")
+            sectionCaption(canStart ? "Need a timing check?" : "Ready to review timing evidence")
             bottomActions(
                 left: canStart
                     ? ("Start timer", "begin run", .startTimerDefault)
                     : ("Review run", "approve learning", .reviewRunDefault),
-                right: ("Ask time", "grounded answer", .askTimeDefault)
+                right: ("Ask time", "grounded answer", .askTimeDefault),
+                leftRole: canStart ? .active : .checkpoint,
+                rightRole: .detour
             )
         }
     }
@@ -232,7 +262,12 @@ struct TemporalHomeScreen: View {
                 .button("Queue ready", "pending changes safe", .waiting, .queueReadyRowNeedsReview),
             ])
             quickCapture(action: .quickCaptureNeedsReview, label: "Add review context")
-            bottomActions(left: ("Review all", "choose scopes", .reviewAllNeedsReview), right: ("Ask impact", "what changes", .askImpactNeedsReview))
+            bottomActions(
+                left: ("Review all", "choose scopes", .reviewAllNeedsReview),
+                right: ("Ask impact", "what changes", .askImpactNeedsReview),
+                leftRole: .checkpoint,
+                rightRole: .detour
+            )
         }
     }
 
@@ -242,33 +277,80 @@ struct TemporalHomeScreen: View {
                 eyebrow: "SYNC PENDING",
                 title: "Backend unavailable",
                 detail: "\(pendingSyncSummary) · retry is safe",
-                role: .waiting,
-                action: .syncFocusSyncPending
+                role: .interruption,
+                action: .syncFocusSyncPending,
+                progress: syncPendingProgress
             )
             temporalInsightCard(
                 title: "Local-first sync behavior",
                 detail: "Sync order is protected and duplicate retries are ignored.",
+                role: .interruption,
+                systemName: "arrow.triangle.2.circlepath",
                 action: .syncBehaviorSyncPending
             )
-            timelineCard(rows: syncQueueTimelineRows)
+            timelineCard(
+                title: "Pending evidence",
+                detail: "Stored on device",
+                rows: syncQueueTimelineRows,
+                density: .compactSignal
+            )
             quickCapture(action: .quickCaptureSyncPending, label: "Capture while offline")
-            bottomActions(left: ("Retry sync", "local queue", .retrySyncPending), right: ("View queue", "pending events", .viewQueueSyncPending))
+            sectionCaption("Sync actions")
+            bottomActions(
+                left: ("Retry sync", "local queue", .retrySyncPending),
+                right: ("View queue", "pending events", .viewQueueSyncPending),
+                leftRole: .active,
+                rightRole: .detour
+            )
         }
     }
 
+    private var defaultSignalRows: [TemporalTimelineRowModel] {
+        [
+            .button(
+                timingViewModel.activityName,
+                runStatusDetail,
+                .active,
+                .runningRowDefault,
+                lane: "Now",
+                badge: timingViewModel.status.displayText
+            ),
+            .button("Preflight check", "only after real evidence", .detour, .preflightRowDefault, lane: "Prep", badge: "Preflight"),
+            .button("Waiting or pause", "wall time stays separate", .waiting, .waitingRowDefault, lane: "Wall", badge: "Waiting"),
+            .button("Personal range", "ask when evidence exists", .checkpoint, .baselineRowDefault, lane: "Range", badge: "Baseline"),
+            .button("Grounded answer", "evidence-backed only", .wall, .groundedRowDefault, lane: "Ask", badge: "Grounded"),
+            .button(
+                "Evidence state",
+                evidenceDetail,
+                .active,
+                .evidenceCurrentRowDefault,
+                lane: "Sync",
+                badge: timingViewModel.pendingEventCount > 0 ? "Queued" : "Current"
+            ),
+        ]
+    }
+
     private var syncQueueTimelineRows: [TemporalTimelineRowModel] {
-        let rows = timingViewModel.pendingSyncRows.map { row in
-            TemporalTimelineRowModel.button(row.title, row.detail, row.role, .viewQueueSyncPending)
+        let rows = Array(timingViewModel.pendingSyncRows.prefix(4).enumerated()).map { index, row in
+            TemporalTimelineRowModel.button(
+                row.title,
+                row.detail,
+                row.role,
+                .viewQueueSyncPending,
+                lane: "\(index + 1)",
+                badge: "Queued"
+            )
         }
         guard !rows.isEmpty else {
             return [
-                .display("No local changes", "queue is clear", .active),
-                .display("Sync order protected", "retry prevents duplicates", .wall),
+                .display("No local changes", "queue is clear", .active, lane: "Safe", badge: "Clear"),
+                .display("Sync order protected", "retry prevents duplicates", .wall, lane: "Seq", badge: "Safe"),
             ]
         }
         return rows + [
-            .button("Retry sync", "retry", .interruption, .bearerRetryRowSyncPending),
-            .display("Sync order protected", "retry prevents duplicates", .wall),
+            .button("Bearer retry", "backend unavailable", .interruption, .bearerRetryRowSyncPending, lane: "Auth", badge: "Retry"),
+            .display("Mutation sequence", "continues safely", .detour, lane: "Seq", badge: "Safe"),
+            .display("Stored on device", "raw timing remains local", .waiting, lane: "Local", badge: "Queued"),
         ]
     }
 
@@ -307,6 +389,8 @@ struct TemporalHomeScreen: View {
         let reviewedRunDetail = answer.map { "\($0.sampleSize ?? 0) reviewed sample\(($0.sampleSize ?? 0) == 1 ? "" : "s")" }
             ?? "sample count required"
         let confidenceDetail = answer?.confidence.map { "confidence \($0)" } ?? "computed from runs"
+        let sampleCount = answer?.sampleSize ?? 0
+        let answerRole: TemporalSemanticRole = sampleCount > 0 ? .active : .waiting
         VStack(spacing: 8) {
             temporalFocusCard(
                 eyebrow: "QUESTION",
@@ -315,9 +399,12 @@ struct TemporalHomeScreen: View {
                 role: .detour,
                 action: .questionFocusGroundedAnswer
             )
-            temporalInsightCard(
+            temporalAnswerCard(
                 title: answerTitle,
                 detail: answerDetail,
+                sampleDetail: reviewedRunDetail,
+                confidenceDetail: confidenceDetail,
+                role: answerRole,
                 action: .answerSummaryGroundedAnswer
             )
             timelineCard(rows: [
@@ -329,15 +416,27 @@ struct TemporalHomeScreen: View {
                 .button("Before starting", "preflight from evidence", .checkpoint, .beforeStartingRowGroundedAnswer),
             ])
             quickCapture(action: .askAnotherGroundedAnswer, label: "Ask another time question")
-            bottomActions(left: ("Start timer", "begin run", .startTimerGroundedAnswer), right: ("Use check", "preflight", .useCheckGroundedAnswer))
+            bottomActions(
+                left: ("Start timer", "begin run", .startTimerGroundedAnswer),
+                right: ("Use check", "preflight", .useCheckGroundedAnswer),
+                leftRole: .active,
+                rightRole: .detour
+            )
         }
     }
 
-    private func temporalFocusCard(eyebrow: String, title: String, detail: String, role: TemporalSemanticRole, action: TemporalHomeAction) -> some View {
+    private func temporalFocusCard(
+        eyebrow: String,
+        title: String,
+        detail: String,
+        role: TemporalSemanticRole,
+        action: TemporalHomeAction,
+        progress: TemporalFocusProgress? = nil
+    ) -> some View {
         Button {
             perform(action)
         } label: {
-            Card(background: Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)).opacity(0.42)) {
+            Card(background: Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)).opacity(role == .interruption ? 0.62 : 0.42)) {
                 Text(eyebrow)
                     .font(.system(size: 9, weight: .bold, design: .rounded))
                     .tracking(1.4)
@@ -361,6 +460,10 @@ struct TemporalHomeScreen: View {
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(Color(parallax: .textTertiaryLight))
                 }
+                if let progress {
+                    progressStrip(progress)
+                        .padding(.top, 2)
+                }
             }
         }
         .buttonStyle(.plain)
@@ -369,21 +472,33 @@ struct TemporalHomeScreen: View {
         .accessibilityIdentifier(action.rawValue)
     }
 
-    private func temporalInsightCard(title: String, detail: String, action: TemporalHomeAction) -> some View {
+    private func temporalInsightCard(
+        title: String,
+        detail: String,
+        role: TemporalSemanticRole = .detour,
+        systemName: String = "sparkles",
+        action: TemporalHomeAction
+    ) -> some View {
         Button {
             perform(action)
         } label: {
             Card {
-                HStack(spacing: 10) {
-                    CircleIcon(systemName: "sparkles", tint: Color(parallax: .detourText), fill: Color(parallax: .detourSoft), size: 38, symbolSize: 15)
+                HStack(spacing: 11) {
+                    CircleIcon(
+                        systemName: systemName,
+                        tint: Color(parallax: DesignTokenMapper.colorToken(for: role)),
+                        fill: Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)),
+                        size: 42,
+                        symbolSize: 16
+                    )
                     VStack(alignment: .leading, spacing: 3) {
                         Text(title)
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .font(.system(size: 13.6, weight: .bold, design: .rounded))
                             .foregroundStyle(Color(parallax: .textPrimaryLight))
                             .lineLimit(1)
                             .minimumScaleFactor(0.72)
                         Text(detail)
-                            .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                            .font(.system(size: 10.4, weight: .medium, design: .rounded))
                             .foregroundStyle(Color(parallax: .textSecondaryLight))
                             .lineLimit(2)
                     }
@@ -400,69 +515,190 @@ struct TemporalHomeScreen: View {
         .accessibilityIdentifier(action.rawValue)
     }
 
-    private func timelineCard(rows: [TemporalTimelineRowModel]) -> some View {
+    private func temporalAnswerCard(
+        title: String,
+        detail: String,
+        sampleDetail: String,
+        confidenceDetail: String,
+        role: TemporalSemanticRole,
+        action: TemporalHomeAction
+    ) -> some View {
+        Button {
+            perform(action)
+        } label: {
+            Card(background: Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)).opacity(0.38)) {
+                HStack(alignment: .top, spacing: 11) {
+                    CircleIcon(
+                        systemName: role == .active ? "checkmark.seal" : "exclamationmark.magnifyingglass",
+                        tint: Color(parallax: DesignTokenMapper.colorToken(for: role)),
+                        fill: Color(parallax: .cardLight),
+                        size: 42,
+                        symbolSize: 16
+                    )
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.system(size: 14.4, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color(parallax: .textPrimaryLight))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                        Text(detail)
+                            .font(.system(size: 10.8, weight: .medium, design: .rounded))
+                            .foregroundStyle(Color(parallax: .textSecondaryLight))
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.76)
+                    }
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color(parallax: .textTertiaryLight))
+                        .padding(.top, 5)
+                }
+                HStack(spacing: 6) {
+                    answerMetric("Samples", sampleDetail, role: .active)
+                    answerMetric("Confidence", confidenceDetail, role: role)
+                    answerMetric("Privacy", "raw notes off", role: .privacy)
+                }
+                .padding(.top, 2)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityIdentifier(action.rawValue)
+    }
+
+    private func answerMetric(_ title: String, _ detail: String, role: TemporalSemanticRole) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(title)
+                .font(.system(size: 8.5, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(parallax: DesignTokenMapper.colorToken(for: role)))
+                .lineLimit(1)
+            Text(detail)
+                .font(.system(size: 8.3, weight: .medium, design: .rounded))
+                .foregroundStyle(Color(parallax: .textSecondaryLight))
+                .lineLimit(1)
+                .minimumScaleFactor(0.62)
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 5)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)).opacity(0.78))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func timelineCard(
+        title: String = "Temporal timeline",
+        detail: String? = nil,
+        rows: [TemporalTimelineRowModel],
+        density: TemporalTimelineDensity = .regular
+    ) -> some View {
         Card {
             HStack {
-                Text("Temporal timeline")
+                Text(title)
                     .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                 Spacer()
-                SoftBadge(text: temporalViewModel.surfaceState.displayText, systemName: nil, role: .active)
+                if let detail {
+                    Text(detail)
+                        .font(.system(size: 8.7, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(parallax: .textTertiaryLight))
+                        .lineLimit(1)
+                } else {
+                    SoftBadge(text: temporalViewModel.surfaceState.displayText, systemName: nil, role: .active)
+                }
             }
             ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                 if index > 0 { Divider() }
-                rowView(row)
+                rowView(row, density: density)
             }
         }
     }
 
     @ViewBuilder
-    private func rowView(_ row: TemporalTimelineRowModel) -> some View {
+    private func rowView(_ row: TemporalTimelineRowModel, density: TemporalTimelineDensity) -> some View {
         switch row.kind {
         case let .button(action):
             Button {
                 perform(action)
             } label: {
-                rowContent(row)
+                rowContent(row, density: density)
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(row.title)
             .accessibilityIdentifier(action.rawValue)
         case .display:
-            rowContent(row)
+            rowContent(row, density: density)
         }
     }
 
-    private func rowContent(_ row: TemporalTimelineRowModel) -> some View {
-        HStack(spacing: 8) {
+    private func rowContent(_ row: TemporalTimelineRowModel, density: TemporalTimelineDensity) -> some View {
+        HStack(spacing: density.rowSpacing) {
+            if let lane = row.lane {
+                Text(lane)
+                    .font(.system(size: density.laneFontSize, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color(parallax: .textTertiaryLight))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                    .frame(width: density.laneWidth, alignment: .trailing)
+            }
             CircleIcon(
                 systemName: "smallcircle.filled.circle",
                 tint: Color(parallax: DesignTokenMapper.colorToken(for: row.role)),
                 fill: Color(parallax: DesignTokenMapper.colorToken(for: row.role, soft: true)),
-                size: 28,
-                symbolSize: 11
+                size: density.iconSize,
+                symbolSize: density.symbolSize
             )
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: density.textSpacing) {
                 Text(row.title)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .font(.system(size: density.titleFontSize, weight: .semibold, design: .rounded))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 Text(row.detail)
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .font(.system(size: density.detailFontSize, weight: .medium, design: .rounded))
                     .foregroundStyle(Color(parallax: .textSecondaryLight))
                     .lineLimit(1)
             }
             Spacer()
-            SoftBadge(text: row.role.displayText, systemName: nil, role: row.role)
+            SoftBadge(text: row.badge ?? row.role.displayText, systemName: nil, role: row.role)
             if case .button = row.kind {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: density.chevronSize, weight: .bold))
                     .foregroundStyle(Color(parallax: .textTertiaryLight))
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, density.verticalPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
+    }
+
+    private func progressStrip(_ progress: TemporalFocusProgress) -> some View {
+        VStack(spacing: 4) {
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color(parallax: .separatorLight).opacity(0.65))
+                    Capsule()
+                        .fill(Color(parallax: DesignTokenMapper.colorToken(for: progress.role)))
+                        .frame(width: max(8, proxy.size.width * progress.value))
+                }
+            }
+            .frame(height: 4)
+            Text(progress.caption)
+                .font(.system(size: 9, weight: .medium, design: .rounded))
+                .foregroundStyle(Color(parallax: DesignTokenMapper.colorToken(for: progress.role)))
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+
+    private func sectionCaption(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 10.6, weight: .medium, design: .rounded))
+            .foregroundStyle(Color(parallax: .textSecondaryLight))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 10)
+            .padding(.top, 2)
     }
 
     private func quickCapture(action: TemporalHomeAction, label: String) -> some View {
@@ -471,11 +707,13 @@ struct TemporalHomeScreen: View {
 
     private func bottomActions(
         left: (String, String, TemporalHomeAction),
-        right: (String, String, TemporalHomeAction)
+        right: (String, String, TemporalHomeAction),
+        leftRole: TemporalSemanticRole = .active,
+        rightRole: TemporalSemanticRole = .detour
     ) -> some View {
         HStack(spacing: 8) {
-            compactAction(title: left.0, subtitle: left.1, action: left.2, role: .checkpoint)
-            compactAction(title: right.0, subtitle: right.1, action: right.2, role: .detour)
+            compactAction(title: left.0, subtitle: left.1, action: left.2, role: leftRole)
+            compactAction(title: right.0, subtitle: right.1, action: right.2, role: rightRole)
         }
     }
 
@@ -483,9 +721,9 @@ struct TemporalHomeScreen: View {
         Button {
             perform(action)
         } label: {
-            Card {
+            Card(background: Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)).opacity(0.62)) {
                 HStack(spacing: 8) {
-                    CircleIcon(systemName: "arrow.up.right", tint: Color(parallax: DesignTokenMapper.colorToken(for: role)), fill: Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)), size: 30, symbolSize: 12)
+                    CircleIcon(systemName: "arrow.up.right", tint: Color(parallax: DesignTokenMapper.colorToken(for: role)), fill: Color(parallax: .cardLight), size: 30, symbolSize: 12)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(title)
                             .font(.system(size: 12.2, weight: .bold, design: .rounded))
@@ -499,6 +737,10 @@ struct TemporalHomeScreen: View {
                     }
                 }
             }
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color(parallax: DesignTokenMapper.colorToken(for: role)).opacity(0.18), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
@@ -649,12 +891,108 @@ private struct TemporalTimelineRowModel {
     let detail: String
     let role: TemporalSemanticRole
     let kind: Kind
+    let lane: String?
+    let badge: String?
 
-    static func button(_ title: String, _ detail: String, _ role: TemporalSemanticRole, _ action: TemporalHomeAction) -> TemporalTimelineRowModel {
-        TemporalTimelineRowModel(title: title, detail: detail, role: role, kind: .button(action))
+    static func button(
+        _ title: String,
+        _ detail: String,
+        _ role: TemporalSemanticRole,
+        _ action: TemporalHomeAction,
+        lane: String? = nil,
+        badge: String? = nil
+    ) -> TemporalTimelineRowModel {
+        TemporalTimelineRowModel(title: title, detail: detail, role: role, kind: .button(action), lane: lane, badge: badge)
     }
 
-    static func display(_ title: String, _ detail: String, _ role: TemporalSemanticRole) -> TemporalTimelineRowModel {
-        TemporalTimelineRowModel(title: title, detail: detail, role: role, kind: .display)
+    static func display(
+        _ title: String,
+        _ detail: String,
+        _ role: TemporalSemanticRole,
+        lane: String? = nil,
+        badge: String? = nil
+    ) -> TemporalTimelineRowModel {
+        TemporalTimelineRowModel(title: title, detail: detail, role: role, kind: .display, lane: lane, badge: badge)
+    }
+}
+
+private struct TemporalFocusProgress {
+    let value: CGFloat
+    let caption: String
+    let role: TemporalSemanticRole
+}
+
+private enum TemporalTimelineDensity {
+    case regular
+    case compactSignal
+
+    var rowSpacing: CGFloat {
+        switch self {
+        case .regular: 8
+        case .compactSignal: 6
+        }
+    }
+
+    var laneWidth: CGFloat {
+        switch self {
+        case .regular: 0
+        case .compactSignal: 29
+        }
+    }
+
+    var laneFontSize: CGFloat {
+        switch self {
+        case .regular: 0
+        case .compactSignal: 8.8
+        }
+    }
+
+    var iconSize: CGFloat {
+        switch self {
+        case .regular: 28
+        case .compactSignal: 24
+        }
+    }
+
+    var symbolSize: CGFloat {
+        switch self {
+        case .regular: 11
+        case .compactSignal: 9
+        }
+    }
+
+    var titleFontSize: CGFloat {
+        switch self {
+        case .regular: 12
+        case .compactSignal: 10.9
+        }
+    }
+
+    var detailFontSize: CGFloat {
+        switch self {
+        case .regular: 10
+        case .compactSignal: 8.8
+        }
+    }
+
+    var textSpacing: CGFloat {
+        switch self {
+        case .regular: 2
+        case .compactSignal: 1
+        }
+    }
+
+    var verticalPadding: CGFloat {
+        switch self {
+        case .regular: 2
+        case .compactSignal: 0
+        }
+    }
+
+    var chevronSize: CGFloat {
+        switch self {
+        case .regular: 12
+        case .compactSignal: 10
+        }
     }
 }

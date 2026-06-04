@@ -53,7 +53,8 @@ import Testing
     temporal.dismissLauncher()
     await timing.startRun()
     await temporal.perform(.currentFocusDefault)
-    #expect(temporal.surfaceState == .expandedTimingRun)
+    #expect(temporal.activeDrawer == .timingRunEvidence)
+    #expect(temporal.surfaceState == .defaultHome)
 
     await temporal.perform(.preflightRowDefault)
     #expect(temporal.activeDrawer == .phase8(.preflightEvidence))
@@ -135,8 +136,8 @@ import Testing
 
     temporal.activeDrawer = .temporalNavigation
     temporal.performTemporalNavigation(.currentRun)
-    #expect(temporal.activeDrawer == nil)
-    #expect(temporal.surfaceState == .expandedTimingRun)
+    #expect(temporal.activeDrawer == .timingRunEvidence)
+    #expect(temporal.surfaceState == .defaultHome)
 
     temporal.activeDrawer = .temporalNavigation
     temporal.performTemporalNavigation(.needsReview)

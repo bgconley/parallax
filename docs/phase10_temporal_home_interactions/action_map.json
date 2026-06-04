@@ -14,9 +14,9 @@
   "actions": [
     {"id": "118_9_menu", "screen_node": "118:9", "label": "Menu", "classification": "drawer", "target": "temporal_navigation", "swift_action": "menuDefault", "workflow": "open_temporal_navigation"},
     {"id": "118_9_temporal_action", "screen_node": "118:9", "label": "Temporal action", "classification": "drawer", "target": "quick_capture", "swift_action": "temporalActionDefault", "workflow": "open_quick_capture"},
-    {"id": "118_9_current_focus", "screen_node": "118:9", "label": "Current Timing Focus Card", "classification": "navigation", "target": "118:294", "swift_action": "currentFocusDefault", "workflow": "open_timing_run_evidence"},
+    {"id": "118_9_current_focus", "screen_node": "118:9", "label": "Current Timing Focus Card", "classification": "drawer", "target": "118:294", "swift_action": "currentFocusDefault", "workflow": "open_timing_run_evidence"},
     {"id": "118_9_preflight_insight", "screen_node": "118:9", "label": "Temporal Insight Card", "classification": "drawer", "target": "preflight_evidence", "swift_action": "preflightInsightDefault", "workflow": "preflight_evidence"},
-    {"id": "118_9_running_row", "screen_node": "118:9", "label": "Current run", "classification": "navigation", "target": "118:294", "swift_action": "runningRowDefault", "workflow": "open_timing_run_evidence"},
+    {"id": "118_9_running_row", "screen_node": "118:9", "label": "Current run", "classification": "drawer", "target": "118:294", "swift_action": "runningRowDefault", "workflow": "open_timing_run_evidence"},
     {"id": "118_9_preflight_row", "screen_node": "118:9", "label": "Preflight evidence", "classification": "drawer", "target": "preflight_evidence", "swift_action": "preflightRowDefault", "workflow": "preflight_evidence"},
     {"id": "118_9_waiting_row", "screen_node": "118:9", "label": "Waiting time", "classification": "drawer", "target": "step_detail", "swift_action": "waitingRowDefault", "workflow": "step_detail"},
     {"id": "118_9_baseline_row", "screen_node": "118:9", "label": "Personal range baseline", "classification": "drawer", "target": "ask_time", "swift_action": "baselineRowDefault", "workflow": "answer_temporal_query"},

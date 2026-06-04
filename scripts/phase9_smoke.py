@@ -62,7 +62,10 @@ def main() -> int:
     )
     parser.add_argument(
         "--postgis-image",
-        default=os.environ.get("PARALLAX_PHASE9_POSTGIS_IMAGE", "postgis/postgis:16-3.5"),
+        default=os.environ.get(
+            "PARALLAX_PHASE9_POSTGIS_IMAGE",
+            "ghcr.io/baosystems/postgis:16-3.5",
+        ),
     )
     parser.add_argument(
         "--timescale-image",

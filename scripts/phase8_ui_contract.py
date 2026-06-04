@@ -338,7 +338,11 @@ def main() -> int:
     _expect(
         "let dismiss: () -> Void" in timing_launcher
         and ".onTapGesture(perform: dismiss)" in timing_launcher
-        and "Button(action: dismiss)" in timing_launcher,
+        and (
+            "Button(action: dismiss)" in timing_launcher
+            or 'LauncherSheetButton(title: "Not now", isPrimary: false, action: dismiss)'
+            in timing_launcher
+        ),
         "Timing launcher must support cancel/backdrop dismissal",
     )
 

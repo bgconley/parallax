@@ -61,7 +61,7 @@ public struct ForgottenTimerEvidenceProjection: Equatable, Sendable {
                 "No source timing facts will change from this drawer.",
                 "Complete a run and review context to create a prompt.",
             ],
-            chips: ["no flag", "no change", "safe"],
+            chips: ["no flag", "source safe", "review later"],
             primaryFlagId: nil,
             canTrim: false,
             canResolveKeptRunning: false,
@@ -150,9 +150,9 @@ public struct PreflightEvidenceProjection: Equatable, Sendable {
                 "Resource dependency count is 0.",
                 "No preflight decision will be saved without a real check.",
             ],
-            chips: ["no evidence", "no change", "review first"],
+            chips: ["no evidence", "source safe", "log first"],
             noteTitle: "How to build evidence",
-            noteLines: ["Log friction during a run, then review it before learning."],
+            noteLines: ["Log friction during a run.", "Review confirmed detours before learning."],
             primaryCheckId: nil,
             hasBackendEvidence: false
         )
@@ -254,9 +254,9 @@ public struct FrictionEvidenceProjection: Equatable, Sendable {
                 "No friction correction will be saved without user evidence.",
                 "Friction evidence starts from a user-authored note.",
             ],
-            chips: ["no evidence", "no change", "log first"],
+            chips: ["no evidence", "source safe", "log first"],
             learningTitle: "Learning effect",
-            learningLines: ["Repeated confirmed detours can become a preflight check."],
+            learningLines: ["Repeated confirmed detours can become a preflight check.", "Until then, this drawer is read-only."],
             canConfirm: false,
             canCorrect: false,
             canIgnore: false,
@@ -487,12 +487,12 @@ public final class TimingSliceViewModel: ObservableObject {
                 summaryTitle: "Current activity",
                 summaryLines: [
                     activityName,
-                "Mode: \(modeText)",
-                "No timing event will be saved from this drawer.",
+                    "Mode: \(modeText)",
+                    "No timing event will be saved from this drawer.",
                 ],
-                chips: ["ready", "no run", "no change"],
+                chips: ["ready", "no run", "source safe"],
                 nextTitle: "Next action",
-                nextLines: ["Start a run from Temporal Home to capture waiting or pause evidence."],
+                nextLines: ["Start a run from Temporal Home.", "Waiting or pause evidence unlocks after timing begins."],
                 canCompleteStep: false,
                 canPause: false,
                 canSkip: false,
@@ -731,6 +731,9 @@ public final class TimingSliceViewModel: ObservableObject {
         let timestamp = now()
         updateDurations(at: timestamp)
         accumulatedActiveSeconds = activeSeconds
+        if openSpan == .resourceDetour {
+            accumulatedDetourSeconds = detourSeconds
+        }
         activeSegmentStartedAt = nil
         let trimmedResourceName = resourceName.trimmingCharacters(in: .whitespacesAndNewlines)
         detourResourceName = trimmedResourceName.isEmpty ? "user-entered friction" : trimmedResourceName
@@ -752,6 +755,28 @@ public final class TimingSliceViewModel: ObservableObject {
             payload: [
                 "resource_name": detourResourceName ?? "user-entered friction",
                 "count_policy": CountPolicy.wallOnly.rawValue
+            ]
+        )
+    }
+
+    public func resumeActiveTiming() async {
+        guard status == .running, openSpan == .resourceDetour else { return }
+        let timestamp = now()
+        updateDurations(at: timestamp)
+        accumulatedActiveSeconds = activeSeconds
+        accumulatedDetourSeconds = detourSeconds
+        detourStartedAt = nil
+        openSpan = nil
+        activeSegmentStartedAt = timestamp
+        await appendEvent(
+            .resourceDetourCompleted,
+            at: timestamp,
+            captureMethod: .manualButton,
+            notePreview: detourNote,
+            payload: [
+                "resource_name": detourResourceName ?? "user-entered friction",
+                "count_policy": CountPolicy.wallOnly.rawValue,
+                "detour_seconds": "\(detourSeconds)",
             ]
         )
     }

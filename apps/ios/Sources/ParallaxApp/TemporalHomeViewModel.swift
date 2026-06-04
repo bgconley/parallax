@@ -43,8 +43,7 @@ public final class TemporalHomeViewModel: ObservableObject {
     public func performTemporalNavigation(_ destination: TemporalNavigationDestination) {
         switch destination {
         case .currentRun:
-            surfaceState = .expandedTimingRun
-            activeDrawer = nil
+            activeDrawer = .timingRunEvidence
         case .needsReview:
             surfaceState = .needsReview
             activeDrawer = nil

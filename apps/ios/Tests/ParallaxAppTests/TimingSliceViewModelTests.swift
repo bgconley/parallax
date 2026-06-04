@@ -460,6 +460,226 @@ import Testing
     #expect(completed.timerActiveSeconds == 60)
 }
 
+@MainActor
+@Test func openResourceDetourCanResumeActiveTiming() async throws {
+    let store = InMemoryPendingTimingEventStore()
+    var timestamps = [
+        Date(timeIntervalSince1970: 1_775_014_000),
+        Date(timeIntervalSince1970: 1_775_014_060),
+        Date(timeIntervalSince1970: 1_775_014_180),
+        Date(timeIntervalSince1970: 1_775_014_240),
+    ]
+    let viewModel = TimingSliceViewModel(
+        activityId: UUID(uuidString: "12121212-1212-4212-8212-121212121212")!,
+        activityName: "Dynamic resumable detour activity",
+        sessionId: UUID(uuidString: "13131313-1313-4313-8313-131313131313")!,
+        deviceId: "ios-detour-resume-device",
+        eventStore: store,
+        now: { timestamps.removeFirst() }
+    )
+
+    await viewModel.startRun()
+    await viewModel.recordResourceDetour(resourceName: "blocked setup", note: "Finding missing setup.")
+    await viewModel.resumeActiveTiming()
+    viewModel.refreshTimer()
+
+    let events = try await store.load()
+    #expect(events.map(\.eventType) == [.sessionStarted, .resourceDetourStarted, .resourceDetourCompleted])
+    #expect(events.last?.payload["resource_name"] == "blocked setup")
+    #expect(events.last?.payload["count_policy"] == CountPolicy.wallOnly.rawValue)
+    #expect(events.last?.payload["detour_seconds"] == "120")
+    #expect(viewModel.openSpan == nil)
+    #expect(viewModel.elapsedSeconds == 240)
+    #expect(viewModel.activeSeconds == 120)
+    #expect(viewModel.detourSeconds == 120)
+}
+
+@MainActor
+@Test func realUsageWholeTaskJourneyKeepsTimerStatesAndReviewCoherent() async throws {
+    let store = InMemoryPendingTimingEventStore()
+    let base = Date(timeIntervalSince1970: 1_775_090_000)
+    var timestamps = [
+        base,
+        base.addingTimeInterval(30),
+        base.addingTimeInterval(60),
+        base.addingTimeInterval(180),
+        base.addingTimeInterval(240),
+        base.addingTimeInterval(360),
+        base.addingTimeInterval(420),
+        base.addingTimeInterval(600),
+        base.addingTimeInterval(620),
+    ]
+    let viewModel = TimingSliceViewModel(
+        activityId: UUID(uuidString: "14141414-1414-4414-8414-141414141414")!,
+        activityName: "Dynamic whole-task real usage",
+        sessionId: UUID(uuidString: "15151515-1515-4515-8515-151515151515")!,
+        deviceId: "ios-real-usage-whole-task",
+        eventStore: store,
+        now: { timestamps.removeFirst() }
+    )
+
+    await viewModel.startRun()
+    viewModel.refreshTimer()
+    await viewModel.pauseCurrentStep()
+    await viewModel.resumeRun()
+    await viewModel.recordResourceDetour(resourceName: "Blocked setup", note: "Had to find a setup detail.")
+    await viewModel.resumeActiveTiming()
+    await viewModel.captureStepNote("Remember this timing context for review.")
+    await viewModel.finishRun()
+    await viewModel.saveReviewDecision(.saveUsefulRun)
+
+    let events = try await store.load()
+    #expect(events.map(\.eventType) == [
+        .sessionStarted,
+        .sessionPaused,
+        .sessionResumed,
+        .resourceDetourStarted,
+        .resourceDetourCompleted,
+        .annotationCaptured,
+        .sessionCompleted,
+        .reviewSaved,
+    ])
+    #expect(events[0].payload["measurement_mode"] == MeasurementMode.wholeTask.rawValue)
+    #expect(events[3].payload["count_policy"] == CountPolicy.wallOnly.rawValue)
+    #expect(events[4].payload["detour_seconds"] == "120")
+    #expect(events[5].notePreview == "Remember this timing context for review.")
+    #expect(events[5].payload["source"] == "timing_session_step_note")
+    #expect(events[6].timerElapsedSeconds == 600)
+    #expect(events[6].timerActiveSeconds == 360)
+    #expect(events[7].payload["decision"] == ModelUpdateDecision.saveUsefulRun.rawValue)
+    #expect(viewModel.status == .reviewed)
+    #expect(viewModel.openSpan == nil)
+    #expect(viewModel.elapsedSeconds == 600)
+    #expect(viewModel.activeSeconds == 360)
+    #expect(viewModel.detourSeconds == 120)
+}
+
+@MainActor
+@Test func realUsageCheckpointedJourneyPreservesCheckpointAndFrictionBoundaries() async throws {
+    let store = InMemoryPendingTimingEventStore()
+    let base = Date(timeIntervalSince1970: 1_775_091_000)
+    var timestamps = [
+        base,
+        base.addingTimeInterval(90),
+        base.addingTimeInterval(120),
+        base.addingTimeInterval(180),
+        base.addingTimeInterval(210),
+        base.addingTimeInterval(240),
+        base.addingTimeInterval(360),
+        base.addingTimeInterval(420),
+        base.addingTimeInterval(600),
+        base.addingTimeInterval(620),
+    ]
+    let viewModel = TimingSliceViewModel(
+        activityId: UUID(uuidString: "16161616-1616-4616-8616-161616161616")!,
+        activityName: "Dynamic checkpointed real usage",
+        sessionId: UUID(uuidString: "17171717-1717-4717-8717-171717171717")!,
+        deviceId: "ios-real-usage-checkpointed",
+        eventStore: store,
+        now: { timestamps.removeFirst() }
+    )
+
+    await viewModel.startRun(mode: .checkpointed)
+    await viewModel.captureStepNote("Current checkpoint needs this detail.")
+    await viewModel.completeCurrentCheckpoint()
+    await viewModel.skipCurrentCheckpoint()
+    await viewModel.moveCurrentCheckpoint()
+    let checkpointBeforeDetour = viewModel.currentCheckpointLabel
+    await viewModel.recordResourceDetour(resourceName: "Checkpoint blocker", note: "Blocked inside checkpoint.")
+    await viewModel.resumeActiveTiming()
+    #expect(viewModel.currentCheckpointLabel == checkpointBeforeDetour)
+    await viewModel.completeCurrentCheckpoint()
+    await viewModel.finishRun()
+    await viewModel.saveReviewDecision(.frictionOnly)
+
+    let events = try await store.load()
+    #expect(events.map(\.eventType) == [
+        .sessionStarted,
+        .checkpointStarted,
+        .annotationCaptured,
+        .checkpointCompleted,
+        .checkpointStarted,
+        .checkpointSkipped,
+        .checkpointStarted,
+        .scopeChanged,
+        .resourceDetourStarted,
+        .resourceDetourCompleted,
+        .checkpointCompleted,
+        .checkpointStarted,
+        .sessionCompleted,
+        .reviewSaved,
+    ])
+    #expect(events[0].payload["measurement_mode"] == MeasurementMode.checkpointed.rawValue)
+    #expect(events[2].payload["checkpoint_label"] == "Current checkpoint")
+    #expect(events[3].payload["sequence_order"] == "2")
+    #expect(events[5].payload["sequence_order"] == "3")
+    #expect(events[7].payload["checkpoint_action"] == "move_current_step")
+    #expect(events[9].payload["detour_seconds"] == "120")
+    #expect(events[10].payload["checkpoint_label"] == checkpointBeforeDetour)
+    #expect(events[12].timerElapsedSeconds == 600)
+    #expect(events[12].timerActiveSeconds == 480)
+    #expect(events[13].payload["decision"] == ModelUpdateDecision.frictionOnly.rawValue)
+    #expect(events[13].payload["model_inclusion"] == ModelInclusion.frictionPatternsOnly.rawValue)
+    #expect(viewModel.measurementMode == .checkpointed)
+    #expect(viewModel.status == .reviewed)
+    #expect(viewModel.openSpan == nil)
+    #expect(viewModel.elapsedSeconds == 600)
+    #expect(viewModel.activeSeconds == 480)
+    #expect(viewModel.detourSeconds == 120)
+}
+
+@Test func timingRingDoesNotDrainDuringOpenResourceDetour() {
+    let early = TimingInstrumentLayout.ringPresentation(
+        status: .running,
+        openSpan: .resourceDetour,
+        elapsedSeconds: 180,
+        activeSeconds: 60,
+        detourSeconds: 120
+    )
+    let later = TimingInstrumentLayout.ringPresentation(
+        status: .running,
+        openSpan: .resourceDetour,
+        elapsedSeconds: 240,
+        activeSeconds: 60,
+        detourSeconds: 180
+    )
+
+    #expect(early.role == .detour)
+    #expect(early.primaryLabel == "Friction")
+    #expect(early.secondaryLabel == "Active paused")
+    #expect(early.progress == later.progress)
+    #expect(later.primarySeconds == 180)
+    #expect(later.secondarySeconds == 60)
+}
+
+@Test func timingStepPreviewReflectsOpenFrictionAsActivePaused() {
+    let wholeTask = TimingInstrumentLayout.currentStepPreview(
+        status: .running,
+        openSpan: .resourceDetour,
+        isCheckpointedMode: false
+    )
+    let checkpointed = TimingInstrumentLayout.currentStepPreview(
+        status: .running,
+        openSpan: .resourceDetour,
+        isCheckpointedMode: true
+    )
+    let paused = TimingInstrumentLayout.currentStepPreview(
+        status: .paused,
+        openSpan: nil,
+        isCheckpointedMode: false
+    )
+
+    #expect(wholeTask.estimate == "active paused")
+    #expect(wholeTask.tag == "Friction")
+    #expect(wholeTask.status == .paused)
+    #expect(checkpointed.estimate == "active paused")
+    #expect(checkpointed.tag == "Friction")
+    #expect(checkpointed.status == .paused)
+    #expect(paused.estimate == "active paused")
+    #expect(paused.tag == "Paused")
+    #expect(paused.status == .paused)
+}
+
 @Test func phase8DrawerWorkflowAliasesMatchFigmaHandoffNames() {
     #expect(Phase8DrawerWorkflow(rawDemoValue: "step_detail") == .stepDetail)
     #expect(Phase8DrawerWorkflow(rawDemoValue: "friction_evidence") == .frictionEvidence)
@@ -488,6 +708,14 @@ import Testing
         #expect(option.decision == decision)
         #expect(option.selected)
     }
+}
+
+@Test func reviewDecisionDrawerLayoutUsesReadableExplicitSaveFlow() {
+    #expect(ReviewDecisionDrawerLayout.usesDraftSelectionBeforeSaving)
+    #expect(ReviewDecisionDrawerLayout.usesScrollableDecisionBody)
+    #expect(ReviewDecisionDrawerLayout.titleFontSize >= 24)
+    #expect(ReviewDecisionDrawerLayout.optionRowMinHeight >= 56)
+    #expect(ReviewDecisionDrawerLayout.primaryActionHeight >= 48)
 }
 
 @MainActor

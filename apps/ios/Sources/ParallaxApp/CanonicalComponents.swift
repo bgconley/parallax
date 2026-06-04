@@ -292,7 +292,7 @@ struct StepRow: View {
             Spacer()
             Text(trailingText ?? status.trailingText)
                 .font(.system(size: 8.7, weight: .medium, design: .rounded))
-                .foregroundStyle(status == .running ? Color(parallax: .active) : Color(parallax: .textSecondaryLight))
+                .foregroundStyle(status.isCurrent ? status.accentColor : Color(parallax: .textSecondaryLight))
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
             if showsChevron {
@@ -303,10 +303,10 @@ struct StepRow: View {
         }
         .padding(.vertical, 2)
         .padding(.horizontal, 6)
-        .background(status == .running ? Color(parallax: .activeSoft).opacity(0.45) : Color.clear)
+        .background(status.isCurrent ? status.softColor.opacity(0.45) : Color.clear)
         .overlay(
             RoundedRectangle(cornerRadius: 9)
-                .stroke(status == .running ? Color(parallax: .active) : Color.clear, lineWidth: 1.2)
+                .stroke(status.isCurrent ? status.accentColor : Color.clear, lineWidth: 1.2)
         )
         .clipShape(RoundedRectangle(cornerRadius: 9))
     }
@@ -315,21 +315,53 @@ struct StepRow: View {
 enum StepStatus {
     case done
     case running
+    case paused
     case pending
 
     var fill: Color {
         switch self {
         case .done: Color(parallax: .detour)
         case .running: Color(parallax: .active)
+        case .paused: Color(parallax: .waiting)
         case .pending: Color(parallax: .separatorLight)
         }
     }
 
     var foreground: Color {
         switch self {
-        case .done, .running: .white
+        case .done, .running, .paused: .white
         case .pending: Color(parallax: .textSecondaryLight)
         }
+    }
+
+    var accentColor: Color {
+        switch self {
+        case .running:
+            return Color(parallax: .active)
+        case .paused:
+            return Color(parallax: .waiting)
+        case .done:
+            return Color(parallax: .detour)
+        case .pending:
+            return Color(parallax: .separatorLight)
+        }
+    }
+
+    var softColor: Color {
+        switch self {
+        case .running:
+            return Color(parallax: .activeSoft)
+        case .paused:
+            return Color(parallax: .waitingSoft)
+        case .done:
+            return Color(parallax: .detourSoft)
+        case .pending:
+            return Color.clear
+        }
+    }
+
+    var isCurrent: Bool {
+        self == .running || self == .paused
     }
 
     @ViewBuilder
@@ -339,6 +371,8 @@ enum StepStatus {
             Image(systemName: "checkmark")
         case .running:
             Text("\(index)")
+        case .paused:
+            Image(systemName: "pause.fill")
         case .pending:
             Text("\(index)")
         }
@@ -350,6 +384,8 @@ enum StepStatus {
             return "Done"
         case .running:
             return "Running"
+        case .paused:
+            return "Paused"
         case .pending:
             return ""
         }

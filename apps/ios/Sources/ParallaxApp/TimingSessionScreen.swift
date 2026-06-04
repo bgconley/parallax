@@ -48,6 +48,116 @@ public enum TimingInstrumentLayout {
     public static func infoLaneWidth(for cardWidth: CGFloat) -> CGFloat {
         max(0, cardWidth - ringSize(for: cardWidth) - infoLaneSpacing(for: cardWidth))
     }
+
+    public static func ringPresentation(
+        status: TimingSessionStatus,
+        openSpan: TemporalSpanType?,
+        elapsedSeconds: Int,
+        activeSeconds: Int,
+        detourSeconds: Int
+    ) -> TimingRingPresentation {
+        let hasTiming = elapsedSeconds > 0 || activeSeconds > 0 || detourSeconds > 0
+        if status == .paused {
+            return TimingRingPresentation(
+                role: .waiting,
+                primaryLabel: "Paused",
+                primarySeconds: elapsedSeconds,
+                secondaryLabel: "Active",
+                secondarySeconds: activeSeconds,
+                progress: hasTiming ? 1 : 0
+            )
+        }
+
+        switch openSpan {
+        case .resourceDetour:
+            return TimingRingPresentation(
+                role: .detour,
+                primaryLabel: "Friction",
+                primarySeconds: detourSeconds,
+                secondaryLabel: "Active paused",
+                secondarySeconds: activeSeconds,
+                progress: hasTiming ? 1 : 0
+            )
+        case .waiting, .interruption:
+            return TimingRingPresentation(
+                role: .waiting,
+                primaryLabel: "Waiting",
+                primarySeconds: elapsedSeconds,
+                secondaryLabel: "Active paused",
+                secondarySeconds: activeSeconds,
+                progress: hasTiming ? 1 : 0
+            )
+        default:
+            return TimingRingPresentation(
+                role: .active,
+                primaryLabel: "Active",
+                primarySeconds: activeSeconds,
+                secondaryLabel: "Wall",
+                secondarySeconds: elapsedSeconds,
+                progress: hasTiming ? 1 : 0
+            )
+        }
+    }
+
+    public static func currentStepPreview(
+        status: TimingSessionStatus,
+        openSpan: TemporalSpanType?,
+        isCheckpointedMode: Bool
+    ) -> TimingStepPreviewPresentation {
+        if openSpan == .resourceDetour {
+            return TimingStepPreviewPresentation(
+                estimate: "active paused",
+                tag: "Friction",
+                status: .paused
+            )
+        }
+        if status == .paused {
+            return TimingStepPreviewPresentation(
+                estimate: "active paused",
+                tag: "Paused",
+                status: .paused
+            )
+        }
+        return TimingStepPreviewPresentation(
+            estimate: isCheckpointedMode ? "active now" : "active run",
+            tag: status.displayText,
+            status: status == .running ? .running : .pending
+        )
+    }
+}
+
+public struct TimingRingPresentation: Equatable {
+    public let role: TemporalSemanticRole
+    public let primaryLabel: String
+    public let primarySeconds: Int
+    public let secondaryLabel: String
+    public let secondarySeconds: Int
+    public let progress: CGFloat
+}
+
+public struct TimingStepPreviewPresentation: Equatable {
+    public let estimate: String
+    public let tag: String
+    public let status: TimingStepPreviewStatus
+}
+
+public enum TimingStepPreviewStatus: Equatable {
+    case running
+    case paused
+    case pending
+}
+
+private extension TimingStepPreviewPresentation {
+    var stepStatus: StepStatus {
+        switch status {
+        case .running:
+            return .running
+        case .paused:
+            return .paused
+        case .pending:
+            return .pending
+        }
+    }
 }
 
 struct TimingSessionScreen: View {
@@ -186,10 +296,14 @@ struct TimingSessionScreen: View {
         return "\(minutes):\(String(format: "%02d", remainder))"
     }
 
-    private var activeShareLabel: String {
-        guard viewModel.elapsedSeconds > 0 else { return "0% active" }
-        let ratio = Double(viewModel.activeSeconds) / Double(max(viewModel.elapsedSeconds, 1))
-        return "\(Int((min(max(ratio, 0), 1) * 100).rounded()))% active"
+    private var timingStateLabel: String {
+        if viewModel.openSpan == .resourceDetour {
+            return "Active paused for friction"
+        }
+        if viewModel.status == .paused {
+            return "Timer paused"
+        }
+        return "Active timing now"
     }
 
     private var pendingChangeLabel: String {
@@ -202,7 +316,10 @@ struct TimingSessionScreen: View {
     }
 
     private var frictionLabel: String {
-        viewModel.detourNote.map { "Friction: \($0)" } ?? "No friction noted"
+        if viewModel.openSpan == .resourceDetour {
+            return "Friction timing \(formatTimer(viewModel.detourSeconds))"
+        }
+        return viewModel.detourNote.map { "Friction logged: \($0)" } ?? "No friction noted"
     }
 
     private var instrumentCard: some View {
@@ -211,12 +328,23 @@ struct TimingSessionScreen: View {
                 let ringSize = TimingInstrumentLayout.ringSize(for: proxy.size.width)
                 let infoSpacing = TimingInstrumentLayout.infoLaneSpacing(for: proxy.size.width)
                 let infoWidth = TimingInstrumentLayout.infoLaneWidth(for: proxy.size.width)
+                let ringPresentation = TimingInstrumentLayout.ringPresentation(
+                    status: viewModel.status,
+                    openSpan: viewModel.openSpan,
+                    elapsedSeconds: viewModel.elapsedSeconds,
+                    activeSeconds: viewModel.activeSeconds,
+                    detourSeconds: viewModel.detourSeconds
+                )
                 HStack(alignment: .center, spacing: infoSpacing) {
-                    TimingRing(elapsedSeconds: viewModel.elapsedSeconds, activeSeconds: viewModel.activeSeconds)
+                    TimingRing(presentation: ringPresentation)
                         .frame(width: ringSize, height: ringSize)
                         .layoutPriority(0)
                     VStack(alignment: .leading, spacing: 4) {
-                        SoftBadge(text: viewModel.status.displayText, systemName: nil, role: .active)
+                        SoftBadge(
+                            text: viewModel.openSpan == .resourceDetour ? "Friction timing" : viewModel.status.displayText,
+                            systemName: nil,
+                            role: ringPresentation.role
+                        )
                         Text(currentWorkTitle)
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .lineLimit(2)
@@ -224,7 +352,8 @@ struct TimingSessionScreen: View {
                         Text(currentWorkSubtitle)
                             .font(.system(size: 10.5, weight: .medium, design: .rounded))
                             .foregroundStyle(Color(parallax: .textSecondaryLight))
-                        CompactLabel(activeShareLabel, systemName: "chart.pie")
+                        CompactLabel(timingStateLabel, systemName: viewModel.openSpan == .resourceDetour ? "pause.circle" : "timer")
+                        CompactLabel("Wall \(formatTimer(viewModel.elapsedSeconds))", systemName: "clock")
                         CompactLabel(pendingChangeLabel, systemName: viewModel.pendingEventCount == 0 ? "checkmark.circle" : "arrow.triangle.2.circlepath")
                         CompactLabel(frictionLabel, systemName: "exclamationmark.bubble")
                     }
@@ -243,9 +372,11 @@ struct TimingSessionScreen: View {
                 }
             }
             HStack(spacing: 9) {
-                SessionAction(title: viewModel.status == .paused ? "Resume" : "Pause", icon: "pause.circle") {
+                SessionAction(title: timerControlTitle, icon: timerControlIcon) {
                     Task {
-                        if viewModel.status == .paused {
+                        if viewModel.openSpan == .resourceDetour {
+                            await viewModel.resumeActiveTiming()
+                        } else if viewModel.status == .paused {
                             await viewModel.resumeRun()
                         } else {
                             await viewModel.pauseCurrentStep()
@@ -286,13 +417,32 @@ struct TimingSessionScreen: View {
         .shadow(color: .black.opacity(0.045), radius: 9, y: 3)
     }
 
+    private var timerControlTitle: String {
+        if viewModel.openSpan == .resourceDetour {
+            return "Resume"
+        }
+        return viewModel.status == .paused ? "Resume" : "Pause"
+    }
+
+    private var timerControlIcon: String {
+        if viewModel.openSpan == .resourceDetour || viewModel.status == .paused {
+            return "play.circle"
+        }
+        return "pause.circle"
+    }
+
     @ViewBuilder
     private var stepPreviewCard: some View {
+        let currentPreview = TimingInstrumentLayout.currentStepPreview(
+            status: viewModel.status,
+            openSpan: viewModel.openSpan,
+            isCheckpointedMode: viewModel.isCheckpointedMode
+        )
         if viewModel.isCheckpointedMode {
             Card {
                 StepRow(index: 1, title: "Start timer", estimate: "timed now", tag: "source event", status: .done, trailingText: "started")
                 Divider()
-                StepRow(index: 2, title: viewModel.currentCheckpointLabel, estimate: "active now", tag: "current", status: .running, trailingText: formatTimer(viewModel.activeSeconds))
+                StepRow(index: 2, title: viewModel.currentCheckpointLabel, estimate: currentPreview.estimate, tag: currentPreview.tag, status: currentPreview.stepStatus, trailingText: formatTimer(viewModel.activeSeconds))
                 Divider()
                 StepRow(index: 3, title: viewModel.nextCheckpointLabel, estimate: "optional", tag: "pending", status: .pending)
                 Button {
@@ -308,7 +458,7 @@ struct TimingSessionScreen: View {
             Card {
                 StepRow(index: 1, title: "Start timer", estimate: "timed now", tag: "source event", status: .done, trailingText: "started")
                 Divider()
-                StepRow(index: 2, title: viewModel.activityName, estimate: "active run", tag: viewModel.status.displayText, status: .running, trailingText: formatTimer(viewModel.activeSeconds))
+                StepRow(index: 2, title: viewModel.activityName, estimate: currentPreview.estimate, tag: currentPreview.tag, status: currentPreview.stepStatus, trailingText: formatTimer(viewModel.activeSeconds))
                 Divider()
                 StepRow(index: 3, title: "Friction note", estimate: viewModel.detourNote ?? "none yet", tag: viewModel.detourNote == nil ? "optional" : "captured", status: viewModel.detourNote == nil ? .pending : .done)
             }
@@ -519,17 +669,14 @@ private struct FrictionCaptureDrawerView: View {
 }
 
 private struct TimingRing: View {
-    let elapsedSeconds: Int
-    let activeSeconds: Int
+    let presentation: TimingRingPresentation
 
-    private var activeShare: CGFloat {
-        guard elapsedSeconds > 0 else { return 0 }
-        let ratio = Double(activeSeconds) / Double(max(elapsedSeconds, 1))
-        return CGFloat(min(max(ratio, 0), 1))
+    private var ringColor: Color {
+        Color(parallax: DesignTokenMapper.colorToken(for: presentation.role))
     }
 
-    private var activeShareText: String {
-        "\(Int((activeShare * 100).rounded()))% active"
+    private var softRingColor: Color {
+        Color(parallax: DesignTokenMapper.colorToken(for: presentation.role, soft: true))
     }
 
     var body: some View {
@@ -537,32 +684,34 @@ private struct TimingRing: View {
             Circle()
                 .stroke(Color(parallax: .separatorLight), lineWidth: 10)
             Circle()
-                .stroke(Color(parallax: .activeSoft), lineWidth: 4)
+                .stroke(softRingColor, lineWidth: 4)
                 .padding(8)
             Circle()
-                .trim(from: 0, to: activeShare)
-                .stroke(Color(parallax: .active), style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                .trim(from: 0, to: presentation.progress)
+                .stroke(ringColor, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .opacity(activeShare > 0 ? 1 : 0)
+                .opacity(presentation.progress > 0 ? 1 : 0)
             VStack(spacing: 3) {
-                Text("Wall")
+                Text(presentation.primaryLabel)
                     .font(.system(size: 8, weight: .medium, design: .rounded))
                     .foregroundStyle(Color(parallax: .textSecondaryLight))
-                DurationText(seconds: elapsedSeconds)
+                DurationText(seconds: presentation.primarySeconds)
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                 Rectangle()
                     .fill(Color(parallax: .separatorLight))
                     .frame(width: 44, height: 1)
-                Text(activeShareText)
+                Text(presentation.secondaryLabel)
                     .font(.system(size: 8, weight: .medium, design: .rounded))
                     .foregroundStyle(Color(parallax: .textSecondaryLight))
-                DurationText(seconds: activeSeconds)
+                DurationText(seconds: presentation.secondarySeconds)
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(Color(parallax: .textSecondaryLight))
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Wall time \(elapsedSeconds) seconds. Active time \(activeSeconds) seconds. \(activeShareText).")
+        .accessibilityLabel(
+            "\(presentation.primaryLabel) \(presentation.primarySeconds) seconds. \(presentation.secondaryLabel) \(presentation.secondarySeconds) seconds."
+        )
     }
 }
 

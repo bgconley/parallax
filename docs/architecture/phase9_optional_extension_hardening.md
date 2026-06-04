@@ -50,6 +50,11 @@ percentiles. The canonical optional profiles keep the documented exact percentil
 path, and `phase9-smoke` live-tests the selected Timescale image instead of
 assuming compatibility.
 
+The Phase 9 PostGIS smoke defaults to `ghcr.io/baosystems/postgis:16-3.5`
+because it publishes both amd64 and arm64 manifests for the selected Postgres
+16/PostGIS 3.5 validation target. Override `PARALLAX_PHASE9_POSTGIS_IMAGE` when
+validating a deployment-specific image.
+
 ## Re-Embedding and Dual-Read Plan
 
 Embedding model changes must not swap retrieval behavior in place.

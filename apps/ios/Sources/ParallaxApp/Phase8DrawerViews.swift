@@ -88,11 +88,19 @@ struct StepDetailDrawerView: View {
                 .disabled(!detail.canMove)
             drawerButton("Note", x: 336, y: 392, w: 92, h: 42, scale: scale) { perform(.addStepNote) }
                 .disabled(!detail.canAddNote)
-            accentCard(
-                title: detail.nextTitle,
-                lines: detail.nextLines,
-                x: 24, y: 448, w: 413, h: 74, accent: Color(parallax: .checkpoint), scale: scale
-            )
+            if detail.canPause || detail.canAddNote {
+                accentCard(
+                    title: detail.nextTitle,
+                    lines: detail.nextLines,
+                    x: 24, y: 448, w: 413, h: 74, accent: Color(parallax: .checkpoint), scale: scale
+                )
+            } else {
+                emptyStateNote(
+                    title: detail.nextTitle,
+                    lines: detail.nextLines + ["No source timing event will be saved from this drawer."],
+                    x: 24, y: 442, w: 413, h: 86, role: .active, scale: scale
+                )
+            }
         }
     }
 }
@@ -115,11 +123,19 @@ struct FrictionEvidenceDrawerView: View {
             drawerChip(evidence.chips[safe: 0] ?? "no evidence", x: 24, y: 283, w: 104, h: 32, role: .detour, scale: scale)
             drawerChip(evidence.chips[safe: 1] ?? "no change", x: 140, y: 283, w: 104, h: 32, role: .active, scale: scale)
             drawerChip(evidence.chips[safe: 2] ?? "log first", x: 256, y: 283, w: 122, h: 32, role: .interruption, scale: scale)
-            accentCard(
-                title: evidence.learningTitle,
-                lines: evidence.learningLines,
-                x: 24, y: 326, w: 413, h: 76, accent: Color(parallax: .active), scale: scale
-            )
+            if evidence.canConfirm {
+                accentCard(
+                    title: evidence.learningTitle,
+                    lines: evidence.learningLines,
+                    x: 24, y: 326, w: 413, h: 76, accent: Color(parallax: .active), scale: scale
+                )
+            } else {
+                emptyStateNote(
+                    title: "No user evidence captured",
+                    lines: ["Log friction during a run to enable confirmation.", "Correction actions stay disabled until evidence exists."],
+                    x: 24, y: 326, w: 413, h: 76, role: .detour, scale: scale
+                )
+            }
             drawerButton("Confirm evidence", x: 24, y: 420, w: 413, h: 50, primary: true, scale: scale) { perform(.confirmFrictionEvidence) }
                 .disabled(!evidence.canConfirm)
             drawerButton("Correct", x: 24, y: 482, w: 126, h: 42, scale: scale) { perform(.correctFrictionEvidence) }
@@ -150,13 +166,24 @@ struct ForgottenTimerDrawerView: View {
             drawerChip(evidence.chips[safe: 0] ?? "no flag", x: 24, y: 284, w: 156, h: 32, role: .interruption, scale: scale)
             drawerChip(evidence.chips[safe: 1] ?? "no change", x: 190, y: 284, w: 126, h: 32, role: .wall, scale: scale)
             drawerChip(evidence.chips[safe: 2] ?? "safe", x: 326, y: 284, w: 108, h: 32, role: .checkpoint, scale: scale)
-            drawerButton("Trim at place change", x: 24, y: 330, w: 413, h: 48, primary: true, scale: scale) { perform(.trimForgottenTimer) }
-                .disabled(!evidence.canTrim)
-            drawerButton("Timer kept running", x: 24, y: 390, w: 413, h: 42, scale: scale) { perform(.timerKeptRunning) }
-                .disabled(!evidence.canResolveKeptRunning)
-            drawerButton("Discard timing, keep note", x: 24, y: 444, w: 413, h: 42, scale: scale) { perform(.discardTimingKeepNote) }
-            drawerButton("Not sure", x: 24, y: 498, w: 413, h: 42, scale: scale) { perform(.forgottenTimerNotSure) }
-                .disabled(!evidence.canDefer)
+            if evidence.canTrim {
+                drawerButton("Trim at place change", x: 24, y: 330, w: 413, h: 48, primary: true, scale: scale) { perform(.trimForgottenTimer) }
+                drawerButton("Timer kept running", x: 24, y: 390, w: 413, h: 42, scale: scale) { perform(.timerKeptRunning) }
+                    .disabled(!evidence.canResolveKeptRunning)
+                drawerButton("Discard timing, keep note", x: 24, y: 444, w: 413, h: 42, scale: scale) { perform(.discardTimingKeepNote) }
+                drawerButton("Not sure", x: 24, y: 498, w: 413, h: 42, scale: scale) { perform(.forgottenTimerNotSure) }
+                    .disabled(!evidence.canDefer)
+            } else {
+                emptyStateNote(
+                    title: "No review prompt is open",
+                    lines: ["Timer-correction actions unlock only with backend evidence.", "Source timing facts remain unchanged."],
+                    x: 24, y: 330, w: 413, h: 98, role: .interruption, scale: scale
+                )
+                drawerButton("No correction available", x: 24, y: 448, w: 413, h: 42, scale: scale) { }
+                    .disabled(true)
+                drawerButton("Not sure", x: 24, y: 502, w: 413, h: 42, scale: scale) { perform(.forgottenTimerNotSure) }
+                    .disabled(true)
+            }
         }
     }
 }
@@ -165,28 +192,260 @@ struct ReviewDecisionDrawerView: View {
     let selectedDecision: ModelUpdateDecision
     let saveDecision: (ModelUpdateDecision) -> Void
     let dismiss: () -> Void
+    @State private var draftDecision: ModelUpdateDecision
+
+    init(
+        selectedDecision: ModelUpdateDecision,
+        saveDecision: @escaping (ModelUpdateDecision) -> Void,
+        dismiss: @escaping () -> Void
+    ) {
+        self.selectedDecision = selectedDecision
+        self.saveDecision = saveDecision
+        self.dismiss = dismiss
+        _draftDecision = State(initialValue: selectedDecision)
+    }
 
     var body: some View {
-        Phase8DrawerOverlay(figmaSheetHeight: 746, dismiss: dismiss) { scale in
-            drawerText("Learning gate · choose what this run teaches", x: 24, y: 36, w: 413, h: 18, size: 12, weight: .semibold, color: Color(parallax: .checkpointText), scale: scale)
-            drawerText("What should this run update?", x: 24, y: 58, w: 413, h: 34, size: 24, weight: .bold, color: Color(parallax: .textPrimaryLight), scale: scale)
-            drawerText("This controls model inclusion. The note can still be kept even when timing is excluded.", x: 24, y: 94, w: 413, h: 42, size: 14, weight: .regular, color: Color(parallax: .textSecondaryLight), scale: scale)
+        Phase8DrawerOverlay(figmaSheetHeight: ReviewDecisionDrawerLayout.sheetHeight, dismiss: dismiss) { _ in
+            VStack(alignment: .leading, spacing: 13) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Learning gate")
+                        .font(.system(size: ReviewDecisionDrawerLayout.eyebrowFontSize, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(parallax: .checkpointText))
+                        .textCase(.uppercase)
+                    Text("What should this run teach?")
+                        .font(.system(size: ReviewDecisionDrawerLayout.titleFontSize, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(parallax: .textPrimaryLight))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.82)
+                    Text("Choose what updates from this timing run. Source evidence stays private unless you explicitly keep it for answers.")
+                        .font(.system(size: 13.2, weight: .regular, design: .rounded))
+                        .foregroundStyle(Color(parallax: .textSecondaryLight))
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.trailing, 34)
 
-            ForEach(Array(ReviewDecisionDisplayFactory.options(selected: selectedDecision).enumerated()), id: \.offset) { index, option in
-                let y = CGFloat(148 + (index * 62))
-                drawerOption(
-                    title: option.title,
-                    subtitle: option.subtitle,
-                    selected: option.selected,
-                    x: 24, y: y, w: 413, h: 56, scale: scale
+                ReviewDecisionImpactCard(option: ReviewDecisionDisplayFactory.option(for: draftDecision))
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 13) {
+                        ReviewDecisionSection(
+                            title: "Use this run",
+                            role: .active,
+                            options: Array(options.prefix(2)),
+                            draftDecision: draftDecision,
+                            select: { draftDecision = $0 }
+                        )
+                        ReviewDecisionSection(
+                            title: "Limit learning",
+                            role: .checkpoint,
+                            options: Array(options.dropFirst(2).prefix(4)),
+                            draftDecision: draftDecision,
+                            select: { draftDecision = $0 }
+                        )
+                        ReviewDecisionSection(
+                            title: "Exclude timing",
+                            role: .interruption,
+                            options: Array(options.dropFirst(6)),
+                            draftDecision: draftDecision,
+                            select: { draftDecision = $0 }
+                        )
+                    }
+                    .padding(.bottom, 2)
+                }
+
+                Button {
+                    saveDecision(draftDecision)
+                } label: {
+                    Text("Save decision")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .frame(maxWidth: .infinity, minHeight: ReviewDecisionDrawerLayout.primaryActionHeight)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding(.top, 40)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 18)
+        }
+    }
+
+    private var options: [ReviewDecisionDisplay] {
+        ReviewDecisionDisplayFactory.options(selected: draftDecision)
+    }
+}
+
+public enum ReviewDecisionDrawerLayout {
+    public static let sheetHeight: CGFloat = 736
+    public static let usesDraftSelectionBeforeSaving = true
+    public static let usesScrollableDecisionBody = true
+    public static let titleFontSize: CGFloat = 25
+    public static let eyebrowFontSize: CGFloat = 11
+    public static let optionRowMinHeight: CGFloat = 58
+    public static let primaryActionHeight: CGFloat = 50
+}
+
+private struct ReviewDecisionImpactCard: View {
+    let option: ReviewDecisionDisplay
+
+    var body: some View {
+        HStack(spacing: 10) {
+            CircleIcon(
+                systemName: iconName,
+                tint: Color(parallax: DesignTokenMapper.colorToken(for: role)),
+                fill: Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)),
+                size: 38,
+                symbolSize: 16
+            )
+            VStack(alignment: .leading, spacing: 2) {
+                Text(option.title)
+                    .font(.system(size: 14.5, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(parallax: .textPrimaryLight))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+                Text(impactText)
+                    .font(.system(size: 11.5, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color(parallax: .textSecondaryLight))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.78)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)).opacity(0.62))
+        .overlay(
+            RoundedRectangle(cornerRadius: 17)
+                .stroke(Color(parallax: DesignTokenMapper.colorToken(for: role)).opacity(0.22), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 17))
+    }
+
+    private var role: TemporalSemanticRole {
+        switch option.modelInclusion {
+        case .full:
+            return .active
+        case .activeDurationOnly, .wallEnvelopeOnly, .frictionPatternsOnly, .queryEvidenceOnly:
+            return .checkpoint
+        case .exclude:
+            return .interruption
+        case .notReviewed:
+            return .waiting
+        }
+    }
+
+    private var iconName: String {
+        switch role {
+        case .active:
+            return "checkmark.seal"
+        case .checkpoint:
+            return "slider.horizontal.3"
+        case .interruption:
+            return "minus.circle"
+        default:
+            return "shield"
+        }
+    }
+
+    private var impactText: String {
+        switch option.decision {
+        case .saveUsefulRun:
+            return "Updates active, wall, friction, and checkpoint evidence."
+        case .markUnusual:
+            return "Keeps the run, but marks it as atypical evidence."
+        case .savePartial:
+            return "Keeps only the reliable part of the run."
+        case .activeOnly:
+            return "Updates active duration without changing the wall baseline."
+        case .frictionOnly:
+            return "Learns blockers and preflight hints, not timing duration."
+        case .queryEvidenceOnly:
+            return "Keeps evidence for Ask Time without prediction updates."
+        case .discardTimingKeepNote:
+            return "Excludes timing while preserving the note as context."
+        case .discardAll:
+            return "Excludes timing and context from learning."
+        }
+    }
+}
+
+private struct ReviewDecisionSection: View {
+    let title: String
+    let role: TemporalSemanticRole
+    let options: [ReviewDecisionDisplay]
+    let draftDecision: ModelUpdateDecision
+    let select: (ModelUpdateDecision) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 7) {
+                Capsule()
+                    .fill(Color(parallax: DesignTokenMapper.colorToken(for: role)))
+                    .frame(width: 22, height: 3)
+                Text(title)
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(parallax: DesignTokenMapper.colorToken(for: role)))
+                    .textCase(.uppercase)
+                Spacer()
+            }
+            ForEach(options, id: \.decision) { option in
+                ReviewDecisionOptionRow(
+                    option: option,
+                    selected: option.decision == draftDecision,
+                    role: role
                 ) {
-                    saveDecision(option.decision)
+                    select(option.decision)
                 }
             }
-            drawerButton("Save selected decision", x: 24, y: 668, w: 413, h: 50, primary: true, scale: scale) {
-                saveDecision(selectedDecision)
-            }
         }
+    }
+}
+
+private struct ReviewDecisionOptionRow: View {
+    let option: ReviewDecisionDisplay
+    let selected: Bool
+    let role: TemporalSemanticRole
+    let select: () -> Void
+
+    var body: some View {
+        Button(action: select) {
+            HStack(spacing: 11) {
+                ZStack {
+                    Circle()
+                        .fill(selected ? Color(parallax: DesignTokenMapper.colorToken(for: role)) : Color(parallax: .elevatedLight))
+                        .frame(width: 24, height: 24)
+                    if selected {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10.5, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(option.title)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color(parallax: .textPrimaryLight))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    Text(option.subtitle)
+                        .font(.system(size: 11.2, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color(parallax: .textSecondaryLight))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.76)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity, minHeight: ReviewDecisionDrawerLayout.optionRowMinHeight, alignment: .leading)
+            .background(selected ? Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)).opacity(0.64) : Color.white)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(selected ? Color(parallax: DesignTokenMapper.colorToken(for: role)) : Color(parallax: .separatorLight), lineWidth: selected ? 1.25 : 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -209,11 +468,19 @@ struct PreflightEvidenceDrawerView: View {
             preflightChip(index: 1, text: evidence.chips[safe: 1] ?? "no change", role: .interruption, scale: scale)
             preflightChip(index: 2, text: evidence.chips[safe: 2] ?? "review first", role: .wall, scale: scale)
             preflightChip(index: 3, text: evidence.chips[safe: 3] ?? "canonical", role: .checkpoint, scale: scale)
-            accentCard(
-                title: evidence.noteTitle,
-                lines: evidence.noteLines,
-                x: 24, y: 348, w: 413, h: 74, accent: Color(parallax: .active), scale: scale
-            )
+            if evidence.hasBackendEvidence {
+                accentCard(
+                    title: evidence.noteTitle,
+                    lines: evidence.noteLines,
+                    x: 24, y: 348, w: 413, h: 74, accent: Color(parallax: .active), scale: scale
+                )
+            } else {
+                emptyStateNote(
+                    title: evidence.noteTitle,
+                    lines: evidence.noteLines + ["No lifecycle decision will be saved without a real check."],
+                    x: 24, y: 348, w: 413, h: 74, role: .detour, scale: scale
+                )
+            }
             drawerButton("Keep active", x: 24, y: 440, w: 198, h: 48, primary: true, scale: scale) { perform(.keepPreflightActive) }
                 .disabled(evidence.primaryCheckId == nil)
             drawerButton("Snooze", x: 234, y: 440, w: 194, h: 48, scale: scale) { perform(.snoozePreflight) }
@@ -330,6 +597,74 @@ private func accentCard(
         .padding(.trailing, 16 * scale)
     }
     .frame(width: w * scale, height: h * scale)
+    .position(x: (x + w / 2) * scale, y: (y + h / 2) * scale)
+}
+
+private func emptyStateNote(
+    title: String,
+    lines: [String],
+    x: CGFloat,
+    y: CGFloat,
+    w: CGFloat,
+    h: CGFloat,
+    role: TemporalSemanticRole,
+    scale: CGFloat
+) -> some View {
+    ZStack(alignment: .topLeading) {
+        RoundedRectangle(cornerRadius: 16 * scale)
+            .fill(Color(parallax: DesignTokenMapper.colorToken(for: role, soft: true)).opacity(0.62))
+        RoundedRectangle(cornerRadius: 16 * scale)
+            .stroke(Color(parallax: DesignTokenMapper.colorToken(for: role)).opacity(0.18), lineWidth: max(1, scale))
+        CircleIcon(
+            systemName: "checkmark.seal",
+            tint: Color(parallax: DesignTokenMapper.colorToken(for: role)),
+            fill: Color(parallax: .cardLight),
+            size: 34 * scale,
+            symbolSize: 13 * scale
+        )
+        .position(x: 31 * scale, y: 31 * scale)
+        VStack(alignment: .leading, spacing: 5 * scale) {
+            Text(title)
+                .font(.system(size: 13.5 * scale, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color(parallax: .textPrimaryLight))
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+            ForEach(Array(lines.prefix(3)), id: \.self) { line in
+                Text(line)
+                    .font(.system(size: 11.3 * scale, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color(parallax: .textSecondaryLight))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+        }
+        .frame(width: (w - 68) * scale, height: (h - 18) * scale, alignment: .leading)
+        .position(x: (52 + (w - 68) / 2) * scale, y: (h / 2) * scale)
+    }
+    .frame(width: w * scale, height: h * scale)
+    .position(x: (x + w / 2) * scale, y: (y + h / 2) * scale)
+}
+
+private func drawerSectionLabel(
+    _ text: String,
+    x: CGFloat,
+    y: CGFloat,
+    w: CGFloat,
+    h: CGFloat,
+    role: TemporalSemanticRole,
+    scale: CGFloat
+) -> some View {
+    HStack(spacing: 7 * scale) {
+        Capsule()
+            .fill(Color(parallax: DesignTokenMapper.colorToken(for: role)))
+            .frame(width: 18 * scale, height: 3 * scale)
+        Text(text)
+            .font(.system(size: 11.5 * scale, weight: .bold, design: .rounded))
+            .tracking(0.7 * scale)
+            .foregroundStyle(Color(parallax: DesignTokenMapper.colorToken(for: role)))
+            .textCase(.uppercase)
+        Spacer()
+    }
+    .frame(width: w * scale, height: h * scale, alignment: .leading)
     .position(x: (x + w / 2) * scale, y: (y + h / 2) * scale)
 }
 

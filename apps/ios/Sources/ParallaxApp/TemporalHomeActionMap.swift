@@ -11,7 +11,7 @@ public enum TemporalHomeActionMap {
         case .temporalActionDefault, .temporalActionNeedsReview, .temporalActionSyncPending, .temporalActionGroundedAnswer:
             return action.spec(label: "Temporal action", classification: .drawer, route: .drawer(.quickCapture), workflow: "open_quick_capture")
         case .currentFocusDefault, .runningRowDefault:
-            return action.spec(label: "Current timing run", classification: .navigation, route: .surface(.expandedTimingRun), workflow: "open_timing_run_evidence")
+            return action.spec(label: "Current timing run", classification: .drawer, route: .drawer(.timingRunEvidence), workflow: "open_timing_run_evidence")
         case .preflightInsightDefault, .preflightRowDefault, .preflightCheckRowNeedsReview, .beforeStartingRowGroundedAnswer, .useCheckGroundedAnswer:
             return action.spec(label: "Preflight evidence", classification: .drawer, route: .drawer(.phase8(.preflightEvidence)), workflow: "preflight_evidence")
         case .waitingRowDefault:

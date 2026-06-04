@@ -58,6 +58,8 @@ def test_release_gate_commands_are_available_from_makefile() -> None:
     assert "scripts/release_preflight.py" in makefile
     assert "release-snapshot-deployment:" in makefile
     assert "scripts/snapshot_gpu_checkout.py" in makefile
+    assert "release-promote-deployment-check:" in makefile
+    assert "scripts/promote_deployment_checkout.py" in makefile
     assert "release-gate:" in makefile
     assert "scripts/release_gate_status.py --summary" in makefile
     release_gate_section = makefile.split("release-gate:", 1)[1].split("\n\n", 1)[0]

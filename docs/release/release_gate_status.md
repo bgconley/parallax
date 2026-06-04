@@ -36,6 +36,7 @@ Before release handoff, run these from the exact commit being released:
 
 ```bash
 make release-snapshot-deployment
+RELEASE_DEPLOYMENT_SNAPSHOT=/home/bgconley/parallax-release-parity-snapshots/<snapshot> make release-promote-deployment-check
 make release-preflight
 make release-gate
 uv run python scripts/release_gate_status.py --summary
@@ -45,6 +46,11 @@ uv run python scripts/release_gate_status.py --summary
 GPU deployment checkout. It records the current HEAD, status, tracked diff, and
 a sanitized archive of untracked files while excluding `.env`, JWTs, keys,
 tokens, PEM files, and `secrets/` directories from the archive.
+
+`make release-promote-deployment-check` is a dry-run guard for deployment parity.
+It verifies that the named snapshot still matches the current dirty deployment
+checkout and that the target release commit is available before any operator runs
+the underlying promotion script with `--apply`.
 
 `make release-preflight` is a read-only prerequisite check. It reports missing
 release secrets by environment variable name only, checks the deployed GPU

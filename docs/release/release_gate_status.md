@@ -74,7 +74,10 @@ log scan, or real backup/restore drill cannot be executed successfully for the
 current release candidate. Each proof command must emit a sanitized, structured
 proof artifact for the current commit. A ready release must also publish a
 commit-matched evidence JSON artifact with non-empty, hash-matched evidence for
-every gate.
+every gate. The backup/restore drill writes temporary restored object bytes under
+`${PARALLAX_RESTORE_DRILL_ROOT:-/srv/parallax/exports/release-restore-drill}`;
+`/srv/parallax/backups` remains restricted local backup staging, not the writable
+restore-drill scratch root.
 
 For Firebase auth mode, the release auth provider probe accepts a fresh token in
 `PARALLAX_RELEASE_BEARER_TOKEN`. If that is absent, it mints a short-lived token

@@ -81,6 +81,19 @@ def test_release_preflight_make_target_accepts_operator_args() -> None:
     assert "scripts/release_preflight.py $(RELEASE_PREFLIGHT_ARGS)" in release_preflight_section
 
 
+def test_release_backup_restore_targets_use_writable_restore_root() -> None:
+    makefile = (REPO_ROOT / "Makefile").read_text()
+    release_gate_section = makefile.split("release-gate:", 1)[1].split("\n\n", 1)[0]
+    backup_restore_section = makefile.split("backup-restore-drill:", 1)[1].split("\n\n", 1)[0]
+
+    expected_default = "/srv/parallax/exports/release-restore-drill"
+    restricted_default = "/srv/parallax/backups/release-restore-drill"
+
+    assert expected_default in release_gate_section
+    assert expected_default in backup_restore_section
+    assert restricted_default not in release_gate_section
+
+
 def test_release_status_summary_command_reads_machine_status() -> None:
     result = subprocess.run(
         ["uv", "run", "python", "scripts/release_gate_status.py", "--summary"],

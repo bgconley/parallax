@@ -27,8 +27,11 @@ def release_auth_headers(
     fallback_user_id: UUID,
     bearer_token: str | None,
     app_check_token: str | None = None,
+    require_bearer_auth: bool = False,
 ) -> dict[str, str]:
     token = release_bearer_token(bearer_token)
+    if require_bearer_auth and not token:
+        raise ValueError("release bearer auth is required")
     headers = (
         {"Authorization": f"Bearer {token}"}
         if token

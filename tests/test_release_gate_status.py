@@ -1,3 +1,4 @@
+import hashlib
 import json
 import subprocess
 import sys
@@ -121,28 +122,38 @@ def test_release_evidence_writer_requires_per_gate_proofs(tmp_path: Path) -> Non
         raise AssertionError("expected release evidence writer to reject missing proofs")
 
 
+def test_release_proof_defaults_are_repo_root_relative() -> None:
+    status = _load_script("release_gate_status", "release_gate_status.py")
+    writer = _load_script("write_release_gate_evidence", "write_release_gate_evidence.py")
+    cleaner = _load_script("clear_release_gate_proofs", "clear_release_gate_proofs.py")
+
+    expected = REPO_ROOT / ".release-gate-proofs"
+
+    assert status.DEFAULT_PROOF_DIR == expected
+    assert writer.DEFAULT_PROOF_DIR == expected
+    assert cleaner.DEFAULT_PROOF_DIR == expected
+
+
 def test_release_evidence_writer_builds_from_structured_proofs(tmp_path: Path) -> None:
     script = _load_script("write_release_gate_evidence", "write_release_gate_evidence.py")
     status = _load_script("release_gate_status", "release_gate_status.py")
     for gate in status.RELEASE_GATES:
-        (tmp_path / f"{gate}.json").write_text(
-            json.dumps(
-                {
-                    "schema_version": 1,
-                    "gate": gate,
-                    "status": "passed",
-                    "commit_sha": "sha",
-                    "recorded_at": "2026-04-30T00:00:00+00:00",
-                    "command": ["uv", "run", "python", "scripts/probe.py"],
-                }
-            )
-        )
+        proof_payload = {
+            "schema_version": 1,
+            "gate": gate,
+            "status": "passed",
+            "commit_sha": "sha",
+            "recorded_at": "2026-04-30T00:00:00+00:00",
+            "command": ["uv", "run", "python", "scripts/probe.py"],
+        }
+        (tmp_path / f"{gate}.json").write_text(json.dumps(proof_payload))
 
     evidence = script.build_release_evidence(tmp_path, current_sha="sha")
 
     assert evidence["release_readiness"] == "ready"
     assert evidence["commit_sha"] == "sha"
     for gate in status.RELEASE_GATES:
+        proof_bytes = (tmp_path / f"{gate}.json").read_bytes()
         gate_evidence = evidence["gates"][gate]
         assert gate_evidence["status"] == "passed"
         assert gate_evidence["evidence"][0]["source"] == "structured_release_proof"
@@ -152,6 +163,240 @@ def test_release_evidence_writer_builds_from_structured_proofs(tmp_path: Path) -
             "python",
             "scripts/probe.py",
         ]
+        assert gate_evidence["evidence"][0]["proof_sha256"] == hashlib.sha256(
+            proof_bytes
+        ).hexdigest()
+
+
+def test_release_gate_status_requires_matching_proof_file_hash(tmp_path: Path) -> None:
+    script = _load_script("release_gate_status", "release_gate_status.py")
+    proof_path = tmp_path / "backup_restore.json"
+    proof_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "gate": "backup_restore",
+                "status": "passed",
+                "commit_sha": "sha",
+                "recorded_at": "2026-04-30T00:00:00+00:00",
+                "command": ["uv", "run", "python", "scripts/probe.py"],
+            }
+        )
+    )
+    good_hash = hashlib.sha256(proof_path.read_bytes()).hexdigest()
+
+    def evidence_with(proof_sha256: str) -> dict[str, object]:
+        return {
+            "commit_sha": "sha",
+            "gates": {
+                "backup_restore": {
+                    "status": "passed",
+                    "evidence": [
+                        {
+                            "recorded_at": "2026-04-30T00:00:00+00:00",
+                            "source": "structured_release_proof",
+                            "command": ["uv", "run", "python", "scripts/probe.py"],
+                            "proof_file": "backup_restore.json",
+                            "proof_sha256": proof_sha256,
+                        }
+                    ],
+                }
+            },
+        }
+
+    assert (
+        script._gate_status(
+            evidence_with(good_hash),
+            "backup_restore",
+            "sha",
+            proof_dir=tmp_path,
+        )
+        == "passed"
+    )
+
+    proof_path.write_text("tampered proof")
+    assert (
+        script._gate_status(
+            evidence_with(good_hash),
+            "backup_restore",
+            "sha",
+            proof_dir=tmp_path,
+        )
+        == "proof-mismatch"
+    )
+    proof_path.unlink()
+    assert (
+        script._gate_status(
+            evidence_with(good_hash),
+            "backup_restore",
+            "sha",
+            proof_dir=tmp_path,
+        )
+        == "missing-proof"
+    )
+
+
+def test_release_gate_status_rejects_hash_matched_stale_proof_file(
+    tmp_path: Path,
+) -> None:
+    script = _load_script("release_gate_status", "release_gate_status.py")
+    proof_path = tmp_path / "backup_restore.json"
+    proof_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "gate": "backup_restore",
+                "status": "passed",
+                "commit_sha": "old-sha",
+                "recorded_at": "2026-04-30T00:00:00+00:00",
+                "command": ["uv", "run", "python", "scripts/probe.py"],
+            }
+        )
+    )
+    proof_hash = hashlib.sha256(proof_path.read_bytes()).hexdigest()
+    evidence = {
+        "commit_sha": "sha",
+        "gates": {
+            "backup_restore": {
+                "status": "passed",
+                "evidence": [
+                    {
+                        "recorded_at": "2026-04-30T00:00:00+00:00",
+                        "source": "structured_release_proof",
+                        "command": ["uv", "run", "python", "scripts/probe.py"],
+                        "proof_file": "backup_restore.json",
+                        "proof_sha256": proof_hash,
+                    }
+                ],
+            }
+        },
+    }
+
+    assert (
+        script._gate_status(
+            evidence,
+            "backup_restore",
+            "sha",
+            proof_dir=tmp_path,
+        )
+        == "stale-proof"
+    )
+
+
+def test_release_gate_status_rejects_hash_matched_malformed_proof_file(
+    tmp_path: Path,
+) -> None:
+    script = _load_script("release_gate_status", "release_gate_status.py")
+    proof_path = tmp_path / "backup_restore.json"
+    proof_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "gate": "backup_restore",
+                "status": "passed",
+                "commit_sha": "sha",
+                "recorded_at": "2026-04-30T00:00:00+00:00",
+            }
+        )
+    )
+    proof_hash = hashlib.sha256(proof_path.read_bytes()).hexdigest()
+    evidence = {
+        "commit_sha": "sha",
+        "gates": {
+            "backup_restore": {
+                "status": "passed",
+                "evidence": [
+                    {
+                        "recorded_at": "2026-04-30T00:00:00+00:00",
+                        "source": "structured_release_proof",
+                        "command": ["uv", "run", "python", "scripts/probe.py"],
+                        "proof_file": "backup_restore.json",
+                        "proof_sha256": proof_hash,
+                    }
+                ],
+            }
+        },
+    }
+
+    assert (
+        script._gate_status(
+            evidence,
+            "backup_restore",
+            "sha",
+            proof_dir=tmp_path,
+        )
+        == "malformed-proof"
+    )
+
+
+def test_release_gate_status_rejects_missing_proof_hash() -> None:
+    script = _load_script("release_gate_status", "release_gate_status.py")
+
+    evidence = {
+        "commit_sha": "sha",
+        "gates": {
+            "backup_restore": {
+                "status": "passed",
+                "evidence": [
+                    {
+                        "recorded_at": "2026-04-30T00:00:00+00:00",
+                        "source": "structured_release_proof",
+                        "command": ["uv", "run", "python", "scripts/probe.py"],
+                        "proof_file": "backup_restore.json",
+                    }
+                ],
+            }
+        },
+    }
+
+    assert script._gate_status(evidence, "backup_restore", "sha") == "malformed-evidence"
+
+
+def test_release_gate_status_rejects_malformed_passed_evidence() -> None:
+    script = _load_script("release_gate_status", "release_gate_status.py")
+
+    evidence = {
+        "commit_sha": "sha",
+        "gates": {
+            "backup_restore": {
+                "status": "passed",
+                "evidence": ["not a structured proof reference"],
+            }
+        },
+    }
+
+    assert script._gate_status(evidence, "backup_restore", "sha") == "malformed-evidence"
+
+
+def test_release_gate_status_requires_gate_scoped_proof_reference() -> None:
+    script = _load_script("release_gate_status", "release_gate_status.py")
+
+    def evidence_with(proof_file: str) -> dict[str, object]:
+        return {
+            "commit_sha": "sha",
+            "gates": {
+                "backup_restore": {
+                    "status": "passed",
+                    "evidence": [
+                        {
+                            "recorded_at": "2026-04-30T00:00:00+00:00",
+                            "source": "structured_release_proof",
+                            "command": ["uv", "run", "python", "scripts/probe.py"],
+                            "proof_file": proof_file,
+                        }
+                    ],
+                }
+            },
+        }
+
+    assert (
+        script._gate_status(evidence_with("performance_slo.json"), "backup_restore", "sha")
+        == "malformed-evidence"
+    )
+    assert (
+        script._gate_status(evidence_with("../backup_restore.json"), "backup_restore", "sha")
+        == "malformed-evidence"
+    )
 
 
 def test_release_gate_recorder_redacts_sensitive_arguments() -> None:

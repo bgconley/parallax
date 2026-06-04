@@ -4,10 +4,12 @@ import argparse
 import os
 from pathlib import Path
 
-from release_gate_status import RELEASE_GATES
+from release_gate_status import RELEASE_GATES, REPO_ROOT
 
-DEFAULT_PROOF_DIR = Path(os.getenv("PARALLAX_RELEASE_PROOF_DIR", ".release-gate-proofs"))
-REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PROOF_DIR = REPO_ROOT / os.getenv(
+    "PARALLAX_RELEASE_PROOF_DIR",
+    ".release-gate-proofs",
+)
 
 
 def main() -> int:

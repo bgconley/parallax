@@ -15,14 +15,20 @@ def main() -> int:
     parser.add_argument("--user-id", default="00000000-0000-0000-0000-0000000000a2")
     parser.add_argument("--bearer-token")
     parser.add_argument("--app-check-token")
+    parser.add_argument("--require-bearer-auth", action="store_true")
     args = parser.parse_args()
 
     marker = f"parallax-sensitive-marker-{uuid4()}"
-    headers = release_auth_headers(
-        fallback_user_id=UUID(args.user_id),
-        bearer_token=args.bearer_token,
-        app_check_token=args.app_check_token,
-    )
+    try:
+        headers = release_auth_headers(
+            fallback_user_id=UUID(args.user_id),
+            bearer_token=args.bearer_token,
+            app_check_token=args.app_check_token,
+            require_bearer_auth=args.require_bearer_auth,
+        )
+    except ValueError as exc:
+        print(f"privacy scan failed: {exc}")
+        return 2
     body_text = _probe_validation_error(args.api_url, headers, marker)
     if marker in body_text:
         print("privacy scan failed: sensitive marker appeared in structured error response")

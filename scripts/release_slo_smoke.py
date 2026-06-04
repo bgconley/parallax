@@ -18,14 +18,20 @@ def main() -> int:
     parser.add_argument("--user-id", default="00000000-0000-0000-0000-0000000000a1")
     parser.add_argument("--bearer-token")
     parser.add_argument("--app-check-token")
+    parser.add_argument("--require-bearer-auth", action="store_true")
     args = parser.parse_args()
 
     user_id = UUID(args.user_id)
-    headers = release_auth_headers(
-        fallback_user_id=user_id,
-        bearer_token=args.bearer_token,
-        app_check_token=args.app_check_token,
-    )
+    try:
+        headers = release_auth_headers(
+            fallback_user_id=user_id,
+            bearer_token=args.bearer_token,
+            app_check_token=args.app_check_token,
+            require_bearer_auth=args.require_bearer_auth,
+        )
+    except ValueError as exc:
+        print(f"release slo smoke failed: {exc}")
+        return 2
     latencies: list[tuple[str, float]] = []
 
     with httpx.Client(base_url=args.api_url, timeout=10.0) as client:

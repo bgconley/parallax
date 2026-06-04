@@ -19,15 +19,21 @@ def main() -> int:
     parser.add_argument("--keep-data", action="store_true")
     parser.add_argument("--bearer-token")
     parser.add_argument("--app-check-token")
+    parser.add_argument("--require-bearer-auth", action="store_true")
     args = parser.parse_args()
 
     user_id = uuid4()
     device_id = f"privacy-smoke-{user_id.hex[:8]}"
-    headers = release_auth_headers(
-        fallback_user_id=user_id,
-        bearer_token=args.bearer_token,
-        app_check_token=args.app_check_token,
-    )
+    try:
+        headers = release_auth_headers(
+            fallback_user_id=user_id,
+            bearer_token=args.bearer_token,
+            app_check_token=args.app_check_token,
+            require_bearer_auth=args.require_bearer_auth,
+        )
+    except ValueError as exc:
+        print(f"privacy lifecycle smoke failed: {exc}")
+        return 2
     summary: dict[str, object] = {"user_id": str(user_id), "device_id": device_id}
 
     try:

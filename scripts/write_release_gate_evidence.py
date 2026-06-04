@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from release_gate_status import EVIDENCE_DOC, RELEASE_GATES, _current_git_sha
+from release_gate_status import EVIDENCE_DOC, RELEASE_GATES, REPO_ROOT, _current_git_sha
 
-DEFAULT_PROOF_DIR = Path(os.getenv("PARALLAX_RELEASE_PROOF_DIR", ".release-gate-proofs"))
+DEFAULT_PROOF_DIR = REPO_ROOT / os.getenv(
+    "PARALLAX_RELEASE_PROOF_DIR",
+    ".release-gate-proofs",
+)
 
 
 def main() -> int:
@@ -46,6 +50,7 @@ def build_release_evidence(proof_dir: Path, *, current_sha: str) -> dict[str, ob
                         "source": "structured_release_proof",
                         "command": proofs[gate]["command"],
                         "proof_file": f"{gate}.json",
+                        "proof_sha256": proofs[gate]["proof_sha256"],
                     }
                 ],
             }
@@ -79,6 +84,7 @@ def _load_gate_proof(proof_dir: Path, gate: str, current_sha: str) -> dict[str, 
         isinstance(part, str) for part in command
     ):
         raise RuntimeError(f"release proof missing command for {gate}")
+    proof["proof_sha256"] = hashlib.sha256(proof_path.read_bytes()).hexdigest()
     return proof
 
 

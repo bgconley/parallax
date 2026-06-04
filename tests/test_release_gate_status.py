@@ -164,6 +164,29 @@ def test_release_preflight_uses_repo_root_parity_script() -> None:
     assert script.PARITY_SCRIPT == REPO_ROOT / "scripts/verify_gpu_commit_parity.sh"
 
 
+def test_release_preflight_formats_local_checkout_parity() -> None:
+    script = _load_script("release_preflight", "release_preflight.py")
+
+    assert script.checkout_parity_status(
+        expected_sha="abc123",
+        actual_sha="abc123",
+        dirty_status="",
+    ) == {"status": "ready", "detail": "GPU deployment checkout matches release SHA"}
+    assert script.checkout_parity_status(
+        expected_sha="abc123",
+        actual_sha="def456",
+        dirty_status="",
+    ) == {
+        "status": "blocked",
+        "detail": "GPU checkout mismatch: expected abc123, got def456",
+    }
+    assert script.checkout_parity_status(
+        expected_sha="abc123",
+        actual_sha="abc123",
+        dirty_status=" M services/api/example.py",
+    ) == {"status": "blocked", "detail": "GPU checkout is dirty"}
+
+
 def test_release_proof_defaults_are_repo_root_relative() -> None:
     status = _load_script("release_gate_status", "release_gate_status.py")
     writer = _load_script("write_release_gate_evidence", "write_release_gate_evidence.py")

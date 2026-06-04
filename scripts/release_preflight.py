@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess  # nosec B404
 from collections.abc import Mapping
+from pathlib import Path
 
 from release_gate_status import REPO_ROOT, _current_git_sha
 
 CheckMap = dict[str, dict[str, str]]
 PARITY_SCRIPT = REPO_ROOT / "scripts/verify_gpu_commit_parity.sh"
+DEFAULT_GPU_REPO = Path("/tank/repos/parallax")
 
 FIREBASE_RELEASE_INPUTS = (
     "PARALLAX_FIREBASE_WEB_API_KEY",
@@ -67,6 +70,9 @@ def evaluate_environment(environ: Mapping[str, str]) -> CheckMap:
 
 
 def check_deployed_commit_parity(expected_sha: str) -> dict[str, str]:
+    gpu_repo = Path(os.getenv("PARALLAX_GPU_REPO", str(DEFAULT_GPU_REPO)))
+    if (gpu_repo / ".git").exists():
+        return check_local_checkout_parity(gpu_repo, expected_sha)
     result = subprocess.run(
         [str(PARITY_SCRIPT), expected_sha],
         check=False,
@@ -80,6 +86,48 @@ def check_deployed_commit_parity(expected_sha: str) -> dict[str, str]:
         "status": "blocked",
         "detail": detail or "scripts/verify_gpu_commit_parity.sh failed",
     }
+
+
+def check_local_checkout_parity(gpu_repo: Path, expected_sha: str) -> dict[str, str]:
+    git = shutil.which("git")
+    if git is None:
+        return {"status": "blocked", "detail": "git executable is required"}
+    sha_result = subprocess.run(
+        [git, "-C", str(gpu_repo), "rev-parse", "HEAD"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )  # nosec B603
+    status_result = subprocess.run(
+        [git, "-C", str(gpu_repo), "status", "--short"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )  # nosec B603
+    if sha_result.returncode != 0 or status_result.returncode != 0:
+        detail = _first_output_line(sha_result.stderr) or _first_output_line(status_result.stderr)
+        return {"status": "blocked", "detail": detail or "could not inspect GPU checkout"}
+    return checkout_parity_status(
+        expected_sha=expected_sha,
+        actual_sha=sha_result.stdout.strip(),
+        dirty_status=status_result.stdout.strip(),
+    )
+
+
+def checkout_parity_status(
+    *,
+    expected_sha: str,
+    actual_sha: str,
+    dirty_status: str,
+) -> dict[str, str]:
+    if actual_sha != expected_sha:
+        return {
+            "status": "blocked",
+            "detail": f"GPU checkout mismatch: expected {expected_sha}, got {actual_sha}",
+        }
+    if dirty_status:
+        return {"status": "blocked", "detail": "GPU checkout is dirty"}
+    return {"status": "ready", "detail": "GPU deployment checkout matches release SHA"}
 
 
 def render_checks(checks: CheckMap) -> str:
